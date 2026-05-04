@@ -470,9 +470,14 @@ img, svg { display: block; max-width: 100%; }
 .dialog-sub a:hover { color: var(--accent); }
 
 /* view switching */
-.dialog-body[data-view="form"] .dialog-success-view { display: none; }
-.dialog-body[data-view="success"] .dialog-form-view { display: none; }
+.dialog-form-view,
 .dialog-success-view {
+  display: none;
+}
+.dialog-body[data-view="form"] .dialog-form-view {
+  display: block;
+}
+.dialog-body[data-view="success"] .dialog-success-view {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
