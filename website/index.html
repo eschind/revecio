@@ -27,7 +27,7 @@
     <nav class="nav">
       <a href="#approach">Approach</a>
       <a href="#opportunity">Opportunity</a>
-      <a href="mailto:hello@revecio.com" class="nav-cta">Contact</a>
+      <a href="#contact" class="nav-cta">Contact</a>
     </nav>
   </div>
 </header>
@@ -50,7 +50,7 @@
         nonprofits that underwrite human capital and essential services.
       </p>
       <div class="hero-actions">
-        <a href="mailto:hello@revecio.com" class="btn btn-primary">Get in touch</a>
+        <a href="#contact" class="btn btn-primary">Get in touch</a>
         <a href="#approach" class="btn btn-ghost">Read more <span aria-hidden="true">→</span></a>
       </div>
     </div>
@@ -154,10 +154,83 @@
         We're building the investment platform institutions deserve.
         <span class="closing-soon">Launching soon.</span>
       </h2>
-      <a href="mailto:hello@revecio.com" class="btn btn-primary">Get in touch</a>
+    </div>
+  </section>
+
+  <section id="contact" class="section section-contact">
+    <div class="container grid-2">
+      <div class="section-label">
+        <span class="num">03</span>
+        <span>Contact</span>
+      </div>
+      <div class="section-body">
+        <h2 class="section-title">Get in touch.</h2>
+        <p>Whether you steward institutional capital, want to learn more about our approach, or are interested in working together — we'd love to hear from you.</p>
+        <form id="contact-form" class="contact-form" novalidate>
+          <div class="form-row">
+            <label class="field">
+              <span class="field-label">Name</span>
+              <input type="text" name="name" required autocomplete="name" maxlength="200" />
+            </label>
+            <label class="field">
+              <span class="field-label">Firm or organization</span>
+              <input type="text" name="firm" required autocomplete="organization" maxlength="200" />
+            </label>
+          </div>
+          <label class="field">
+            <span class="field-label">Email</span>
+            <input type="email" name="email" required autocomplete="email" maxlength="200" />
+          </label>
+          <label class="field">
+            <span class="field-label">Message</span>
+            <textarea name="message" rows="5" required maxlength="5000"></textarea>
+          </label>
+          <div class="hp-field" aria-hidden="true">
+            <label>Website<input type="text" name="website" tabindex="-1" autocomplete="off" /></label>
+          </div>
+          <div class="form-footer">
+            <button type="submit" class="btn btn-primary">Send message</button>
+            <p class="form-status" role="status" aria-live="polite"></p>
+          </div>
+        </form>
+      </div>
     </div>
   </section>
 </main>
+
+<script>
+(function () {
+  const form = document.getElementById('contact-form');
+  if (!form) return;
+  const status = form.querySelector('.form-status');
+  const btn = form.querySelector('button[type="submit"]');
+  form.addEventListener('submit', async function (e) {
+    e.preventDefault();
+    if (!form.reportValidity()) return;
+    const data = Object.fromEntries(new FormData(form));
+    status.textContent = 'Sending…';
+    status.dataset.state = 'sending';
+    btn.disabled = true;
+    try {
+      const res = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(body.error || 'Send failed');
+      status.textContent = "Thanks — we'll be in touch shortly.";
+      status.dataset.state = 'ok';
+      form.reset();
+    } catch (err) {
+      status.textContent = (err && err.message) || 'Something went wrong. Please email hello@revecio.com directly.';
+      status.dataset.state = 'error';
+    } finally {
+      btn.disabled = false;
+    }
+  });
+})();
+</script>
 
 <footer class="site-footer">
   <div class="container footer-inner">
