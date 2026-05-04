@@ -22,7 +22,7 @@
     <nav class="nav">
       <a href="#approach">Approach</a>
       <a href="#opportunity">Opportunity</a>
-      <a href="#contact" class="nav-cta">Contact</a>
+      <a href="#contact" class="nav-cta" data-open-contact>Contact</a>
     </nav>
   </div>
 </header>
@@ -45,7 +45,7 @@
         nonprofits that underwrite human capital and essential services.
       </p>
       <div class="hero-actions">
-        <a href="#contact" class="btn btn-primary">Get in touch</a>
+        <a href="#contact" class="btn btn-primary" data-open-contact>Get in touch</a>
         <a href="#approach" class="btn btn-ghost">Read more <span aria-hidden="true">→</span></a>
       </div>
     </div>
@@ -149,63 +149,98 @@
         We're building the investment platform institutions deserve.
         <span class="closing-soon">Launching soon.</span>
       </h2>
-    </div>
-  </section>
-
-  <section id="contact" class="section section-contact">
-    <div class="container grid-2">
-      <div class="section-label">
-        <span class="num">03</span>
-        <span>Contact</span>
-      </div>
-      <div class="section-body">
-        <h2 class="section-title">Get in touch.</h2>
-        <p>Whether you steward institutional capital, want to learn more about our approach, or are interested in working together — we'd love to hear from you.</p>
-        <form id="contact-form" class="contact-form" novalidate>
-          <div class="form-row">
-            <label class="field">
-              <span class="field-label">Name</span>
-              <input type="text" name="name" required autocomplete="name" maxlength="200" />
-            </label>
-            <label class="field">
-              <span class="field-label">Firm or organization</span>
-              <input type="text" name="firm" required autocomplete="organization" maxlength="200" />
-            </label>
-          </div>
-          <label class="field">
-            <span class="field-label">Email</span>
-            <input type="email" name="email" required autocomplete="email" maxlength="200" />
-          </label>
-          <label class="field">
-            <span class="field-label">Message</span>
-            <textarea name="message" rows="5" required maxlength="5000"></textarea>
-          </label>
-          <div class="hp-field" aria-hidden="true">
-            <label>Website<input type="text" name="website" tabindex="-1" autocomplete="off" /></label>
-          </div>
-          <div class="form-footer">
-            <button type="submit" class="btn btn-primary">Send message</button>
-            <p class="form-status" role="status" aria-live="polite"></p>
-          </div>
-        </form>
-      </div>
+      <a href="#contact" class="btn btn-primary" data-open-contact>Get in touch</a>
     </div>
   </section>
 </main>
 
+<dialog id="contact-dialog" class="contact-dialog" aria-labelledby="contact-dialog-title">
+  <div class="dialog-content">
+    <button type="button" class="dialog-close" aria-label="Close">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+      </svg>
+    </button>
+    <div class="dialog-body">
+      <p class="dialog-eyebrow"><span class="num">03</span> Contact</p>
+      <h2 id="contact-dialog-title" class="dialog-title">Get in touch.</h2>
+      <p class="dialog-sub">Whether you steward institutional capital, want to learn more about our approach, or are interested in working together — we'd love to hear from you.</p>
+      <form id="contact-form" class="contact-form" novalidate>
+        <div class="form-row">
+          <label class="field">
+            <span class="field-label">Name</span>
+            <input type="text" name="name" required autocomplete="name" maxlength="200" />
+          </label>
+          <label class="field">
+            <span class="field-label">Firm or organization</span>
+            <input type="text" name="firm" required autocomplete="organization" maxlength="200" />
+          </label>
+        </div>
+        <label class="field">
+          <span class="field-label">Email</span>
+          <input type="email" name="email" required autocomplete="email" maxlength="200" />
+        </label>
+        <label class="field">
+          <span class="field-label">Message</span>
+          <textarea name="message" rows="5" required maxlength="5000"></textarea>
+        </label>
+        <div class="hp-field" aria-hidden="true">
+          <label>Website<input type="text" name="website" tabindex="-1" autocomplete="off" /></label>
+        </div>
+        <div class="form-footer">
+          <button type="submit" class="btn btn-primary">Send message</button>
+          <p class="form-status" role="status" aria-live="polite"></p>
+        </div>
+      </form>
+    </div>
+  </div>
+</dialog>
+
 <script>
 (function () {
+  const dialog = document.getElementById('contact-dialog');
   const form = document.getElementById('contact-form');
-  if (!form) return;
+  if (!dialog || !form) return;
+
   const status = form.querySelector('.form-status');
-  const btn = form.querySelector('button[type="submit"]');
+  const submitBtn = form.querySelector('button[type="submit"]');
+  const closeBtn = dialog.querySelector('.dialog-close');
+
+  function openDialog() {
+    if (typeof dialog.showModal === 'function') {
+      dialog.showModal();
+    } else {
+      dialog.setAttribute('open', '');
+    }
+    requestAnimationFrame(() => {
+      const firstInput = form.querySelector('input, textarea');
+      if (firstInput) firstInput.focus();
+    });
+  }
+  function closeDialog() {
+    if (typeof dialog.close === 'function') dialog.close();
+    else dialog.removeAttribute('open');
+  }
+
+  document.querySelectorAll('[data-open-contact]').forEach(function (el) {
+    el.addEventListener('click', function (e) {
+      e.preventDefault();
+      openDialog();
+    });
+  });
+
+  closeBtn.addEventListener('click', closeDialog);
+  dialog.addEventListener('click', function (e) {
+    if (e.target === dialog) closeDialog();
+  });
+
   form.addEventListener('submit', async function (e) {
     e.preventDefault();
     if (!form.reportValidity()) return;
     const data = Object.fromEntries(new FormData(form));
     status.textContent = 'Sending…';
     status.dataset.state = 'sending';
-    btn.disabled = true;
+    submitBtn.disabled = true;
     try {
       const res = await fetch('/api/contact', {
         method: 'POST',
@@ -221,7 +256,7 @@
       status.textContent = (err && err.message) || 'Something went wrong. Please email hello@revecio.com directly.';
       status.dataset.state = 'error';
     } finally {
-      btn.disabled = false;
+      submitBtn.disabled = false;
     }
   });
 })();
