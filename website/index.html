@@ -161,37 +161,53 @@
         <path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
       </svg>
     </button>
-    <div class="dialog-body">
-      <p class="dialog-eyebrow"><span class="num">03</span> Contact</p>
-      <h2 id="contact-dialog-title" class="dialog-title">Get in touch.</h2>
-      <p class="dialog-sub">Whether you steward institutional capital, want to learn more about our approach, or are interested in working together — we'd love to hear from you.</p>
-      <form id="contact-form" class="contact-form" novalidate>
-        <div class="form-row">
+    <div class="dialog-body" data-view="form">
+      <div class="dialog-form-view">
+        <p class="dialog-eyebrow"><span class="num">03</span> Contact</p>
+        <h2 id="contact-dialog-title" class="dialog-title">Get in touch.</h2>
+        <p class="dialog-sub">Whether you steward institutional capital, want to learn more about our approach, or are interested in working together — we'd love to hear from you.</p>
+        <form id="contact-form" class="contact-form" novalidate>
+          <div class="form-row">
+            <label class="field">
+              <span class="field-label">Name</span>
+              <input type="text" name="name" required autocomplete="name" maxlength="200" />
+            </label>
+            <label class="field">
+              <span class="field-label">Firm or organization</span>
+              <input type="text" name="firm" required autocomplete="organization" maxlength="200" />
+            </label>
+          </div>
           <label class="field">
-            <span class="field-label">Name</span>
-            <input type="text" name="name" required autocomplete="name" maxlength="200" />
+            <span class="field-label">Email</span>
+            <input type="email" name="email" required autocomplete="email" maxlength="200" />
           </label>
           <label class="field">
-            <span class="field-label">Firm or organization</span>
-            <input type="text" name="firm" required autocomplete="organization" maxlength="200" />
+            <span class="field-label">Message</span>
+            <textarea name="message" rows="5" required maxlength="5000"></textarea>
           </label>
+          <div class="hp-field" aria-hidden="true">
+            <label>Website<input type="text" name="website" tabindex="-1" autocomplete="off" /></label>
+          </div>
+          <div class="form-footer">
+            <button type="submit" class="btn btn-primary">Send message</button>
+            <p class="form-status" role="status" aria-live="polite"></p>
+          </div>
+        </form>
+      </div>
+      <div class="dialog-success-view" role="status" aria-live="polite">
+        <div class="success-mark" aria-hidden="true">
+          <svg viewBox="0 0 48 48" width="48" height="48" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="24" cy="24" r="22" stroke="currentColor" stroke-width="1.25" opacity="0.4"/>
+            <path d="M14 24.5 L21 31 L34 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
         </div>
-        <label class="field">
-          <span class="field-label">Email</span>
-          <input type="email" name="email" required autocomplete="email" maxlength="200" />
-        </label>
-        <label class="field">
-          <span class="field-label">Message</span>
-          <textarea name="message" rows="5" required maxlength="5000"></textarea>
-        </label>
-        <div class="hp-field" aria-hidden="true">
-          <label>Website<input type="text" name="website" tabindex="-1" autocomplete="off" /></label>
+        <h2 class="dialog-title">Message sent.</h2>
+        <p class="dialog-sub">Thanks for reaching out — we'll get back to you within a couple of business days. In the meantime, you can also reach us directly at <a href="mailto:hello@revecio.com">hello@revecio.com</a>.</p>
+        <div class="success-actions">
+          <button type="button" class="btn btn-primary" data-close-contact>Close</button>
+          <button type="button" class="btn btn-link" data-reset-contact>Send another message</button>
         </div>
-        <div class="form-footer">
-          <button type="submit" class="btn btn-primary">Send message</button>
-          <p class="form-status" role="status" aria-live="polite"></p>
-        </div>
-      </form>
+      </div>
     </div>
   </div>
 </dialog>
@@ -202,11 +218,23 @@
   const form = document.getElementById('contact-form');
   if (!dialog || !form) return;
 
+  const body = dialog.querySelector('.dialog-body');
   const status = form.querySelector('.form-status');
   const submitBtn = form.querySelector('button[type="submit"]');
   const closeBtn = dialog.querySelector('.dialog-close');
 
+  function setView(view) {
+    body.dataset.view = view;
+  }
+  function resetForm() {
+    form.reset();
+    status.textContent = '';
+    status.dataset.state = '';
+    submitBtn.disabled = false;
+    setView('form');
+  }
   function openDialog() {
+    resetForm();
     if (typeof dialog.showModal === 'function') {
       dialog.showModal();
     } else {
@@ -228,6 +256,12 @@
       openDialog();
     });
   });
+  document.querySelectorAll('[data-close-contact]').forEach(function (el) {
+    el.addEventListener('click', closeDialog);
+  });
+  document.querySelectorAll('[data-reset-contact]').forEach(function (el) {
+    el.addEventListener('click', resetForm);
+  });
 
   closeBtn.addEventListener('click', closeDialog);
   dialog.addEventListener('click', function (e) {
@@ -247,11 +281,11 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       });
-      const body = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(body.error || 'Send failed');
-      status.textContent = "Thanks — we'll be in touch shortly.";
-      status.dataset.state = 'ok';
-      form.reset();
+      const result = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(result.error || 'Send failed');
+      status.textContent = '';
+      status.dataset.state = '';
+      setView('success');
     } catch (err) {
       status.textContent = (err && err.message) || 'Something went wrong. Please email hello@revecio.com directly.';
       status.dataset.state = 'error';
