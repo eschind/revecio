@@ -389,6 +389,93 @@ img, svg { display: block; max-width: 100%; }
   font-size: 0.7em;
 }
 
+/* ---------- contact form ---------- */
+.section-closing { border-bottom: none; padding-bottom: clamp(40px, 6vw, 60px); }
+.section-contact { padding-top: clamp(40px, 6vw, 60px); }
+
+.contact-form {
+  margin-top: 36px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  max-width: 640px;
+}
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+}
+@media (max-width: 560px) {
+  .form-row { grid-template-columns: 1fr; }
+}
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.field-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.contact-form input,
+.contact-form textarea {
+  font-family: inherit;
+  font-size: 16px;
+  color: var(--ink);
+  background: color-mix(in srgb, var(--bg) 60%, white);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px 14px;
+  width: 100%;
+  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.contact-form textarea {
+  resize: vertical;
+  min-height: 120px;
+  line-height: 1.5;
+}
+.contact-form input:focus,
+.contact-form textarea:focus {
+  outline: none;
+  border-color: var(--ink);
+  background: white;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ink) 8%, transparent);
+}
+.contact-form input:invalid:not(:placeholder-shown),
+.contact-form textarea:invalid:not(:placeholder-shown) {
+  border-color: #b94a3b;
+}
+.hp-field {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+.form-footer {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+.contact-form .btn-primary[disabled] {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.form-status {
+  margin: 0;
+  font-size: 14px;
+  color: var(--muted);
+}
+.form-status[data-state="ok"] { color: var(--accent); }
+.form-status[data-state="error"] { color: #b94a3b; }
+
 /* ---------- footer ---------- */
 .site-footer {
   padding: 36px 0;
