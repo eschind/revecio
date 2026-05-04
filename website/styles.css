@@ -466,10 +466,58 @@ img, svg { display: block; max-width: 100%; }
   font-size: 15px;
   line-height: 1.55;
 }
+.dialog-sub a { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
+.dialog-sub a:hover { color: var(--accent); }
+
+/* view switching */
+.dialog-body[data-view="form"] .dialog-success-view { display: none; }
+.dialog-body[data-view="success"] .dialog-form-view { display: none; }
+.dialog-success-view {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 4px 0;
+  animation: dialog-success-in 320ms cubic-bezier(0.2, 0.7, 0.3, 1);
+}
+@keyframes dialog-success-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.success-mark {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  border-radius: 999px;
+  padding: 14px;
+  display: inline-flex;
+  margin-bottom: 4px;
+}
+.success-mark svg { width: 32px; height: 32px; display: block; }
+.dialog-success-view .dialog-title { margin-bottom: 4px; }
+.success-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+.btn-link {
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  font-size: 14px;
+  font-family: inherit;
+  cursor: pointer;
+  padding: 8px 4px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: color-mix(in srgb, var(--muted) 40%, transparent);
+  transition: color 0.15s, text-decoration-color 0.15s;
+}
+.btn-link:hover { color: var(--ink); text-decoration-color: var(--ink); }
 
 .contact-form {
   margin-top: 24px;
-  margin-top: 36px;
   display: flex;
   flex-direction: column;
   gap: 18px;
