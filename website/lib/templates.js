@@ -359,11 +359,46 @@ function currentMonthYear() {
   });
 }
 
-function renderMemo({ viewerEmail, memo = DEFAULT_MEMO } = {}) {
+function watermarkSvg({ email, date }) {
+  const text = `${email}  ·  ${date}`;
+  const safe = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  // 320x220 tile with one diagonal line; tiles repeat across the page.
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='320' height='220'>
+    <text x='160' y='110'
+          font-family='Inter, system-ui, sans-serif'
+          font-size='17'
+          font-weight='500'
+          fill='rgba(20,23,28,0.16)'
+          transform='rotate(-28 160 110)'
+          text-anchor='middle'>${safe}</text>
+  </svg>`;
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+}
+
+function renderMemo({ viewerEmail, memo = DEFAULT_MEMO, watermark = null, hideTopbar = false } = {}) {
   const total = memo.pages.length;
   const metaTemplate = memo.meta || 'Investor Memo &nbsp;·&nbsp; Confidential &nbsp;·&nbsp; {date}';
   const meta = metaTemplate.replace('{date}', currentMonthYear());
   const pagesHtml = memo.pages.map((p, i) => renderPage(p, { pageNum: i + 1, total, meta })).join('');
+
+  const watermarkCss = watermark
+    ? `
+    .page { position: relative; }
+    .page::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 5;
+      background-image: url("${watermarkSvg(watermark)}");
+      background-repeat: repeat;
+      background-position: 0 0;
+      mix-blend-mode: multiply;
+    }
+    .page > * { position: relative; z-index: 1; }
+  `
+    : '';
+  const hideTopbarCss = hideTopbar ? `.topbar { display: none !important; }` : '';
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -373,7 +408,10 @@ function renderMemo({ viewerEmail, memo = DEFAULT_MEMO } = {}) {
 <title>Reve — Investor Memo</title>
 ${FONTS}
 <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-<style>${renderMemoCss()}</style>
+<style>${renderMemoCss()}
+${watermarkCss}
+${hideTopbarCss}
+</style>
 </head>
 <body>
   <div class="topbar">
