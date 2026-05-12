@@ -382,14 +382,16 @@ function currentMonthYear() {
 function watermarkSvg({ email, date }) {
   const text = `${email}  ·  ${date}`;
   const safe = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-  // 320x220 tile with one diagonal line; tiles repeat across the page.
-  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='320' height='220'>
-    <text x='160' y='110'
-          font-family='Inter, system-ui, sans-serif'
-          font-size='17'
-          font-weight='500'
-          fill='rgba(20,23,28,0.16)'
-          transform='rotate(-28 160 110)'
+  // Larger tile + smaller text so each watermark is contained within its tile
+  // even for longer emails. font-family falls back to whatever sans the
+  // rendering environment has (Inter isn't installed on Lambda).
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='420' height='280'>
+    <text x='210' y='140'
+          font-family='Helvetica, Arial, sans-serif'
+          font-size='13'
+          font-weight='400'
+          fill='rgba(20,23,28,0.14)'
+          transform='rotate(-28 210 140)'
           text-anchor='middle'>${safe}</text>
   </svg>`;
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
