@@ -1,0 +1,7 @@
+{
+  "rewrites": [
+    { "source": "/investors", "destination": "/api/investors" },
+    { "source": "/investors/", "destination": "/api/investors" },
+    { "source": "/investors/logout", "destination": "/api/investors" }
+  ]
+}
