@@ -1,4 +1,4 @@
-import { ensureSchema, recordVisit } from '../lib/db.js';
+import { ensureSchema, recordVisit, isEmailAllowed } from '../lib/db.js';
 import {
   buildSessionCookie,
   clearSessionCookie,
@@ -6,7 +6,8 @@ import {
   clientIp,
 } from '../lib/session.js';
 import { sendVisitNotification } from '../lib/notify.js';
-import { renderGate, renderMemo, escapeHtml } from '../lib/templates.js';
+import { renderGate, renderMemo } from '../lib/templates.js';
+import { loadMemoForRender } from '../lib/memo-store.js';
 
 const isEmail = (s) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
 const trim = (v, max = 320) => String(v ?? '').trim().slice(0, max);
@@ -29,7 +30,6 @@ function redirect(res, to, extraHeaders = {}) {
 
 export default async function handler(req, res) {
   try {
-    // /investors/logout
     if (req.url && req.url.startsWith('/investors/logout')) {
       return redirect(res, '/investors', { 'Set-Cookie': clearSessionCookie() });
     }
@@ -43,7 +43,15 @@ export default async function handler(req, res) {
     if (!session) {
       return sendHtml(res, 200, renderGate());
     }
-    return sendHtml(res, 200, renderMemo({ viewerEmail: session.email }));
+
+    let memo;
+    try {
+      await ensureSchema();
+      memo = await loadMemoForRender();
+    } catch (err) {
+      console.error('[investors] memo load failed:', err?.message);
+    }
+    return sendHtml(res, 200, renderMemo({ viewerEmail: session.email, memo }));
   } catch (err) {
     console.error('investors handler error:', err);
     return sendHtml(res, 500, renderGate({ error: 'Something went wrong. Please try again.' }));
@@ -91,20 +99,37 @@ async function handleAccess(req, res) {
     return sendHtml(res, 401, renderGate({ error: 'That access code is not correct.', prefillEmail: email }));
   }
 
+  // Whitelist check: only allow emails that admin has added (admin email is always allowed)
+  try {
+    await ensureSchema();
+  } catch (err) {
+    console.error('[investors] ensureSchema failed:', err);
+  }
+  const adminEmail = (process.env.ADMIN_EMAIL || '').toLowerCase();
+  let allowed = email === adminEmail;
+  if (!allowed) {
+    try {
+      allowed = await isEmailAllowed(email);
+    } catch (err) {
+      console.error('[investors] whitelist check failed:', err);
+    }
+  }
+  if (!allowed) {
+    return sendHtml(res, 403, renderGate({
+      error: 'That email is not on the access list. Please reach out to eytan@revecio.com if you believe this is in error.',
+      prefillEmail: email,
+    }));
+  }
+
   const ip = clientIp(req);
   const userAgent = req.headers['user-agent'] || '';
 
-  // Ensure schema, then log visit (don't block on email)
   try {
-    await ensureSchema();
     await recordVisit({ email, ip, userAgent, action: 'view' });
   } catch (err) {
     console.error('visit logging failed:', err);
-    // continue — do not block access on logging failure
   }
 
-  // Must await — Vercel's serverless runtime can terminate fire-and-forget
-  // promises as soon as the response is sent.
   try {
     await sendVisitNotification({ email, ip, userAgent, action: 'view' });
   } catch (err) {

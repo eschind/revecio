@@ -5,6 +5,7 @@ import { ensureSchema, recordVisit } from '../../lib/db.js';
 import { readSession, clientIp } from '../../lib/session.js';
 import { sendVisitNotification } from '../../lib/notify.js';
 import { renderMemo } from '../../lib/templates.js';
+import { loadMemoForRender } from '../../lib/memo-store.js';
 
 export const config = {
   maxDuration: 60,
@@ -37,9 +38,18 @@ export default async function handler(req, res) {
       console.error('[download] visit log failed:', err);
     }
 
+    // Load latest memo content from DB (seeded from default on first run)
+    let memo;
+    try {
+      memo = await loadMemoForRender();
+    } catch (err) {
+      console.error('[download] memo load failed, falling back to default:', err?.message);
+    }
+
     // Build the watermarked HTML — same memo, plus diagonal watermark layer
     const html = renderMemo({
       viewerEmail: email,
+      memo,
       hideTopbar: true,
       watermark: { email, date: todayIso() },
     });
