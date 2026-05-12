@@ -2,6 +2,13 @@
   "rewrites": [
     { "source": "/investors", "destination": "/api/investors" },
     { "source": "/investors/", "destination": "/api/investors" },
-    { "source": "/investors/logout", "destination": "/api/investors" }
-  ]
+    { "source": "/investors/logout", "destination": "/api/investors" },
+    { "source": "/investors/download.pdf", "destination": "/api/investors/download" }
+  ],
+  "functions": {
+    "api/investors/download.js": {
+      "memory": 2048,
+      "maxDuration": 60
+    }
+  }
 }

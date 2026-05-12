@@ -4,7 +4,9 @@
   "version": "0.1.0",
   "type": "module",
   "dependencies": {
+    "@sparticuz/chromium-min": "^131.0.1",
     "postgres": "^3.4.5",
+    "puppeteer-core": "^23.10.0",
     "resend": "^4.0.1"
   }
 }
