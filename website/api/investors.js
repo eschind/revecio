@@ -103,9 +103,13 @@ async function handleAccess(req, res) {
     // continue — do not block access on logging failure
   }
 
-  sendVisitNotification({ email, ip, userAgent, action: 'view' }).catch((err) =>
-    console.error('notification failed:', err)
-  );
+  // Must await — Vercel's serverless runtime can terminate fire-and-forget
+  // promises as soon as the response is sent.
+  try {
+    await sendVisitNotification({ email, ip, userAgent, action: 'view' });
+  } catch (err) {
+    console.error('notification failed:', err);
+  }
 
   const cookie = buildSessionCookie({ email });
   return redirect(res, '/investors', { 'Set-Cookie': cookie });
