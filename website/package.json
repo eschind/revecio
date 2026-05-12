@@ -4,9 +4,9 @@
   "version": "0.1.0",
   "type": "module",
   "dependencies": {
-    "@sparticuz/chromium": "^131.0.1",
+    "@sparticuz/chromium": "^148.0.0",
     "postgres": "^3.4.5",
-    "puppeteer-core": "^23.10.0",
+    "puppeteer-core": "^24.0.0",
     "resend": "^4.0.1"
   }
 }
