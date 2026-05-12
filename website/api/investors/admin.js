@@ -4,6 +4,8 @@ import {
   addAllowedEmail,
   removeAllowedEmail,
   listRecentVisits,
+  isWhitelistEnabled,
+  setWhitelistEnabled,
 } from '../../lib/db.js';
 import {
   readAdminSession,
@@ -151,20 +153,32 @@ async function handlePost(req, res) {
     return sendDashboard(res, session.email, { savedMessage: email ? `Removed ${email}.` : 'No email provided.' });
   }
 
+  if (action === 'toggle-whitelist') {
+    const enabled = String(body.enabled || '').toLowerCase() === 'true';
+    await setWhitelistEnabled(enabled);
+    return sendDashboard(res, session.email, {
+      savedMessage: enabled
+        ? 'Whitelist is now ON — only listed emails can access /investors.'
+        : 'Whitelist is now OFF — any email with the access code can sign in.',
+    });
+  }
+
   return sendDashboard(res, session.email);
 }
 
 async function sendDashboard(res, adminEmail, opts = {}) {
-  const [memo, allowedEmails, visits] = await Promise.all([
+  const [memo, allowedEmails, visits, whitelistEnabled] = await Promise.all([
     loadMemoForRender(),
     listAllowedEmails(),
     listRecentVisits(40),
+    isWhitelistEnabled(),
   ]);
   return sendHtml(res, 200, renderAdminDashboard({
     adminEmail,
     memo,
     allowedEmails,
     visits,
+    whitelistEnabled,
     savedMessage: opts.savedMessage,
   }));
 }
