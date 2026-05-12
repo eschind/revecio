@@ -351,9 +351,18 @@ function renderPage(p, { pageNum, total, meta }) {
   </section>`;
 }
 
+function currentMonthYear() {
+  return new Date().toLocaleString('en-US', {
+    timeZone: 'America/New_York',
+    month: 'long',
+    year: 'numeric',
+  });
+}
+
 function renderMemo({ viewerEmail, memo = DEFAULT_MEMO } = {}) {
   const total = memo.pages.length;
-  const meta = memo.meta || 'Investor Memo &nbsp;·&nbsp; Confidential';
+  const metaTemplate = memo.meta || 'Investor Memo &nbsp;·&nbsp; Confidential &nbsp;·&nbsp; {date}';
+  const meta = metaTemplate.replace('{date}', currentMonthYear());
   const pagesHtml = memo.pages.map((p, i) => renderPage(p, { pageNum: i + 1, total, meta })).join('');
   return `<!doctype html>
 <html lang="en">

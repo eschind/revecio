@@ -2,7 +2,7 @@
 // editor so this only acts as the seed.
 
 const DEFAULT_MEMO = {
-  meta: 'Investor Memo &nbsp;·&nbsp; Confidential &nbsp;·&nbsp; May 2026',
+  meta: 'Investor Memo &nbsp;·&nbsp; Confidential &nbsp;·&nbsp; {date}',
   pages: [
     {
       lede: `Reve is building an <em>AI-native OCIO</em> to better serve America's most important pools of investment capital — and in doing so, strengthen the institutions that sustain our country's human capital.`,
