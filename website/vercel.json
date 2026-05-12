@@ -3,6 +3,8 @@
     { "source": "/investors", "destination": "/api/investors" },
     { "source": "/investors/", "destination": "/api/investors" },
     { "source": "/investors/logout", "destination": "/api/investors" },
+    { "source": "/investors/admin", "destination": "/api/investors/admin" },
+    { "source": "/investors/admin/", "destination": "/api/investors/admin" },
     { "source": "/investors/download.pdf", "destination": "/api/investors/download" }
   ],
   "functions": {

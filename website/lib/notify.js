@@ -76,4 +76,45 @@ async function sendVisitNotification({ email, ip, userAgent, action }) {
   console.log('[notify] Resend accepted, id=', result?.data?.id);
 }
 
-export { sendVisitNotification };
+async function sendMagicLink({ to, link }) {
+  if (!process.env.RESEND_API_KEY) {
+    console.warn('[notify] RESEND_API_KEY not set; cannot send magic link');
+    throw new Error('Email service is not configured.');
+  }
+  const resend = new Resend(process.env.RESEND_API_KEY);
+  const text = [
+    `Sign in to the Reve memo admin`,
+    ``,
+    `Click this link to sign in (valid for 15 minutes):`,
+    link,
+    ``,
+    `If you did not request this, you can ignore this email.`,
+  ].join('\n');
+  const html = `<!doctype html><html><body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Helvetica,sans-serif;background:#f7f5f0;color:#14171c;padding:24px;margin:0">
+    <table cellpadding="0" cellspacing="0" style="max-width:520px;margin:0 auto;background:#fff;border:1px solid #d9d4c7;border-radius:10px;overflow:hidden">
+      <tr><td style="padding:24px 28px 12px 28px;border-bottom:1px solid #d9d4c7">
+        <div style="font-family:'Newsreader',Georgia,serif;font-size:22px">Reve</div>
+        <div style="font-family:'JetBrains Mono',ui-monospace,Menlo,monospace;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:#6a6f78;margin-top:4px">Admin sign-in</div>
+      </td></tr>
+      <tr><td style="padding:20px 28px 24px 28px">
+        <p style="margin:0 0 18px;font-size:15px;line-height:1.5">Click below to sign in to the Reve memo admin. The link is valid for 15 minutes.</p>
+        <a href="${link}" style="display:inline-block;background:#14171c;color:#f4f1ea;text-decoration:none;padding:11px 22px;border-radius:999px;font-size:14px;font-weight:500">Sign in</a>
+        <p style="margin:18px 0 0;font-size:12px;color:#6a6f78;line-height:1.5;word-break:break-all">If the button doesn't work, paste this URL:<br><span style="font-family:'JetBrains Mono',monospace;font-size:11px">${escapeHtml(link)}</span></p>
+      </td></tr>
+    </table>
+  </body></html>`;
+
+  const result = await resend.emails.send({
+    from: FROM,
+    to,
+    subject: 'Sign in to the Reve memo admin',
+    text,
+    html,
+  });
+  if (result?.error) {
+    console.error('[notify] Magic link rejected:', JSON.stringify(result.error));
+    throw new Error(result.error.message || 'Magic link send failed');
+  }
+}
+
+export { sendVisitNotification, sendMagicLink };

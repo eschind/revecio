@@ -329,7 +329,27 @@ function renderSection(s) {
     ${renderCallout(s.callout)}
     ${renderPillars(s.pillars)}`;
 }
+function renderStoredPage(p, { pageNum, total, meta }) {
+  const closingHtml = p.closing ? `<div class="closing">${p.closing}</div>` : '';
+  return `<section class="page">
+    <div class="header">
+      <span class="logo">Reve</span>
+      <span class="meta">${meta}</span>
+    </div>
+    <div class="page-body">${p.body || ''}</div>
+    ${closingHtml}
+    <div class="footer">
+      <span>Reve &nbsp;·&nbsp; AI-native OCIO</span>
+      <span>Page ${pageNum} / ${total}</span>
+    </div>
+  </section>`;
+}
+
 function renderPage(p, { pageNum, total, meta }) {
+  // Stored shape uses body/closing as HTML strings; DEFAULT_MEMO uses structured
+  if (typeof p.body === 'string') {
+    return renderStoredPage(p, { pageNum, total, meta });
+  }
   const ledeHtml = p.lede ? `<p class="lede">${p.lede}</p>` : '';
   const closingHtml = p.closing
     ? `<div class="closing"><p>${p.closing.line}</p>${p.closing.contact ? `<p class="small">${p.closing.contact}</p>` : ''}</div>`
@@ -341,7 +361,7 @@ function renderPage(p, { pageNum, total, meta }) {
     </div>
     <div class="page-body">
       ${ledeHtml}
-      ${p.sections.map(renderSection).join('')}
+      ${(p.sections || []).map(renderSection).join('')}
     </div>
     ${closingHtml}
     <div class="footer">
