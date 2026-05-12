@@ -108,7 +108,7 @@ async function handleAccess(req, res) {
   try {
     await sendVisitNotification({ email, ip, userAgent, action: 'view' });
   } catch (err) {
-    console.error('notification failed:', err);
+    console.error('[investors] notification failed:', err?.message, err?.stack);
   }
 
   const cookie = buildSessionCookie({ email });

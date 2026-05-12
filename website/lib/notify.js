@@ -60,17 +60,20 @@ async function sendVisitNotification({ email, ip, userAgent, action }) {
     </table>
   </body></html>`;
 
-  try {
-    await resend.emails.send({
-      from: FROM,
-      to: process.env.ADMIN_EMAIL,
-      subject: `Reve memo ${action === 'download' ? 'downloaded' : 'viewed'}: ${email}`,
-      text,
-      html,
-    });
-  } catch (err) {
-    console.error('sendVisitNotification failed:', err);
+  const payload = {
+    from: FROM,
+    to: process.env.ADMIN_EMAIL,
+    subject: `Reve memo ${action === 'download' ? 'downloaded' : 'viewed'}: ${email}`,
+    text,
+    html,
+  };
+  console.log('[notify] sending visit email', { to: payload.to, from: payload.from, subject: payload.subject });
+  const result = await resend.emails.send(payload);
+  if (result?.error) {
+    console.error('[notify] Resend rejected:', JSON.stringify(result.error));
+    throw new Error(`Resend error: ${result.error.message || JSON.stringify(result.error)}`);
   }
+  console.log('[notify] Resend accepted, id=', result?.data?.id);
 }
 
 export { sendVisitNotification };
