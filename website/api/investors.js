@@ -1,4 +1,4 @@
-import { ensureSchema, recordVisit, isEmailAllowed } from '../lib/db.js';
+import { ensureSchema, recordVisit, isEmailAllowed, isWhitelistEnabled } from '../lib/db.js';
 import {
   buildSessionCookie,
   clearSessionCookie,
@@ -99,7 +99,7 @@ async function handleAccess(req, res) {
     return sendHtml(res, 401, renderGate({ error: 'That access code is not correct.', prefillEmail: email }));
   }
 
-  // Whitelist check: only allow emails that admin has added (admin email is always allowed)
+  // Whitelist check (if enabled). Admin email is always allowed.
   try {
     await ensureSchema();
   } catch (err) {
@@ -108,10 +108,20 @@ async function handleAccess(req, res) {
   const adminEmail = (process.env.ADMIN_EMAIL || '').toLowerCase();
   let allowed = email === adminEmail;
   if (!allowed) {
+    let whitelistOn = true;
     try {
-      allowed = await isEmailAllowed(email);
+      whitelistOn = await isWhitelistEnabled();
     } catch (err) {
-      console.error('[investors] whitelist check failed:', err);
+      console.error('[investors] whitelist flag read failed (defaulting ON):', err);
+    }
+    if (!whitelistOn) {
+      allowed = true; // Whitelist disabled — any valid email + correct password is allowed
+    } else {
+      try {
+        allowed = await isEmailAllowed(email);
+      } catch (err) {
+        console.error('[investors] whitelist check failed:', err);
+      }
     }
   }
   if (!allowed) {

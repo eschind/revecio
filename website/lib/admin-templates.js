@@ -79,7 +79,7 @@ ${FONTS}
 // ============================================================
 // Dashboard
 // ============================================================
-function renderAdminDashboard({ adminEmail, memo, allowedEmails, visits, savedMessage }) {
+function renderAdminDashboard({ adminEmail, memo, allowedEmails, visits, whitelistEnabled, savedMessage }) {
   const memoJson = JSON.stringify(memo).replace(/</g, '\\u003c');
   return `<!doctype html><html lang="en"><head>
 <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -145,7 +145,15 @@ ${FONTS}
   .editor-content a { color: var(--ink); text-decoration: underline; }
 
   /* whitelist */
+  .wl-toggle { display: flex; align-items: center; gap: 12px; padding: 10px 14px; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; margin-bottom: 18px; flex-wrap: wrap; }
+  .wl-toggle-label { font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+  .wl-toggle-status { font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 999px; letter-spacing: 0.08em; }
+  .wl-toggle-status.on { background: #e7efe9; color: #1a3a2e; border: 1px solid #c5d8cc; }
+  .wl-toggle-status.off { background: #efeae0; color: #7a6a3a; border: 1px solid #d8cdb0; }
+  .wl-toggle-explanation { font-size: 12.5px; color: var(--muted); flex: 1; min-width: 200px; }
+  .wl-toggle form { margin: 0; }
   .wl-add-form { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 14px; }
+  .wl-locked { opacity: 0.55; pointer-events: none; }
   .wl-add-form input { padding: 9px 12px; font: inherit; font-size: 14px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); }
   .wl-add-form input:focus { outline: none; border-color: var(--ink); background: #fff; }
   .wl-add-form input[name="email"] { width: 280px; }
@@ -213,7 +221,21 @@ ${FONTS}
         <h2>Allowed emails</h2>
         <span class="meta">${allowedEmails.length} on the list</span>
       </div>
-      <p class="desc">Only emails on this list can sign in at /investors. Your own admin email always has access.</p>
+
+      <div class="wl-toggle">
+        <span class="wl-toggle-label">Whitelist gate</span>
+        <span class="wl-toggle-status ${whitelistEnabled ? 'on' : 'off'}">${whitelistEnabled ? 'ON' : 'OFF'}</span>
+        <span class="wl-toggle-explanation">${whitelistEnabled
+          ? 'Only listed emails (plus your admin email) can sign in at /investors.'
+          : 'Anyone with the access code can sign in — the list below is paused.'}</span>
+        <form method="POST" action="/investors/admin">
+          <input type="hidden" name="action" value="toggle-whitelist" />
+          <input type="hidden" name="enabled" value="${whitelistEnabled ? 'false' : 'true'}" />
+          <button class="btn" type="submit">${whitelistEnabled ? 'Disable' : 'Enable'}</button>
+        </form>
+      </div>
+
+      <p class="desc">Manage the list of emails allowed at /investors. Your admin email always has access regardless of this list.</p>
       <form class="wl-add-form" method="POST" action="/investors/admin">
         <input type="hidden" name="action" value="add-email" />
         <input type="email" name="email" required placeholder="investor@example.com" autocomplete="off" />

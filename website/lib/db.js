@@ -44,7 +44,40 @@ async function ensureSchema() {
       added_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )
   `;
+  await db`
+    CREATE TABLE IF NOT EXISTS settings (
+      key TEXT PRIMARY KEY,
+      value JSONB NOT NULL,
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `;
   schemaInitialized = true;
+}
+
+async function getSetting(key, defaultValue = null) {
+  const db = getSql();
+  const rows = await db`SELECT value FROM settings WHERE key = ${key}`;
+  if (rows.length === 0) return defaultValue;
+  return rows[0].value;
+}
+
+async function setSetting(key, value) {
+  const db = getSql();
+  await db`
+    INSERT INTO settings (key, value, updated_at)
+    VALUES (${key}, ${db.json(value)}, NOW())
+    ON CONFLICT (key) DO UPDATE SET value = ${db.json(value)}, updated_at = NOW()
+  `;
+}
+
+async function isWhitelistEnabled() {
+  // Default: on
+  const v = await getSetting('whitelist_enabled', true);
+  return v !== false;
+}
+
+async function setWhitelistEnabled(enabled) {
+  await setSetting('whitelist_enabled', Boolean(enabled));
 }
 
 async function recordVisit({ email, ip, userAgent, action }) {
@@ -120,4 +153,8 @@ export {
   addAllowedEmail,
   removeAllowedEmail,
   countAllowedEmails,
+  getSetting,
+  setSetting,
+  isWhitelistEnabled,
+  setWhitelistEnabled,
 };
