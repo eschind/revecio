@@ -1,16 +1,10 @@
-import chromium from '@sparticuz/chromium-min';
+import chromium from '@sparticuz/chromium';
 import puppeteer from 'puppeteer-core';
 
 import { ensureSchema, recordVisit } from '../../lib/db.js';
 import { readSession, clientIp } from '../../lib/session.js';
 import { sendVisitNotification } from '../../lib/notify.js';
 import { renderMemo } from '../../lib/templates.js';
-
-// Where to fetch the Chromium binary from at cold start. Pin to the version
-// that matches @sparticuz/chromium-min so the binary speaks the protocol the
-// puppeteer-core build expects.
-const CHROMIUM_PACK_URL =
-  'https://github.com/Sparticuz/chromium/releases/download/v131.0.1/chromium-v131.0.1-pack.tar';
 
 export const config = {
   maxDuration: 60,
@@ -50,12 +44,11 @@ export default async function handler(req, res) {
       watermark: { email, date: todayIso() },
     });
 
-    // Launch headless Chromium
-    const execPath = await chromium.executablePath(CHROMIUM_PACK_URL);
+    // Launch headless Chromium (binary + shared libs bundled by @sparticuz/chromium)
     browser = await puppeteer.launch({
       args: chromium.args,
       defaultViewport: chromium.defaultViewport,
-      executablePath: execPath,
+      executablePath: await chromium.executablePath(),
       headless: chromium.headless,
     });
 
