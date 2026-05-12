@@ -329,7 +329,7 @@ function renderSection(s) {
     ${renderCallout(s.callout)}
     ${renderPillars(s.pillars)}`;
 }
-function renderPage(p, { pageNum, total }) {
+function renderPage(p, { pageNum, total, meta }) {
   const ledeHtml = p.lede ? `<p class="lede">${p.lede}</p>` : '';
   const closingHtml = p.closing
     ? `<div class="closing"><p>${p.closing.line}</p>${p.closing.contact ? `<p class="small">${p.closing.contact}</p>` : ''}</div>`
@@ -337,7 +337,7 @@ function renderPage(p, { pageNum, total }) {
   return `<section class="page">
     <div class="header">
       <span class="logo">Reve</span>
-      <span class="meta">Investor Memo &nbsp;·&nbsp; Confidential</span>
+      <span class="meta">${meta}</span>
     </div>
     <div class="page-body">
       ${ledeHtml}
@@ -353,7 +353,8 @@ function renderPage(p, { pageNum, total }) {
 
 function renderMemo({ viewerEmail, memo = DEFAULT_MEMO } = {}) {
   const total = memo.pages.length;
-  const pagesHtml = memo.pages.map((p, i) => renderPage(p, { pageNum: i + 1, total })).join('');
+  const meta = memo.meta || 'Investor Memo &nbsp;·&nbsp; Confidential';
+  const pagesHtml = memo.pages.map((p, i) => renderPage(p, { pageNum: i + 1, total, meta })).join('');
   return `<!doctype html>
 <html lang="en">
 <head>
