@@ -25,12 +25,12 @@ function renderSection(s) {
   return `<h2><span class="num">${s.num}</span> <span>${s.label}</span></h2>${s.body || ''}${renderStats(s.stats)}${renderCallout(s.callout)}${renderPillars(s.pillars)}`;
 }
 
-function defaultMemoAsStored() {
+function structuredToStored(structured) {
   return {
-    meta: DEFAULT_MEMO.meta,
-    pages: DEFAULT_MEMO.pages.map((p) => {
+    meta: structured.meta,
+    pages: structured.pages.map((p) => {
       const lede = p.lede ? `<p class="lede">${p.lede}</p>` : '';
-      const sections = p.sections.map(renderSection).join('');
+      const sections = (p.sections || []).map(renderSection).join('');
       const body = `${lede}${sections}`;
       const closing = p.closing
         ? `<p>${p.closing.line}</p>${p.closing.contact ? `<p class="small">${p.closing.contact}</p>` : ''}`
@@ -38,6 +38,10 @@ function defaultMemoAsStored() {
       return { body, closing };
     }),
   };
+}
+
+function defaultMemoAsStored() {
+  return structuredToStored(DEFAULT_MEMO);
 }
 
 function emptyDocContent({ title }) {
@@ -82,6 +86,9 @@ async function ensureAtLeastOneDocument() {
     const seed = defaultMemoAsStored();
     await createDocument({ slug: 'memo', title: 'Investor Memo', content: seed });
   }
+  // Seed the deep dive if it's not present (one-time per project)
+  const { seedDeepDiveIfMissing } = await import('./seed-deep-dive.js');
+  await seedDeepDiveIfMissing();
 }
 
 async function saveDocumentContent(slug, content) {
@@ -110,6 +117,7 @@ async function createNewDocument({ title }) {
 }
 
 export {
+  structuredToStored,
   defaultMemoAsStored,
   emptyDocContent,
   slugify,
