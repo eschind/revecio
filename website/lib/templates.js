@@ -307,6 +307,137 @@ function renderMemoCss() {
   .small { font-size: 9pt; }
   a { color: var(--ink); text-decoration: underline; text-decoration-color: rgba(20,23,28,0.4); text-underline-offset: 2px; }
   a:hover { color: var(--accent); }
+
+  /* ===== Document-style classes (used by long-form docs like the deep dive) ===== */
+  h1.doc-title {
+    font-family: 'Newsreader', serif; font-weight: 300;
+    font-size: 26pt; line-height: 1.1; letter-spacing: -0.02em;
+    margin: 0 0 6pt; color: var(--ink);
+  }
+  .doc-lede {
+    font-size: 12pt; line-height: 1.45; color: var(--ink-2);
+    margin: 0 0 12pt;
+  }
+  h2.doc-section {
+    font-family: 'Newsreader', serif; font-weight: 400;
+    font-size: 15pt; line-height: 1.2; letter-spacing: -0.005em;
+    margin: 14pt 0 6pt; color: var(--ink);
+    display: block; text-transform: none; gap: 0;
+  }
+  h3.doc-subsection {
+    font-family: 'Newsreader', serif; font-weight: 500;
+    font-size: 11.5pt; line-height: 1.2;
+    margin: 10pt 0 4pt; color: var(--ink);
+  }
+  .doc-body p { color: var(--ink-2); margin: 0 0 7pt; }
+  .doc-body ul { margin: 4pt 0 8pt; padding-left: 16px; color: var(--ink-2); }
+  .doc-body ul li { margin-bottom: 4pt; }
+  .doc-body strong { color: var(--ink); }
+  .doc-body em { font-style: italic; }
+  .doc-body .label-em { font-style: italic; color: var(--ink-2); }
+
+  /* Footnote markers */
+  sup.fn-ref { font-size: 70%; line-height: 0; }
+  sup.fn-ref a { color: var(--ink); text-decoration: none; }
+  sup.fn-ref a:hover { color: var(--accent); }
+
+  /* End-of-document footnotes section */
+  .footnotes {
+    margin-top: 0;
+    padding-top: 0;
+    border-top: none;
+    font-size: 8.5pt;
+    color: var(--ink-2);
+  }
+  .footnotes h2 { font-family: 'Newsreader', serif; font-weight: 500; font-size: 12pt; margin: 0 0 6pt; color: var(--ink); display: block; text-transform: none; letter-spacing: 0; }
+  .footnotes ol { margin: 0; padding-left: 18px; }
+  .footnotes ol li { margin-bottom: 5pt; line-height: 1.45; }
+  .footnotes a { color: var(--ink); text-decoration: underline; text-decoration-color: rgba(20,23,28,0.4); }
+
+  /* Exhibit: light callout (3-column gap-in-numbers box) */
+  .exhibit-box {
+    background: color-mix(in srgb, var(--bg) 60%, white);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 12px 16px;
+    margin: 8pt 0 14pt;
+  }
+  .exhibit-box-eyebrow {
+    font-family: 'JetBrains Mono', monospace; font-size: 8pt;
+    letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted);
+    margin: 0 0 8px;
+  }
+  .exhibit-cols {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;
+  }
+  .exhibit-col h4 {
+    font-family: 'Inter', sans-serif; font-weight: 600; font-size: 10pt;
+    margin: 0 0 4px; color: var(--ink);
+  }
+  .exhibit-col p {
+    font-size: 9pt; color: var(--ink-2); margin: 0; line-height: 1.45;
+  }
+
+  /* Exhibit: stacked coverage bar */
+  .coverage-bar {
+    display: flex; height: 32px; border-radius: 4px; overflow: hidden;
+    margin: 6pt 0;
+    border: 1px solid var(--line);
+  }
+  .coverage-segment {
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'JetBrains Mono', monospace; font-size: 9pt; color: white;
+    letter-spacing: 0.04em;
+  }
+
+  .chart-legend {
+    display: flex; flex-wrap: wrap; gap: 14px;
+    font-family: 'JetBrains Mono', monospace; font-size: 8pt;
+    letter-spacing: 0.04em; color: var(--ink-2);
+    margin: 4pt 0 12pt;
+  }
+  .chart-legend .key { display: inline-flex; align-items: center; gap: 5px; }
+  .chart-legend .swatch { display: inline-block; width: 9px; height: 9px; border-radius: 1px; }
+
+  /* Exhibit: chart caption */
+  .exhibit-chart-title {
+    font-family: 'Newsreader', serif; font-weight: 500; font-size: 11pt;
+    margin: 8pt 0 2pt; color: var(--ink);
+  }
+  .exhibit-chart-sub {
+    font-size: 8.5pt; color: var(--muted); margin: 0 0 6pt; line-height: 1.4;
+  }
+
+  /* Horizontal bar chart (top 15 providers) */
+  .bar-chart-row {
+    display: grid; grid-template-columns: 130px 1fr 44px;
+    gap: 8px; align-items: center; padding: 2.5px 0;
+    font-size: 9pt;
+  }
+  .bar-chart-row .label { color: var(--ink); text-align: right; }
+  .bar-chart-row .bar { height: 12px; border-radius: 2px; }
+  .bar-chart-row .pct {
+    font-family: 'JetBrains Mono', monospace; font-size: 8.5pt; color: var(--muted);
+  }
+
+  /* Exhibit: providers table */
+  .exhibit-table {
+    width: 100%; border-collapse: collapse; font-size: 8.5pt; margin: 6pt 0;
+  }
+  .exhibit-table th {
+    font-family: 'JetBrains Mono', monospace; font-size: 7.5pt;
+    letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted);
+    text-align: left; padding: 8px 8px 6px 0;
+    border-bottom: 1px solid var(--line); font-weight: 500;
+    vertical-align: bottom;
+  }
+  .exhibit-table th.num { text-align: right; }
+  .exhibit-table td {
+    padding: 8px 8px 8px 0; border-bottom: 1px solid var(--line);
+    vertical-align: top; color: var(--ink-2); line-height: 1.4;
+  }
+  .exhibit-table td.num { font-family: 'JetBrains Mono', monospace; text-align: right; font-size: 8.5pt; color: var(--ink); }
+  .exhibit-table td.provider { color: var(--ink); font-weight: 500; }
   `;
 }
 
