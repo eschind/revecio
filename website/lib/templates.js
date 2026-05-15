@@ -336,6 +336,15 @@ function renderMemoCss() {
   .doc-body em { font-style: italic; }
   .doc-body .label-em { font-style: italic; color: var(--ink-2); }
 
+  /* Dark callout overrides inside doc-body — keep memo's high-contrast scheme */
+  .doc-body .callout { color: var(--dark-ink); }
+  .doc-body .callout p { color: rgba(244,241,234,0.82); }
+  .doc-body .callout p strong,
+  .doc-body .callout strong { color: var(--dark-ink); font-weight: 600; }
+  .doc-body .callout h3 { color: var(--dark-ink); }
+  .doc-body .callout a { color: var(--dark-ink); text-decoration-color: rgba(244,241,234,0.5); }
+  .doc-body .callout a:hover { color: #fff; text-decoration-color: #fff; }
+
   /* Footnote markers */
   sup.fn-ref { font-size: 70%; line-height: 0; }
   sup.fn-ref a { color: var(--ink); text-decoration: none; }
