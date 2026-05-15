@@ -81,6 +81,17 @@ async function ensureSchema() {
     }
   }
 
+  // Backfill: any pre-multi-doc visit/download events have NULL document_slug.
+  // Attribute them to the oldest document (which is the migrated memo).
+  // Idempotent — running again is a no-op because there are no more NULL rows.
+  await db`
+    UPDATE visits
+    SET document_slug = d.slug, document_title = d.title
+    FROM (SELECT slug, title FROM documents ORDER BY sort_order, id LIMIT 1) d
+    WHERE visits.document_slug IS NULL
+      AND visits.action IN ('view', 'download')
+  `;
+
   schemaInitialized = true;
 }
 
