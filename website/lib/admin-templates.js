@@ -139,13 +139,6 @@ function renderSidebar({ documents, activeSection, activeSlug }) {
           ${!d.visible ? '<span class="hidden-dot" title="Hidden">(hidden)</span>' : ''}
         </a>
       `).join('')}
-      <div class="sidebar-new">
-        <form method="POST" action="/investors/admin">
-          <input type="hidden" name="action" value="new-doc" />
-          <input type="text" name="title" placeholder="+ New document title" autocomplete="off" />
-          <button type="submit">Create</button>
-        </form>
-      </div>
     </div>
     <div class="sidebar-group">
       <div class="sidebar-label">Manage</div>
