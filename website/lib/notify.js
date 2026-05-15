@@ -12,7 +12,7 @@ function escapeHtml(s) {
   })[c]);
 }
 
-async function sendVisitNotification({ email, ip, userAgent, action }) {
+async function sendVisitNotification({ email, ip, userAgent, action, documentTitle, documentSlug }) {
   if (!process.env.RESEND_API_KEY || !process.env.ADMIN_EMAIL) {
     console.warn('RESEND_API_KEY or ADMIN_EMAIL not set; skipping visit email');
     return;
@@ -30,13 +30,19 @@ async function sendVisitNotification({ email, ip, userAgent, action }) {
     hour12: true,
   });
 
-  const actionLabel = action === 'download' ? 'downloaded the memo PDF' : 'viewed the memo';
+  const docLabel = documentTitle ? ` "${documentTitle}"` : '';
+  const actionLabel =
+    action === 'download' ? `downloaded${docLabel}` :
+    action === 'view'     ? `viewed${docLabel}` :
+    action === 'access'   ? 'signed in to the investor area' :
+                            action;
 
   const text = [
     `Reve memo: ${actionLabel}`,
     '',
     `Viewer:      ${email}`,
     `Action:      ${action}`,
+    `Document:    ${documentTitle || '—'}`,
     `When:        ${when} ET`,
     `IP:          ${ip || 'unknown'}`,
     `User agent:  ${userAgent || 'unknown'}`,
@@ -52,6 +58,7 @@ async function sendVisitNotification({ email, ip, userAgent, action }) {
         <p style="margin:0 0 16px;font-size:15px;line-height:1.5">Someone just ${actionLabel} at <strong>revecio.com/investors</strong>.</p>
         <table cellpadding="0" cellspacing="0" style="border-collapse:collapse;font-size:14px;width:100%">
           <tr><td style="padding:6px 0;color:#6a6f78;width:120px">Viewer</td><td style="padding:6px 0"><strong>${escapeHtml(email)}</strong></td></tr>
+          ${documentTitle ? `<tr><td style="padding:6px 0;color:#6a6f78">Document</td><td style="padding:6px 0">${escapeHtml(documentTitle)}</td></tr>` : ''}
           <tr><td style="padding:6px 0;color:#6a6f78">When</td><td style="padding:6px 0">${escapeHtml(when)} ET</td></tr>
           <tr><td style="padding:6px 0;color:#6a6f78">IP</td><td style="padding:6px 0;font-family:'JetBrains Mono',monospace;font-size:12px">${escapeHtml(ip || 'unknown')}</td></tr>
           <tr><td style="padding:6px 0;color:#6a6f78;vertical-align:top">Agent</td><td style="padding:6px 0;font-family:'JetBrains Mono',monospace;font-size:11px;color:#2b3038">${escapeHtml(userAgent || 'unknown')}</td></tr>

@@ -1,11 +1,10 @@
 import chromium from '@sparticuz/chromium';
 import puppeteer from 'puppeteer-core';
 
-import { ensureSchema, recordVisit } from '../../lib/db.js';
+import { ensureSchema, recordVisit, getDocumentBySlug } from '../../lib/db.js';
 import { readSession, clientIp } from '../../lib/session.js';
 import { sendVisitNotification } from '../../lib/notify.js';
 import { renderMemo } from '../../lib/templates.js';
-import { loadMemoForRender } from '../../lib/memo-store.js';
 
 export const config = {
   maxDuration: 60,
@@ -13,6 +12,14 @@ export const config = {
 
 function todayIso() {
   return new Date().toISOString().slice(0, 10);
+}
+
+function parseSlugFromUrl(url) {
+  const u = new URL(url, 'http://x');
+  const path = u.pathname.replace(/\/+$/, '');
+  // /investors/<slug>/download.pdf
+  const m = path.match(/^\/(?:api\/)?investors\/([^/]+)\/download(?:\.pdf)?$/);
+  return m ? decodeURIComponent(m[1]) : null;
 }
 
 export default async function handler(req, res) {
@@ -24,37 +31,50 @@ export default async function handler(req, res) {
     return res.end();
   }
 
+  const slug = parseSlugFromUrl(req.url);
+  if (!slug) {
+    res.statusCode = 302;
+    res.setHeader('Location', '/investors');
+    return res.end();
+  }
+
   const email = session.email;
   const ip = clientIp(req);
   const userAgent = req.headers['user-agent'] || '';
 
   let browser = null;
   try {
-    // Log the download (don't block PDF on logging errors)
+    let doc;
     try {
       await ensureSchema();
-      await recordVisit({ email, ip, userAgent, action: 'download' });
+      doc = await getDocumentBySlug(slug);
+    } catch (err) {
+      console.error('[download] document load failed:', err?.message);
+    }
+    if (!doc || !doc.visible) {
+      res.statusCode = 302;
+      res.setHeader('Location', '/investors');
+      return res.end();
+    }
+
+    try {
+      await recordVisit({
+        email, ip, userAgent, action: 'download',
+        documentSlug: doc.slug, documentTitle: doc.title,
+      });
     } catch (err) {
       console.error('[download] visit log failed:', err);
     }
 
-    // Load latest memo content from DB (seeded from default on first run)
-    let memo;
-    try {
-      memo = await loadMemoForRender();
-    } catch (err) {
-      console.error('[download] memo load failed, falling back to default:', err?.message);
-    }
-
-    // Build the watermarked HTML — same memo, plus diagonal watermark layer
     const html = renderMemo({
       viewerEmail: email,
-      memo,
+      memo: doc.content,
+      documentTitle: doc.title,
+      documentSlug: doc.slug,
       hideTopbar: true,
       watermark: { email, date: todayIso() },
     });
 
-    // Launch headless Chromium (binary + shared libs bundled by @sparticuz/chromium)
     browser = await puppeteer.launch({
       args: chromium.args,
       defaultViewport: chromium.defaultViewport,
@@ -71,19 +91,19 @@ export default async function handler(req, res) {
       margin: { top: 0, right: 0, bottom: 0, left: 0 },
     });
 
-    // Send notification email after PDF generated (await — must finish before response)
     try {
-      await sendVisitNotification({ email, ip, userAgent, action: 'download' });
+      await sendVisitNotification({
+        email, ip, userAgent, action: 'download',
+        documentSlug: doc.slug, documentTitle: doc.title,
+      });
     } catch (err) {
       console.error('[download] notification failed:', err?.message);
     }
 
+    const filename = `reve-${doc.slug}-${todayIso()}.pdf`;
     res.statusCode = 200;
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader(
-      'Content-Disposition',
-      `attachment; filename="reve-investor-memo-${todayIso()}.pdf"`
-    );
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
     res.setHeader('Cache-Control', 'no-store, max-age=0, must-revalidate');
     res.setHeader('X-Robots-Tag', 'noindex, nofollow');
     return res.end(pdf);
@@ -93,8 +113,6 @@ export default async function handler(req, res) {
     res.setHeader('Content-Type', 'text/plain');
     return res.end('Could not generate the PDF. Please try again in a moment.');
   } finally {
-    if (browser) {
-      await browser.close().catch(() => {});
-    }
+    if (browser) await browser.close().catch(() => {});
   }
 }

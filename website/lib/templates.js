@@ -397,9 +397,17 @@ function watermarkSvg({ email, date }) {
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
 }
 
-function renderMemo({ viewerEmail, memo = DEFAULT_MEMO, watermark = null, hideTopbar = false } = {}) {
+function renderMemo({
+  viewerEmail,
+  memo = DEFAULT_MEMO,
+  watermark = null,
+  hideTopbar = false,
+  documentTitle = 'Investor Memo',
+  documentSlug = null,
+  showBackLink = false,
+} = {}) {
   const total = memo.pages.length;
-  const metaTemplate = memo.meta || 'Investor Memo &nbsp;·&nbsp; Confidential &nbsp;·&nbsp; {date}';
+  const metaTemplate = memo.meta || `${documentTitle} &nbsp;·&nbsp; Confidential &nbsp;·&nbsp; {date}`;
   const meta = metaTemplate.replace('{date}', currentMonthYear());
   const pagesHtml = memo.pages.map((p, i) => renderPage(p, { pageNum: i + 1, total, meta })).join('');
 
@@ -421,13 +429,14 @@ function renderMemo({ viewerEmail, memo = DEFAULT_MEMO, watermark = null, hideTo
   `
     : '';
   const hideTopbarCss = hideTopbar ? `.topbar { display: none !important; }` : '';
+  const downloadHref = documentSlug ? `/investors/${encodeURIComponent(documentSlug)}/download.pdf` : '/investors/download.pdf';
   return `<!doctype html>
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <meta name="robots" content="noindex, nofollow" />
-<title>Reve — Investor Memo</title>
+<title>Reve — ${escapeHtml(documentTitle)}</title>
 ${FONTS}
 <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 <style>${renderMemoCss()}
@@ -438,12 +447,13 @@ ${hideTopbarCss}
 <body>
   <div class="topbar">
     <div class="tb-left">
-      <span class="tb-title">Reve · Investor Memo</span>
+      <span class="tb-title">Reve · ${escapeHtml(documentTitle)}</span>
       <span class="tb-hint">Signed in as ${viewerEmail ? escapeHtml(viewerEmail) : '—'}</span>
     </div>
     <div>
+      ${showBackLink ? '<a class="tb-btn ghost" href="/investors" style="text-decoration:none;display:inline-block">All documents</a>' : ''}
       <a class="tb-btn ghost" href="/investors/logout" style="text-decoration:none;display:inline-block">Sign out</a>
-      <a class="tb-btn" href="/investors/download.pdf" style="text-decoration:none;display:inline-block">Download PDF</a>
+      <a class="tb-btn" href="${downloadHref}" style="text-decoration:none;display:inline-block">Download PDF</a>
     </div>
   </div>
   ${pagesHtml}
@@ -451,4 +461,73 @@ ${hideTopbarCss}
 </html>`;
 }
 
-export { renderGate, renderMemo, escapeHtml };
+// ============================================================
+// Document list (signed-in landing at /investors)
+// ============================================================
+function renderDocumentList({ viewerEmail, documents }) {
+  return `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex, nofollow" />
+<title>Reve — Investor Materials</title>
+${FONTS}
+<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+<style>
+  ${BASE_VARS}
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--ink); font-family: 'Inter', sans-serif; font-size: 15px; line-height: 1.55; min-height: 100vh; }
+
+  .topbar { position: sticky; top: 0; z-index: 50; background: rgba(20,23,28,0.97); color: var(--dark-ink); padding: 12px 24px; display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+  .tb-title { font-family: 'Newsreader', serif; font-size: 19px; }
+  .tb-hint { font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: rgba(244,241,234,0.6); margin-left: 14px; }
+  .tb-btn { appearance: none; background: transparent; color: var(--dark-ink); border: 1px solid rgba(244,241,234,0.2); font: inherit; font-size: 12.5px; padding: 7px 14px; border-radius: 999px; cursor: pointer; text-decoration: none; }
+  .tb-btn:hover { background: rgba(244,241,234,0.08); border-color: rgba(244,241,234,0.45); }
+
+  main { max-width: 880px; margin: 0 auto; padding: 60px 24px 80px; }
+  h1 { font-family: 'Newsreader', serif; font-weight: 300; font-size: 36px; letter-spacing: -0.015em; margin: 0 0 8px; }
+  .intro { color: var(--ink-2); font-size: 15px; margin: 0 0 32px; max-width: 60ch; }
+  .doc-list { display: flex; flex-direction: column; gap: 12px; list-style: none; padding: 0; margin: 0; }
+  .doc-card { background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 22px 24px; display: flex; align-items: center; justify-content: space-between; gap: 16px; text-decoration: none; color: var(--ink); transition: border-color 0.15s, transform 0.15s, box-shadow 0.15s; }
+  .doc-card:hover { border-color: var(--ink); transform: translateY(-1px); box-shadow: 0 8px 20px -10px rgba(20,23,28,0.15); }
+  .doc-card-title { font-family: 'Newsreader', serif; font-size: 22px; line-height: 1.2; }
+  .doc-card-meta { font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); margin-top: 4px; }
+  .doc-card-arrow { color: var(--muted); font-size: 20px; }
+  .doc-card:hover .doc-card-arrow { color: var(--accent); }
+  .empty { padding: 40px 24px; text-align: center; color: var(--muted); border: 1px dashed var(--line); border-radius: 10px; font-style: italic; }
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <div style="display:flex;align-items:baseline">
+      <span class="tb-title">Reve</span>
+      <span class="tb-hint">Signed in as ${escapeHtml(viewerEmail || '—')}</span>
+    </div>
+    <a class="tb-btn" href="/investors/logout">Sign out</a>
+  </div>
+  <main>
+    <h1>Investor materials</h1>
+    <p class="intro">Documents prepared for your review. Click to read or download.</p>
+    ${documents.length === 0
+      ? `<div class="empty">No documents are available yet. Please check back later.</div>`
+      : `<ul class="doc-list">
+          ${documents.map((d) => `
+            <li>
+              <a class="doc-card" href="/investors/${encodeURIComponent(d.slug)}">
+                <div>
+                  <div class="doc-card-title">${escapeHtml(d.title)}</div>
+                  <div class="doc-card-meta">Updated ${new Date(d.updated_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</div>
+                </div>
+                <span class="doc-card-arrow">→</span>
+              </a>
+            </li>
+          `).join('')}
+        </ul>`}
+  </main>
+</body>
+</html>`;
+}
+
+export { renderGate, renderMemo, renderDocumentList, escapeHtml };
