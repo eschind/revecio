@@ -29,6 +29,9 @@ async function ensureSchema() {
   `;
   await db`CREATE INDEX IF NOT EXISTS visits_ts_idx ON visits (ts DESC)`;
   await db`CREATE INDEX IF NOT EXISTS visits_email_idx ON visits (email)`;
+  await db`ALTER TABLE visits ADD COLUMN IF NOT EXISTS document_slug TEXT`;
+  await db`ALTER TABLE visits ADD COLUMN IF NOT EXISTS document_title TEXT`;
+
   await db`
     CREATE TABLE IF NOT EXISTS memo_content (
       id INTEGER PRIMARY KEY DEFAULT 1,
@@ -51,54 +54,55 @@ async function ensureSchema() {
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )
   `;
+  await db`
+    CREATE TABLE IF NOT EXISTS documents (
+      id SERIAL PRIMARY KEY,
+      slug TEXT UNIQUE NOT NULL,
+      title TEXT NOT NULL,
+      content JSONB NOT NULL,
+      visible BOOLEAN NOT NULL DEFAULT TRUE,
+      sort_order INTEGER NOT NULL DEFAULT 0,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `;
+  await db`CREATE INDEX IF NOT EXISTS documents_sort_idx ON documents (sort_order, id)`;
+
+  // One-time migration: move the old singleton memo_content into the documents table
+  const docs = await db`SELECT COUNT(*)::int AS c FROM documents`;
+  if (docs[0].c === 0) {
+    const memoRow = await db`SELECT content FROM memo_content WHERE id = 1`;
+    if (memoRow.length > 0) {
+      await db`
+        INSERT INTO documents (slug, title, content, visible, sort_order)
+        VALUES ('memo', 'Investor Memo', ${db.json(memoRow[0].content)}, TRUE, 0)
+        ON CONFLICT (slug) DO NOTHING
+      `;
+    }
+  }
+
   schemaInitialized = true;
 }
 
-async function getSetting(key, defaultValue = null) {
-  const db = getSql();
-  const rows = await db`SELECT value FROM settings WHERE key = ${key}`;
-  if (rows.length === 0) return defaultValue;
-  return rows[0].value;
-}
-
-async function setSetting(key, value) {
+async function recordVisit({ email, ip, userAgent, action, documentSlug, documentTitle }) {
   const db = getSql();
   await db`
-    INSERT INTO settings (key, value, updated_at)
-    VALUES (${key}, ${db.json(value)}, NOW())
-    ON CONFLICT (key) DO UPDATE SET value = ${db.json(value)}, updated_at = NOW()
-  `;
-}
-
-async function isWhitelistEnabled() {
-  // Default: on
-  const v = await getSetting('whitelist_enabled', true);
-  return v !== false;
-}
-
-async function setWhitelistEnabled(enabled) {
-  await setSetting('whitelist_enabled', Boolean(enabled));
-}
-
-async function recordVisit({ email, ip, userAgent, action }) {
-  const db = getSql();
-  await db`
-    INSERT INTO visits (email, ip, user_agent, action)
-    VALUES (${email}, ${ip || null}, ${userAgent || null}, ${action})
+    INSERT INTO visits (email, ip, user_agent, action, document_slug, document_title)
+    VALUES (${email}, ${ip || null}, ${userAgent || null}, ${action}, ${documentSlug || null}, ${documentTitle || null})
   `;
 }
 
 async function listRecentVisits(limit = 50) {
   const db = getSql();
-  return db`SELECT email, ip, user_agent, action, ts FROM visits ORDER BY ts DESC LIMIT ${limit}`;
+  return db`SELECT email, ip, user_agent, action, ts, document_slug, document_title FROM visits ORDER BY ts DESC LIMIT ${limit}`;
 }
 
+// ----- legacy memo helpers retained for backwards compat -----
 async function getMemo() {
   const db = getSql();
   const rows = await db`SELECT content, updated_at FROM memo_content WHERE id = 1`;
   return rows[0] || null;
 }
-
 async function setMemo(content) {
   const db = getSql();
   await db`
@@ -108,37 +112,101 @@ async function setMemo(content) {
   `;
 }
 
-const normalizeEmail = (e) => String(e || '').trim().toLowerCase();
+// ----- documents -----
+async function listDocuments({ visibleOnly = false } = {}) {
+  const db = getSql();
+  if (visibleOnly) {
+    return db`SELECT id, slug, title, visible, sort_order, updated_at FROM documents WHERE visible = TRUE ORDER BY sort_order, id`;
+  }
+  return db`SELECT id, slug, title, visible, sort_order, updated_at FROM documents ORDER BY sort_order, id`;
+}
 
+async function getDocumentBySlug(slug) {
+  const db = getSql();
+  const rows = await db`SELECT id, slug, title, content, visible, sort_order, updated_at FROM documents WHERE slug = ${slug}`;
+  return rows[0] || null;
+}
+
+async function createDocument({ slug, title, content }) {
+  const db = getSql();
+  const rows = await db`
+    INSERT INTO documents (slug, title, content, visible, sort_order)
+    SELECT ${slug}, ${title}, ${db.json(content)}, TRUE,
+           COALESCE((SELECT MAX(sort_order) + 1 FROM documents), 0)
+    RETURNING id, slug, title, visible, sort_order
+  `;
+  return rows[0];
+}
+
+async function updateDocument(slug, { title, content }) {
+  const db = getSql();
+  if (title != null && content != null) {
+    await db`UPDATE documents SET title = ${title}, content = ${db.json(content)}, updated_at = NOW() WHERE slug = ${slug}`;
+  } else if (title != null) {
+    await db`UPDATE documents SET title = ${title}, updated_at = NOW() WHERE slug = ${slug}`;
+  } else if (content != null) {
+    await db`UPDATE documents SET content = ${db.json(content)}, updated_at = NOW() WHERE slug = ${slug}`;
+  }
+}
+
+async function setDocumentVisible(slug, visible) {
+  const db = getSql();
+  await db`UPDATE documents SET visible = ${Boolean(visible)}, updated_at = NOW() WHERE slug = ${slug}`;
+}
+
+async function deleteDocument(slug) {
+  const db = getSql();
+  await db`DELETE FROM documents WHERE slug = ${slug}`;
+}
+
+async function renameDocumentSlug(oldSlug, newSlug) {
+  const db = getSql();
+  await db`UPDATE documents SET slug = ${newSlug}, updated_at = NOW() WHERE slug = ${oldSlug}`;
+}
+
+// ----- whitelist -----
+const normalizeEmail = (e) => String(e || '').trim().toLowerCase();
 async function isEmailAllowed(email) {
   const db = getSql();
   const rows = await db`SELECT 1 FROM allowed_emails WHERE email = ${normalizeEmail(email)}`;
   return rows.length > 0;
 }
-
 async function listAllowedEmails() {
   const db = getSql();
   return db`SELECT email, note, added_at FROM allowed_emails ORDER BY added_at DESC`;
 }
-
 async function addAllowedEmail(email, note) {
   const db = getSql();
   await db`
-    INSERT INTO allowed_emails (email, note)
-    VALUES (${normalizeEmail(email)}, ${note || null})
+    INSERT INTO allowed_emails (email, note) VALUES (${normalizeEmail(email)}, ${note || null})
     ON CONFLICT (email) DO UPDATE SET note = ${note || null}
   `;
 }
-
 async function removeAllowedEmail(email) {
   const db = getSql();
   await db`DELETE FROM allowed_emails WHERE email = ${normalizeEmail(email)}`;
 }
 
-async function countAllowedEmails() {
+// ----- settings -----
+async function getSetting(key, defaultValue = null) {
   const db = getSql();
-  const rows = await db`SELECT COUNT(*)::int AS c FROM allowed_emails`;
-  return rows[0]?.c ?? 0;
+  const rows = await db`SELECT value FROM settings WHERE key = ${key}`;
+  if (rows.length === 0) return defaultValue;
+  return rows[0].value;
+}
+async function setSetting(key, value) {
+  const db = getSql();
+  await db`
+    INSERT INTO settings (key, value, updated_at) VALUES (${key}, ${db.json(value)}, NOW())
+    ON CONFLICT (key) DO UPDATE SET value = ${db.json(value)}, updated_at = NOW()
+  `;
+}
+async function isWhitelistEnabled() {
+  const v = await getSetting('whitelist_enabled', true);
+  return v !== false;
+}
+async function setWhitelistEnabled(enabled) {
+  await setSetting('whitelist_enabled', Boolean(enabled));
 }
 
 export {
@@ -146,13 +214,23 @@ export {
   ensureSchema,
   recordVisit,
   listRecentVisits,
+  // legacy
   getMemo,
   setMemo,
+  // documents
+  listDocuments,
+  getDocumentBySlug,
+  createDocument,
+  updateDocument,
+  setDocumentVisible,
+  deleteDocument,
+  renameDocumentSlug,
+  // whitelist
   isEmailAllowed,
   listAllowedEmails,
   addAllowedEmail,
   removeAllowedEmail,
-  countAllowedEmails,
+  // settings
   getSetting,
   setSetting,
   isWhitelistEnabled,

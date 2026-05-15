@@ -1,4 +1,11 @@
-import { ensureSchema, recordVisit, isEmailAllowed, isWhitelistEnabled } from '../lib/db.js';
+import {
+  ensureSchema,
+  recordVisit,
+  isEmailAllowed,
+  isWhitelistEnabled,
+  listDocuments,
+  getDocumentBySlug,
+} from '../lib/db.js';
 import {
   buildSessionCookie,
   clearSessionCookie,
@@ -6,8 +13,8 @@ import {
   clientIp,
 } from '../lib/session.js';
 import { sendVisitNotification } from '../lib/notify.js';
-import { renderGate, renderMemo } from '../lib/templates.js';
-import { loadMemoForRender } from '../lib/memo-store.js';
+import { renderGate, renderMemo, renderDocumentList } from '../lib/templates.js';
+import { ensureAtLeastOneDocument } from '../lib/doc-store.js';
 
 const isEmail = (s) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
 const trim = (v, max = 320) => String(v ?? '').trim().slice(0, max);
@@ -20,7 +27,6 @@ function sendHtml(res, status, html, extraHeaders = {}) {
   for (const [k, v] of Object.entries(extraHeaders)) res.setHeader(k, v);
   res.end(html);
 }
-
 function redirect(res, to, extraHeaders = {}) {
   res.statusCode = 302;
   res.setHeader('Location', to);
@@ -28,32 +34,71 @@ function redirect(res, to, extraHeaders = {}) {
   res.end();
 }
 
+function parseSlugFromUrl(url) {
+  // Rewrites give us back the original URL: /investors or /investors/<slug>
+  // (/investors/logout is special-cased by the rewrite separately)
+  const u = new URL(url, 'http://x');
+  const path = u.pathname.replace(/\/+$/, '');
+  // path can be /investors or /investors/<slug>
+  if (path === '/investors' || path === '/api/investors') return null;
+  const m = path.match(/^\/(?:api\/)?investors\/([^/]+)$/);
+  return m ? decodeURIComponent(m[1]) : null;
+}
+
 export default async function handler(req, res) {
   try {
-    if (req.url && req.url.startsWith('/investors/logout')) {
+    if (req.url && (req.url.startsWith('/investors/logout') || req.url.includes('logout=1'))) {
       return redirect(res, '/investors', { 'Set-Cookie': clearSessionCookie() });
     }
 
-    if (req.method === 'POST') {
-      return handleAccess(req, res);
-    }
+    if (req.method === 'POST') return handleAccess(req, res);
 
-    // GET — show gate or memo based on session
+    // GET — show gate or doc/list based on session
     const session = readSession(req);
-    if (!session) {
-      return sendHtml(res, 200, renderGate());
-    }
+    if (!session) return sendHtml(res, 200, renderGate());
 
-    let memo;
     try {
       await ensureSchema();
-      memo = await loadMemoForRender();
+      await ensureAtLeastOneDocument();
     } catch (err) {
-      console.error('[investors] memo load failed:', err?.message);
+      console.error('[investors] schema/seed failed:', err?.message);
     }
-    return sendHtml(res, 200, renderMemo({ viewerEmail: session.email, memo }));
+
+    const slug = parseSlugFromUrl(req.url);
+
+    if (slug) {
+      const doc = await getDocumentBySlug(slug);
+      if (!doc || !doc.visible) {
+        // Document not visible — show 404-ish redirect to list
+        return redirect(res, '/investors');
+      }
+      // Log a view event for this specific document
+      try {
+        await recordVisit({
+          email: session.email,
+          ip: clientIp(req),
+          userAgent: req.headers['user-agent'] || '',
+          action: 'view',
+          documentSlug: doc.slug,
+          documentTitle: doc.title,
+        });
+      } catch (err) {
+        console.error('[investors] view log failed:', err?.message);
+      }
+      return sendHtml(res, 200, renderMemo({
+        viewerEmail: session.email,
+        memo: doc.content,
+        documentTitle: doc.title,
+        documentSlug: doc.slug,
+        showBackLink: true,
+      }));
+    }
+
+    // No slug — show the list of visible documents
+    const docs = await listDocuments({ visibleOnly: true });
+    return sendHtml(res, 200, renderDocumentList({ viewerEmail: session.email, documents: docs }));
   } catch (err) {
-    console.error('investors handler error:', err);
+    console.error('[investors] handler error:', err);
     return sendHtml(res, 500, renderGate({ error: 'Something went wrong. Please try again.' }));
   }
 }
@@ -99,7 +144,6 @@ async function handleAccess(req, res) {
     return sendHtml(res, 401, renderGate({ error: 'That access code is not correct.', prefillEmail: email }));
   }
 
-  // Whitelist check (if enabled). Admin email is always allowed.
   try {
     await ensureSchema();
   } catch (err) {
@@ -115,7 +159,7 @@ async function handleAccess(req, res) {
       console.error('[investors] whitelist flag read failed (defaulting ON):', err);
     }
     if (!whitelistOn) {
-      allowed = true; // Whitelist disabled — any valid email + correct password is allowed
+      allowed = true;
     } else {
       try {
         allowed = await isEmailAllowed(email);
@@ -134,16 +178,16 @@ async function handleAccess(req, res) {
   const ip = clientIp(req);
   const userAgent = req.headers['user-agent'] || '';
 
+  // Log a generic 'access' event (not yet tied to a specific document)
   try {
-    await recordVisit({ email, ip, userAgent, action: 'view' });
+    await recordVisit({ email, ip, userAgent, action: 'access' });
   } catch (err) {
-    console.error('visit logging failed:', err);
+    console.error('[investors] access log failed:', err);
   }
-
   try {
-    await sendVisitNotification({ email, ip, userAgent, action: 'view' });
+    await sendVisitNotification({ email, ip, userAgent, action: 'access' });
   } catch (err) {
-    console.error('[investors] notification failed:', err?.message, err?.stack);
+    console.error('[investors] notification failed:', err?.message);
   }
 
   const cookie = buildSessionCookie({ email });

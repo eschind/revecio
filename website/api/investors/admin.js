@@ -6,6 +6,11 @@ import {
   listRecentVisits,
   isWhitelistEnabled,
   setWhitelistEnabled,
+  listDocuments,
+  getDocumentBySlug,
+  setDocumentVisible,
+  deleteDocument,
+  updateDocument,
 } from '../../lib/db.js';
 import {
   readAdminSession,
@@ -13,11 +18,18 @@ import {
   clearAdminCookie,
   buildMagicLinkToken,
   verifyMagicToken,
-  clientIp,
 } from '../../lib/session.js';
 import { sendMagicLink } from '../../lib/notify.js';
-import { renderAdminSignin, renderAdminDashboard } from '../../lib/admin-templates.js';
-import { loadMemoForRender } from '../../lib/memo-store.js';
+import {
+  renderAdminSignin,
+  renderAdminDocEdit,
+  renderAdminSettings,
+  renderAdminActivity,
+} from '../../lib/admin-templates.js';
+import {
+  ensureAtLeastOneDocument,
+  createNewDocument,
+} from '../../lib/doc-store.js';
 
 function sendHtml(res, status, html, extraHeaders = {}) {
   res.statusCode = status;
@@ -27,14 +39,12 @@ function sendHtml(res, status, html, extraHeaders = {}) {
   for (const [k, v] of Object.entries(extraHeaders)) res.setHeader(k, v);
   res.end(html);
 }
-
 function redirect(res, to, extraHeaders = {}) {
   res.statusCode = 302;
   res.setHeader('Location', to);
   for (const [k, v] of Object.entries(extraHeaders)) res.setHeader(k, v);
   res.end();
 }
-
 async function readBody(req) {
   if (req.body && typeof req.body === 'object') return req.body;
   return new Promise((resolve) => {
@@ -67,44 +77,98 @@ function originFromReq(req) {
   return `${proto}://${host}`;
 }
 
+function parseSection(url) {
+  const u = new URL(url, 'http://x');
+  const path = u.pathname.replace(/\/+$/, '');
+  // Possibilities (post-rewrite):
+  //   /investors/admin                       → null
+  //   /investors/admin/settings              → settings
+  //   /investors/admin/activity              → activity
+  //   /investors/admin/doc/<slug>            → { section: 'doc', slug }
+  const m = path.match(/^\/(?:api\/)?investors\/admin(?:\/(.+))?$/);
+  if (!m) return { section: null };
+  const tail = m[1];
+  if (!tail) return { section: null };
+  if (tail === 'settings') return { section: 'settings' };
+  if (tail === 'activity') return { section: 'activity' };
+  const docMatch = tail.match(/^doc\/([^/]+)\/?$/);
+  if (docMatch) return { section: 'doc', slug: decodeURIComponent(docMatch[1]) };
+  return { section: null };
+}
+
 export default async function handler(req, res) {
   try {
     await ensureSchema();
+    await ensureAtLeastOneDocument();
 
     const url = new URL(req.url, 'http://x');
-    const params = url.searchParams;
-
-    // Sign-out
-    if (params.get('signout')) {
+    if (url.searchParams.get('signout')) {
       return redirect(res, '/investors/admin', { 'Set-Cookie': clearAdminCookie() });
     }
 
     // Magic-link landing
-    if (params.get('magic')) {
-      const payload = verifyMagicToken(params.get('magic'));
+    if (url.searchParams.get('magic')) {
+      const payload = verifyMagicToken(url.searchParams.get('magic'));
       const expectedEmail = (process.env.ADMIN_EMAIL || '').toLowerCase();
       if (!payload || payload.email !== expectedEmail) {
         return sendHtml(res, 401, renderAdminSignin({ error: 'That sign-in link is invalid or has expired.' }));
       }
-      const cookie = buildAdminCookie({ email: payload.email });
-      return redirect(res, '/investors/admin', { 'Set-Cookie': cookie });
+      return redirect(res, '/investors/admin', { 'Set-Cookie': buildAdminCookie({ email: payload.email }) });
     }
 
-    if (req.method === 'POST') return handlePost(req, res);
+    if (req.method === 'POST') return handlePost(req, res, url);
 
-    // GET — sign in or dashboard
+    // GET — section routing
     const session = readAdminSession(req);
     if (!session?.email) {
       return sendHtml(res, 200, renderAdminSignin({}));
     }
-    return sendDashboard(res, session.email);
+
+    return renderSection(req, res, session.email, url);
   } catch (err) {
     console.error('[admin] handler error:', err?.message, err?.stack);
     return sendHtml(res, 500, renderAdminSignin({ error: 'Something went wrong. Please try again.' }));
   }
 }
 
-async function handlePost(req, res) {
+async function renderSection(req, res, adminEmail, url, opts = {}) {
+  const { section, slug } = parseSection(req.url);
+
+  if (section === 'settings') {
+    const [documents, allowedEmails, whitelistEnabled] = await Promise.all([
+      listDocuments(), listAllowedEmails(), isWhitelistEnabled(),
+    ]);
+    return sendHtml(res, 200, renderAdminSettings({
+      adminEmail, documents, allowedEmails, whitelistEnabled,
+      savedMessage: opts.savedMessage,
+    }));
+  }
+
+  if (section === 'activity') {
+    const [documents, visits] = await Promise.all([
+      listDocuments(), listRecentVisits(80),
+    ]);
+    return sendHtml(res, 200, renderAdminActivity({ adminEmail, documents, visits }));
+  }
+
+  if (section === 'doc') {
+    const documents = await listDocuments();
+    const doc = await getDocumentBySlug(slug);
+    if (!doc) return redirect(res, '/investors/admin');
+    return sendHtml(res, 200, renderAdminDocEdit({
+      adminEmail, documents, doc, savedMessage: opts.savedMessage,
+    }));
+  }
+
+  // section === null → default: send to first doc, or settings if none
+  const documents = await listDocuments();
+  if (documents.length > 0) {
+    return redirect(res, `/investors/admin/doc/${encodeURIComponent(documents[0].slug)}`);
+  }
+  return redirect(res, '/investors/admin/settings');
+}
+
+async function handlePost(req, res, url) {
   const body = await readBody(req);
   const action = trim(body.action, 64);
 
@@ -115,7 +179,6 @@ async function handlePost(req, res) {
     if (!email || !isEmail(email)) {
       return sendHtml(res, 400, renderAdminSignin({ error: 'Please enter a valid email.', prefillEmail: email }));
     }
-    // Only send a link if it matches the admin email; otherwise silently pretend success
     if (email === expectedEmail) {
       try {
         const token = buildMagicLinkToken(email);
@@ -140,45 +203,38 @@ async function handlePost(req, res) {
   if (action === 'add-email') {
     const email = trim(body.email).toLowerCase();
     const note = trim(body.note, 200) || null;
-    if (!email || !isEmail(email)) {
-      return sendDashboard(res, session.email, { savedMessage: 'Invalid email — not added.' });
-    }
-    await addAllowedEmail(email, note);
-    return sendDashboard(res, session.email, { savedMessage: `Added ${email} to the whitelist.` });
+    if (email && isEmail(email)) await addAllowedEmail(email, note);
+    return redirect(res, '/investors/admin/settings');
   }
-
   if (action === 'remove-email') {
     const email = trim(body.email).toLowerCase();
     if (email) await removeAllowedEmail(email);
-    return sendDashboard(res, session.email, { savedMessage: email ? `Removed ${email}.` : 'No email provided.' });
+    return redirect(res, '/investors/admin/settings');
   }
-
   if (action === 'toggle-whitelist') {
     const enabled = String(body.enabled || '').toLowerCase() === 'true';
     await setWhitelistEnabled(enabled);
-    return sendDashboard(res, session.email, {
-      savedMessage: enabled
-        ? 'Whitelist is now ON — only listed emails can access /investors.'
-        : 'Whitelist is now OFF — any email with the access code can sign in.',
-    });
+    return redirect(res, '/investors/admin/settings');
+  }
+  if (action === 'toggle-doc-visible') {
+    const slug = trim(body.slug, 80);
+    const visible = String(body.visible || '').toLowerCase() === 'true';
+    if (slug) await setDocumentVisible(slug, visible);
+    return redirect(res, '/investors/admin/settings');
+  }
+  if (action === 'delete-doc') {
+    const slug = trim(body.slug, 80);
+    if (slug) await deleteDocument(slug);
+    return redirect(res, '/investors/admin/settings');
+  }
+  if (action === 'new-doc') {
+    const title = trim(body.title, 120);
+    if (title) {
+      const created = await createNewDocument({ title });
+      return redirect(res, `/investors/admin/doc/${encodeURIComponent(created.slug)}`);
+    }
+    return redirect(res, '/investors/admin');
   }
 
-  return sendDashboard(res, session.email);
-}
-
-async function sendDashboard(res, adminEmail, opts = {}) {
-  const [memo, allowedEmails, visits, whitelistEnabled] = await Promise.all([
-    loadMemoForRender(),
-    listAllowedEmails(),
-    listRecentVisits(40),
-    isWhitelistEnabled(),
-  ]);
-  return sendHtml(res, 200, renderAdminDashboard({
-    adminEmail,
-    memo,
-    allowedEmails,
-    visits,
-    whitelistEnabled,
-    savedMessage: opts.savedMessage,
-  }));
+  return redirect(res, '/investors/admin');
 }
