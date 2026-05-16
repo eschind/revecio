@@ -17,7 +17,7 @@ const TITLE = 'Reve CIO Deep Dive';
 // to replace whatever's currently in the DB on next request.
 // WARNING: any admin edits to this doc are overwritten when this number
 // is incremented. Only bump when the new seed is the source of truth.
-const SEED_VERSION = 2;
+const SEED_VERSION = 3;
 const SEED_VERSION_KEY = 'deep_dive_seed_version';
 
 // Stored shape: { meta, pages: [{ body, closing }] }
@@ -112,30 +112,30 @@ const DEEP_DIVE_CONTENT = {
 <h3 class="doc-subsection">Share of AUM by provider and service type</h3>
 <p class="exhibit-chart-sub">Coverage breakdown of ~$1.25T total sub-$250M E&amp;F AUM, by service type.</p>
 <div class="coverage-bar">
-  <div class="coverage-segment" style="width: 13%; background: #243478;">13%</div>
-  <div class="coverage-segment" style="width: 12%; background: #7a7fc7;">12%</div>
-  <div class="coverage-segment" style="width: 15%; background: #5859a6;">15%</div>
-  <div class="coverage-segment" style="width: 60%; background: #c98c80;">60%</div>
+  <div class="coverage-segment" style="width: 13%; background: #1a3a2e;">13%</div>
+  <div class="coverage-segment" style="width: 12%; background: #6b9684;">12%</div>
+  <div class="coverage-segment" style="width: 15%; background: #3d6b58;">15%</div>
+  <div class="coverage-segment" style="width: 60%; background: #b8b09a;">60%</div>
 </div>
 <div class="chart-legend">
-  <span class="key"><span class="swatch" style="background:#243478"></span>Custom OCIO 13%</span>
-  <span class="key"><span class="swatch" style="background:#7a7fc7"></span>Pooled vehicles 12%</span>
-  <span class="key"><span class="swatch" style="background:#5859a6"></span>Non-discretionary 15%</span>
-  <span class="key"><span class="swatch" style="background:#c98c80"></span>Unaddressed 60%</span>
+  <span class="key"><span class="swatch" style="background:#1a3a2e"></span>Custom OCIO 13%</span>
+  <span class="key"><span class="swatch" style="background:#6b9684"></span>Pooled vehicles 12%</span>
+  <span class="key"><span class="swatch" style="background:#3d6b58"></span>Non-discretionary 15%</span>
+  <span class="key"><span class="swatch" style="background:#b8b09a"></span>Unaddressed 60%</span>
 </div>
 
 <h3 class="doc-subsection">Named providers vs. unaddressed</h3>
 <p class="exhibit-chart-sub">Within the ~$1.25T sub-$250M E&amp;F universe, named providers account for a small share; the long tail is dominated by structurally unaddressed AUM.</p>
 <div style="margin-top: 6pt;">
-  <div class="bar-chart-row"><span class="label">Unaddressed</span><div class="bar" style="width: 100%; background: #c98c80;"></div><span class="pct">60%</span></div>
-  <div class="bar-chart-row"><span class="label">Non-discretionary</span><div class="bar" style="width: 25%; background: #5859a6;"></div><span class="pct">15%</span></div>
-  <div class="bar-chart-row"><span class="label">Pooled vehicles</span><div class="bar" style="width: 20%; background: #7a7fc7;"></div><span class="pct">12%</span></div>
-  <div class="bar-chart-row"><span class="label">Commonfund</span><div class="bar" style="width: 5%; background: #243478;"></div><span class="pct">3%</span></div>
-  <div class="bar-chart-row"><span class="label">Other boutiques</span><div class="bar" style="width: 5%; background: #243478;"></div><span class="pct">3%</span></div>
-  <div class="bar-chart-row"><span class="label">TIFF</span><div class="bar" style="width: 3.3%; background: #243478;"></div><span class="pct">2%</span></div>
-  <div class="bar-chart-row"><span class="label">Glenmede</span><div class="bar" style="width: 3.3%; background: #243478;"></div><span class="pct">2%</span></div>
-  <div class="bar-chart-row"><span class="label">GEM</span><div class="bar" style="width: 3.3%; background: #243478;"></div><span class="pct">2%</span></div>
-  <div class="bar-chart-row"><span class="label">Verger</span><div class="bar" style="width: 1.7%; background: #243478;"></div><span class="pct">1%</span></div>
+  <div class="bar-chart-row"><span class="label">Unaddressed</span><div class="bar" style="width: 100%; background: #b8b09a;"></div><span class="pct">60%</span></div>
+  <div class="bar-chart-row"><span class="label">Non-discretionary</span><div class="bar" style="width: 25%; background: #3d6b58;"></div><span class="pct">15%</span></div>
+  <div class="bar-chart-row"><span class="label">Pooled vehicles</span><div class="bar" style="width: 20%; background: #6b9684;"></div><span class="pct">12%</span></div>
+  <div class="bar-chart-row"><span class="label">Commonfund</span><div class="bar" style="width: 5%; background: #1a3a2e;"></div><span class="pct">3%</span></div>
+  <div class="bar-chart-row"><span class="label">Other boutiques</span><div class="bar" style="width: 5%; background: #1a3a2e;"></div><span class="pct">3%</span></div>
+  <div class="bar-chart-row"><span class="label">TIFF</span><div class="bar" style="width: 3.3%; background: #1a3a2e;"></div><span class="pct">2%</span></div>
+  <div class="bar-chart-row"><span class="label">Glenmede</span><div class="bar" style="width: 3.3%; background: #1a3a2e;"></div><span class="pct">2%</span></div>
+  <div class="bar-chart-row"><span class="label">GEM</span><div class="bar" style="width: 3.3%; background: #1a3a2e;"></div><span class="pct">2%</span></div>
+  <div class="bar-chart-row"><span class="label">Verger</span><div class="bar" style="width: 1.7%; background: #1a3a2e;"></div><span class="pct">1%</span></div>
 </div>
 </div>`, closing: null },
 
