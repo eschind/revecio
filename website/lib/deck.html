@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reve — Investor deck</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,500;1,6..72,300;1,6..72,400&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f7f5f0;
+    --bg-2: #efece4;
+    --ink: #14171c;
+    --ink-2: #2b3038;
+    --muted: #6a6f78;
+    --line: #d9d4c7;
+    --accent: #1a3a2e;
+    --accent-2: #3d6b58;
+    --accent-3: #6b9684;
+    --sand: #b8b09a;
+    --dark-bg: #14171c;
+    --dark-ink: #f4f1ea;
+    --dark-muted: #8a8f99;
+    --dark-line: #2a2f38;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    background: #0b0d10;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    color: var(--ink);
+    overflow: hidden;
+  }
+
+  /* Stage: letterbox the 1920x1080 slide into the viewport */
+  .stage {
+    position: fixed; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .slide-wrap {
+    width: 1920px; height: 1080px;
+    transform-origin: center center;
+  }
+  .slide {
+    width: 1920px; height: 1080px;
+    background: var(--bg);
+    color: var(--ink);
+    padding: 120px 140px;
+    display: none;
+    position: relative;
+    overflow: hidden;
+  }
+  .slide.active { display: block; }
+  .slide.dark { background: var(--dark-bg); color: var(--dark-ink); }
+  .slide.dark .muted { color: var(--dark-muted); }
+  .slide.dark .rule { background: var(--dark-line); }
+
+  /* Common chrome: header + footer */
+  .s-header, .s-footer {
+    position: absolute; left: 140px; right: 140px;
+    display: flex; justify-content: space-between; align-items: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 16px; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--muted);
+  }
+  .slide.dark .s-header, .slide.dark .s-footer { color: var(--dark-muted); }
+  .s-header { top: 60px; }
+  .s-footer { bottom: 60px; }
+  .s-header .brand { font-family: 'Newsreader', serif; font-size: 22px; font-weight: 400; text-transform: none; letter-spacing: -0.01em; color: var(--ink); }
+  .slide.dark .s-header .brand { color: var(--dark-ink); }
+  .s-footer .num { display: inline-block; min-width: 32px; }
+
+  /* Type scale */
+  h1.display { font-family: 'Newsreader', serif; font-weight: 300; font-size: 240px; line-height: 0.95; letter-spacing: -0.04em; }
+  h1.title { font-family: 'Newsreader', serif; font-weight: 300; font-size: 96px; line-height: 1.05; letter-spacing: -0.025em; }
+  h2.section-title { font-family: 'Newsreader', serif; font-weight: 300; font-size: 72px; line-height: 1.1; letter-spacing: -0.02em; margin-bottom: 32px; }
+  h3.kicker { font-family: 'JetBrains Mono', monospace; font-size: 16px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--accent); margin-bottom: 28px; }
+  .slide.dark h3.kicker { color: var(--accent-3); }
+  .lede { font-family: 'Newsreader', serif; font-weight: 400; font-size: 52px; line-height: 1.25; letter-spacing: -0.01em; color: var(--ink-2); max-width: 26ch; }
+  .slide.dark .lede { color: var(--dark-ink); }
+  .body { font-size: 28px; line-height: 1.45; color: var(--ink-2); max-width: 60ch; }
+  .slide.dark .body { color: var(--dark-ink); }
+  .small { font-size: 22px; line-height: 1.5; color: var(--muted); }
+  .italic { font-family: 'Newsreader', serif; font-style: italic; font-weight: 400; }
+  .accent { color: var(--accent); }
+  .slide.dark .accent { color: var(--accent-3); }
+  em, .body em { font-family: 'Newsreader', serif; font-style: italic; font-weight: 400; color: var(--ink); }
+  .slide.dark em { color: var(--dark-ink); }
+  strong { font-weight: 600; color: var(--ink); }
+  .slide.dark strong { color: var(--dark-ink); }
+
+  ul.bullets { list-style: none; }
+  ul.bullets li {
+    font-size: 28px; line-height: 1.5; color: var(--ink-2);
+    padding-left: 36px; position: relative; margin-bottom: 20px;
+    max-width: 70ch;
+  }
+  ul.bullets li::before {
+    content: ""; position: absolute; left: 0; top: 18px;
+    width: 18px; height: 2px; background: var(--accent);
+  }
+  .slide.dark ul.bullets li { color: var(--dark-ink); }
+  .slide.dark ul.bullets li::before { background: var(--accent-3); }
+
+  .rule { height: 1px; background: var(--line); }
+  .eyebrow-chip {
+    display: inline-flex; align-items: center; gap: 12px;
+    padding: 10px 18px; border: 1px solid var(--line); border-radius: 999px;
+    font-family: 'JetBrains Mono', monospace; font-size: 15px;
+    letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted);
+  }
+  .slide.dark .eyebrow-chip { border-color: var(--dark-line); color: var(--dark-muted); }
+  .status-dot {
+    width: 8px; height: 8px; border-radius: 50%; background: var(--accent);
+  }
+  .slide.dark .status-dot { background: var(--accent-3); }
+
+  /* Layout helpers */
+  .stack { display: flex; flex-direction: column; }
+  .stack.grow { height: 100%; }
+  .center { align-items: center; justify-content: center; text-align: center; }
+  .gap-16 { gap: 16px; } .gap-24 { gap: 24px; } .gap-32 { gap: 32px; } .gap-48 { gap: 48px; } .gap-64 { gap: 64px; }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: start; }
+  .three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 56px; align-items: start; }
+  .four-col { display: grid; grid-template-columns: repeat(4, 1fr); gap: 40px; align-items: start; }
+
+  .big-stat .num {
+    font-family: 'Newsreader', serif; font-weight: 300; font-size: 200px; line-height: 0.95;
+    letter-spacing: -0.04em; color: var(--ink);
+  }
+  .slide.dark .big-stat .num { color: var(--dark-ink); }
+  .big-stat .num.accent { color: var(--accent); }
+  .slide.dark .big-stat .num.accent { color: var(--accent-3); }
+  .big-stat .lbl { font-size: 26px; color: var(--muted); margin-top: 24px; max-width: 36ch; }
+  .slide.dark .big-stat .lbl { color: var(--dark-muted); }
+
+  .stat-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 80px; }
+  .stat-row .num { font-family: 'Newsreader', serif; font-weight: 300; font-size: 120px; line-height: 1; letter-spacing: -0.03em; color: var(--accent); }
+  .slide.dark .stat-row .num { color: var(--accent-3); }
+  .stat-row .lbl { font-size: 22px; color: var(--muted); margin-top: 20px; line-height: 1.5; }
+  .slide.dark .stat-row .lbl { color: var(--dark-muted); }
+
+  /* Bar/segmented exhibit on AUM slide */
+  .coverage-bar { display: flex; width: 100%; height: 96px; border-radius: 6px; overflow: hidden; }
+  .coverage-segment { display: flex; align-items: center; justify-content: center; font-family: 'JetBrains Mono', monospace; font-size: 22px; color: #fff; font-weight: 500; }
+  .coverage-segment.sand { color: var(--ink); }
+  .chart-legend { display: flex; flex-wrap: wrap; gap: 24px 40px; margin-top: 32px; }
+  .key { display: inline-flex; align-items: center; gap: 12px; font-size: 22px; color: var(--ink-2); }
+  .swatch { width: 16px; height: 16px; border-radius: 4px; display: inline-block; }
+
+  /* Compare table */
+  .compare { width: 100%; border-collapse: collapse; font-size: 24px; }
+  .compare th, .compare td { padding: 22px 24px; text-align: left; border-bottom: 1px solid var(--line); }
+  .compare th { font-family: 'JetBrains Mono', monospace; font-size: 16px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); font-weight: 500; }
+  .compare td.label { color: var(--ink); font-weight: 500; }
+  .compare td.dim { color: var(--muted); }
+  .compare td.accent { color: var(--accent); font-weight: 600; }
+
+  /* Team cards */
+  .team-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 80px; }
+  .team-card { padding: 48px; border: 1px solid var(--line); border-radius: 12px; background: var(--bg-2); }
+  .team-card .name { font-family: 'Newsreader', serif; font-size: 56px; font-weight: 400; letter-spacing: -0.02em; }
+  .team-card .role { font-family: 'JetBrains Mono', monospace; font-size: 16px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent); margin-top: 8px; }
+  .team-card .bio { font-size: 22px; color: var(--ink-2); margin-top: 24px; line-height: 1.5; }
+
+  /* Quote slide */
+  .pull-quote {
+    font-family: 'Newsreader', serif; font-weight: 300; font-size: 84px;
+    line-height: 1.15; letter-spacing: -0.02em; max-width: 22ch;
+  }
+  .pull-quote .open, .pull-quote .close { color: var(--accent); }
+  .slide.dark .pull-quote .open, .slide.dark .pull-quote .close { color: var(--accent-3); }
+  .attribution { margin-top: 48px; font-family: 'JetBrains Mono', monospace; font-size: 18px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+
+  /* Nav */
+  .navbar {
+    position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%);
+    display: flex; gap: 12px; align-items: center;
+    background: rgba(20,23,28,0.85); color: #f4f1ea;
+    padding: 8px 16px; border-radius: 999px;
+    font-family: 'JetBrains Mono', monospace; font-size: 12px;
+    z-index: 100; user-select: none; backdrop-filter: blur(8px);
+  }
+  .navbar button {
+    background: none; border: 1px solid rgba(244,241,234,0.25); color: inherit;
+    padding: 4px 10px; border-radius: 999px; cursor: pointer; font: inherit;
+  }
+  .navbar button:hover { border-color: rgba(244,241,234,0.6); }
+  .navbar .pos { min-width: 56px; text-align: center; }
+  .navbar.hidden { opacity: 0; pointer-events: none; transition: opacity 0.3s; }
+
+  @media print {
+    body { background: #fff; }
+    .navbar { display: none; }
+    .slide { display: block !important; page-break-after: always; }
+    .stage { position: static; }
+    .slide-wrap { transform: none !important; }
+  }
+</style>
+</head>
+<body>
+<div class="stage">
+  <div class="slide-wrap" id="wrap">
+
+    <!-- ============ 01 — Cover ============ -->
+    <section class="slide active" data-title="01 Cover">
+      <div class="s-header">
+        <span class="brand">Reve</span>
+        <span>Investor deck · 2026</span>
+      </div>
+      <span class="eyebrow-chip" style="position:absolute; top:200px; left:50%; transform:translateX(-50%);">
+        <span class="status-dot"></span>Series Seed · Confidential
+      </span>
+      <div class="stack grow center gap-48">
+        <h1 class="display">Reve</h1>
+        <p class="lede" style="text-align:center;">
+          An <span class="italic">AI-native</span> OCIO for America's most important pools of investment capital.
+        </p>
+      </div>
+      <div class="s-footer"><span><span class="num">01</span>Cover</span><span>01 / 16</span></div>
+    </section>
+
+    <!-- ============ 02 — Vision ============ -->
+    <section class="slide dark" data-title="02 Vision">
+      <div class="s-header"><span class="brand">Reve</span><span>Vision</span></div>
+      <div class="stack grow center gap-32" style="padding-top:60px;">
+        <h3 class="kicker">Our mission</h3>
+        <p class="title" style="text-align:center; max-width: 22ch;">
+          Strengthen the institutions that sustain America's <span class="italic accent">human capital</span> — by transforming how they invest.
+        </p>
+      </div>
+      <div class="s-footer"><span><span class="num">02</span>Vision</span><span>02 / 16</span></div>
+    </section>
+
+    <!-- ============ 03 — The market ============ -->
+    <section class="slide" data-title="03 Market">
+      <div class="s-header"><span class="brand">Reve</span><span>The market</span></div>
+      <div class="stack grow gap-64" style="justify-content:center;">
+        <div>
+          <h3 class="kicker">The opportunity</h3>
+          <h2 class="section-title">$20B+ of services revenue,<br>built on a 1980s playbook.</h2>
+        </div>
+        <div class="stat-row">
+          <div><div class="num">$2.5T</div><div class="lbl">U.S. OCIO AUM today, growing 16% YoY · $4.4T projected by 2030</div></div>
+          <div><div class="num">$33.8T</div><div class="lbl">U.S. investment consulting AUA · $49.9T projected by 2030</div></div>
+          <div><div class="num">$20B+</div><div class="lbl">global annual revenue across OCIO and investment consulting</div></div>
+        </div>
+        <p class="small" style="max-width: 90ch;">
+          OCIO and investment consulting manage and advise on institutional capital for foundations, endowments, pensions, and family offices — and the work has not structurally changed since the 1980s.
+        </p>
+      </div>
+      <div class="s-footer"><span><span class="num">03</span>Market</span><span>03 / 16</span></div>
+    </section>
+
+    <!-- ============ 04 — Why it's broken ============ -->
+    <section class="slide" data-title="04 Why it's broken">
+      <div class="s-header"><span class="brand">Reve</span><span>Why it's broken</span></div>
+      <div class="stack grow gap-48" style="justify-content:center;">
+        <div>
+          <h3 class="kicker">The status quo</h3>
+          <h2 class="section-title">Analyst-heavy, premium-priced, structurally underperforming.</h2>
+        </div>
+        <ul class="bullets" style="max-width: 90ch;">
+          <li><strong>High-cost, human-intensive.</strong> Every IC package, monitoring report, scenario analysis, and board deck is produced manually. Technology leverage is near zero.</li>
+          <li><strong>Premium pricing.</strong> Sub-$250M clients pay 30–40 bps blended; fully loaded fees reach 75–175 bps — consuming budget that would otherwise fund mission.</li>
+          <li><strong>Dispersion and underperformance.</strong> 8% spread between top- and bottom-quartile OCIO returns over three years through 2025 — a 25% compounded gap. Bottom quartile returned just 3% in 2024.</li>
+          <li><strong>Opacity and conflicts.</strong> Hidden fees, cherry-picked track records, and compensation routed through affiliated products are pervasive.</li>
+          <li><strong>Smaller institutions excluded.</strong> ~60% of the $1.25T sub-$250M segment is unaddressed by any third-party investment management service.</li>
+        </ul>
+      </div>
+      <div class="s-footer"><span><span class="num">04</span>Why it's broken</span><span>04 / 16</span></div>
+    </section>
+
+    <!-- ============ 05 — Performance dispersion (big stat) ============ -->
+    <section class="slide dark" data-title="05 Dispersion">
+      <div class="s-header"><span class="brand">Reve</span><span>Dispersion</span></div>
+      <div class="stack grow center gap-32">
+        <h3 class="kicker">Top vs. bottom quartile, three years through 2025</h3>
+        <div class="big-stat" style="text-align:center;">
+          <div class="num accent">25%</div>
+          <div class="lbl" style="max-width: 32ch; margin-left:auto; margin-right:auto;">
+            compounded performance gap between top- and bottom-quartile OCIOs. The bottom quartile returned 3% in 2024 — barely tracking inflation.
+          </div>
+        </div>
+      </div>
+      <div class="s-footer"><span><span class="num">05</span>Dispersion</span><span>05 / 16</span></div>
+    </section>
+
+    <!-- ============ 06 — The underserved segment ============ -->
+    <section class="slide" data-title="06 Underserved segment">
+      <div class="s-header"><span class="brand">Reve</span><span>The wedge</span></div>
+      <div class="stack grow gap-48" style="justify-content:center;">
+        <div>
+          <h3 class="kicker">Our entry point</h3>
+          <h2 class="section-title">20–25k institutions. ~$1.25T in assets.<br>~60% unaddressed.</h2>
+        </div>
+        <div class="three-col">
+          <div><div class="big-stat"><div class="num accent" style="font-size:120px;">~$1.25T</div></div><div class="body" style="margin-top:16px;">in institutional pools of $10M–$250M across the U.S. — community foundations, school and college endowments, arts and cultural organizations, hospital foundations.</div></div>
+          <div><div class="big-stat"><div class="num accent" style="font-size:120px;">~60%</div></div><div class="body" style="margin-top:16px;">structurally <strong>unaddressed</strong> by any third-party investment management service. Self-managed, bank-trust, or unnamed RIAs with no institutional infrastructure.</div></div>
+          <div><div class="big-stat"><div class="num accent" style="font-size:120px;">&gt;$3B</div></div><div class="body" style="margin-top:16px;">annual revenue opportunity at a below-market 25 bps blended rate — even before upmarket expansion.</div></div>
+        </div>
+      </div>
+      <div class="s-footer"><span><span class="num">06</span>Wedge</span><span>06 / 16</span></div>
+    </section>
+
+    <!-- ============ 07 — Who the clients are ============ -->
+    <section class="slide" data-title="07 Clients">
+      <div class="s-header"><span class="brand">Reve</span><span>Who we serve</span></div>
+      <div class="stack grow gap-48" style="justify-content:center;">
+        <div>
+          <h3 class="kicker">Initial customer</h3>
+          <h2 class="section-title">Mission-driven institutions that<br>can't afford to underperform.</h2>
+        </div>
+        <div class="four-col">
+          <div>
+            <div style="font-family:'Newsreader',serif; font-size:48px; font-weight:300; letter-spacing:-0.02em;">Foundations</div>
+            <div class="body" style="margin-top:16px; font-size:24px;">Private and community foundations funding nonprofit grants and program work.</div>
+          </div>
+          <div>
+            <div style="font-family:'Newsreader',serif; font-size:48px; font-weight:300; letter-spacing:-0.02em;">Endowments</div>
+            <div class="body" style="margin-top:16px; font-size:24px;">School and college endowments funding financial aid and academic programs.</div>
+          </div>
+          <div>
+            <div style="font-family:'Newsreader',serif; font-size:48px; font-weight:300; letter-spacing:-0.02em;">Arts &amp; culture</div>
+            <div class="body" style="margin-top:16px; font-size:24px;">Museums, performing-arts institutions, and cultural organizations supporting live programming.</div>
+          </div>
+          <div>
+            <div style="font-family:'Newsreader',serif; font-size:48px; font-weight:300; letter-spacing:-0.02em;">Health foundations</div>
+            <div class="body" style="margin-top:16px; font-size:24px;">Hospital and health-system foundations supporting patient care and community health.</div>
+          </div>
+        </div>
+        <p class="small" style="max-width: 100ch;">
+          These organizations depend on portfolio returns more than ever as government funding recedes — and they need genuine fiduciary accountability, IPS design, spend modeling, customization, monitoring, and reporting.
+        </p>
+      </div>
+      <div class="s-footer"><span><span class="num">07</span>Clients</span><span>07 / 16</span></div>
+    </section>
+
+    <!-- ============ 08 — Share of AUM exhibit ============ -->
+    <section class="slide" data-title="08 Share of AUM">
+      <div class="s-header"><span class="brand">Reve</span><span>Share of AUM · sub-$250M E&amp;F</span></div>
+      <div class="stack grow gap-32" style="justify-content:center;">
+        <div>
+          <h3 class="kicker">Where the $1.25T sits today</h3>
+          <h2 class="section-title">Most of the segment has no real investment partner.</h2>
+        </div>
+        <div class="coverage-bar">
+          <div class="coverage-segment" style="width: 13%; background: #1a3a2e;">13%</div>
+          <div class="coverage-segment" style="width: 12%; background: #6b9684;">12%</div>
+          <div class="coverage-segment" style="width: 15%; background: #3d6b58;">15%</div>
+          <div class="coverage-segment sand" style="width: 60%; background: #b8b09a;">60%</div>
+        </div>
+        <div class="chart-legend">
+          <span class="key"><span class="swatch" style="background:#1a3a2e"></span>Custom OCIO · 13%</span>
+          <span class="key"><span class="swatch" style="background:#6b9684"></span>Pooled vehicles · 12%</span>
+          <span class="key"><span class="swatch" style="background:#3d6b58"></span>Non-discretionary · 15%</span>
+          <span class="key"><span class="swatch" style="background:#b8b09a"></span>Unaddressed · 60%</span>
+        </div>
+        <p class="small" style="max-width: 100ch; margin-top: 32px;">
+          Of the $1.25T held by the sub-$250M segment, about 10% receives bespoke discretionary service, ~30% is in pooled vehicles or non-discretionary consulting, and <strong>~60% is unaddressed</strong> — self-managed, bank-trust, or unnamed RIAs.
+        </p>
+      </div>
+      <div class="s-footer"><span><span class="num">08</span>Share of AUM</span><span>08 / 16</span></div>
+    </section>
+
+    <!-- ============ 09 — Why OCIO is next AI frontier ============ -->
+    <section class="slide dark" data-title="09 AI frontier">
+      <div class="s-header"><span class="brand">Reve</span><span>Why now</span></div>
+      <div class="stack grow gap-48" style="justify-content:center;">
+        <div>
+          <h3 class="kicker">Why OCIO is the next AI frontier</h3>
+          <h2 class="section-title" style="max-width: 26ch;">
+            OCIO is <span class="italic accent">information labor</span>,<br>not judgment labor.
+          </h2>
+        </div>
+        <div class="two-col" style="max-width: 1400px;">
+          <p class="body">
+            Gathering market and manager data, building and stress-testing portfolios, drafting IPS documents, monitoring positions, generating board materials, answering trustee questions — all dense information processing, all today done by hand.
+          </p>
+          <p class="body">
+            Frontier agents with the right data foundation can do nearly all of it — with full audit trails. Final judgments stay with humans.
+          </p>
+        </div>
+        <div style="margin-top: 16px; padding: 32px 40px; border-left: 3px solid var(--accent-3); max-width: 1400px;">
+          <p class="body" style="color: var(--dark-ink);">
+            <strong>OCIO is harder than legal or accounting AI</strong> — more degrees of freedom, fewer clean right answers. That difficulty is the moat.
+          </p>
+        </div>
+      </div>
+      <div class="s-footer"><span><span class="num">09</span>Why now</span><span>09 / 16</span></div>
+    </section>
+
+    <!-- ============ 10 — What we're building ============ -->
+    <section class="slide" data-title="10 Product">
+      <div class="s-header"><span class="brand">Reve</span><span>Product</span></div>
+      <div class="stack grow gap-48" style="justify-content:center;">
+        <div>
+          <h3 class="kicker">What we're building</h3>
+          <h2 class="section-title">A single, unified agentic system<br>across every core OCIO workflow.</h2>
+        </div>
+        <div class="three-col">
+          <div>
+            <div style="font-family:'JetBrains Mono',monospace; font-size:14px; letter-spacing:0.16em; text-transform:uppercase; color: var(--accent); margin-bottom:16px;">Onboarding &amp; governance</div>
+            <ul class="bullets" style="margin-top:0;">
+              <li>Client onboarding</li>
+              <li>IPS design &amp; updates</li>
+              <li>Spend policy &amp; cash-flow modeling</li>
+              <li>Regulatory compliance</li>
+            </ul>
+          </div>
+          <div>
+            <div style="font-family:'JetBrains Mono',monospace; font-size:14px; letter-spacing:0.16em; text-transform:uppercase; color: var(--accent); margin-bottom:16px;">Portfolio &amp; investment</div>
+            <ul class="bullets" style="margin-top:0;">
+              <li>Portfolio customization</li>
+              <li>Scenario analysis</li>
+              <li>Investment selection &amp; diligence</li>
+              <li>Trade execution &amp; operations</li>
+            </ul>
+          </div>
+          <div>
+            <div style="font-family:'JetBrains Mono',monospace; font-size:14px; letter-spacing:0.16em; text-transform:uppercase; color: var(--accent); margin-bottom:16px;">Monitoring &amp; service</div>
+            <ul class="bullets" style="margin-top:0;">
+              <li>Continuous monitoring</li>
+              <li>Tax optimization</li>
+              <li>Reporting &amp; board updates</li>
+              <li>Ad-hoc research &amp; Q&amp;A</li>
+            </ul>
+          </div>
+        </div>
+        <p class="small" style="max-width: 100ch;">
+          Built on existing data infrastructure — Addepar, Bloomberg, Pitchbook, Arch, Schwab — with an agentic layer above it. Analysts stay in the loop where judgment matters; agents do everything else.
+        </p>
+      </div>
+      <div class="s-footer"><span><span class="num">10</span>Product</span><span>10 / 16</span></div>
+    </section>
+
+    <!-- ============ 11 — Unit economics (big stat) ============ -->
+    <section class="slide" data-title="11 Unit economics">
+      <div class="s-header"><span class="brand">Reve</span><span>Unit economics</span></div>
+      <div class="stack grow gap-48" style="justify-content:center;">
+        <div>
+          <h3 class="kicker">Operating leverage</h3>
+          <h2 class="section-title">10× the AUM per employee.<br>Half the fee. Better outcomes.</h2>
+        </div>
+        <div class="two-col" style="margin-top: 16px;">
+          <div>
+            <div style="font-family:'JetBrains Mono',monospace; font-size:14px; letter-spacing:0.16em; text-transform:uppercase; color: var(--muted); margin-bottom:16px;">Traditional OCIO</div>
+            <div class="big-stat"><div class="num" style="font-size:160px; color: var(--muted);">~$100M</div></div>
+            <div class="body" style="margin-top:16px;">AUM per employee. Analyst hours are the binding constraint; margins are thin.</div>
+          </div>
+          <div>
+            <div style="font-family:'JetBrains Mono',monospace; font-size:14px; letter-spacing:0.16em; text-transform:uppercase; color: var(--accent); margin-bottom:16px;">Reve target</div>
+            <div class="big-stat"><div class="num accent" style="font-size:160px;">$1B+</div></div>
+            <div class="body" style="margin-top:16px;"><strong>10×+ the AUM per employee.</strong> Lower fees, 10× better service, transformed margin profile.</div>
+          </div>
+        </div>
+      </div>
+      <div class="s-footer"><span><span class="num">11</span>Unit economics</span><span>11 / 16</span></div>
+    </section>
+
+    <!-- ============ 12 — Go-to-market ============ -->
+    <section class="slide" data-title="12 GTM">
+      <div class="s-header"><span class="brand">Reve</span><span>Go-to-market</span></div>
+      <div class="stack grow gap-48" style="justify-content:center;">
+        <div>
+          <h3 class="kicker">Go-to-market</h3>
+          <h2 class="section-title">Radically transparent pricing.<br>Agentic distribution.</h2>
+        </div>
+        <div class="two-col">
+          <div>
+            <div style="font-family:'Newsreader',serif; font-size:48px; font-weight:300; letter-spacing:-0.02em;">15 bps, published.</div>
+            <p class="body" style="margin-top:16px;">
+              ~50% below market for the sub-$250M segment. Fee schedule lives on our website — no obfuscation, no transition costs, no hidden layers.
+            </p>
+          </div>
+          <div>
+            <div style="font-family:'Newsreader',serif; font-size:48px; font-weight:300; letter-spacing:-0.02em;">Agentic reach.</div>
+            <p class="body" style="margin-top:16px;">
+              AI agents identify prospects, respond to public RFPs at scale, and demonstrate credibility via the team and advisory board. Speed and reach unprecedented for OCIO.
+            </p>
+          </div>
+        </div>
+        <p class="small" style="max-width: 100ch;">
+          Initial focus: community foundations, education endowments, and arts/cultural organizations — most underserved, most budget pressure, most acute need.
+        </p>
+      </div>
+      <div class="s-footer"><span><span class="num">12</span>GTM</span><span>12 / 16</span></div>
+    </section>
+
+    <!-- ============ 13 — Scale path ============ -->
+    <section class="slide" data-title="13 Scale">
+      <div class="s-header"><span class="brand">Reve</span><span>Scale path</span></div>
+      <div class="stack grow gap-48" style="justify-content:center;">
+        <div>
+          <h3 class="kicker">How we scale</h3>
+          <h2 class="section-title">Organic + acquisition + upmarket.</h2>
+        </div>
+        <div class="three-col">
+          <div>
+            <div style="font-family:'Newsreader',serif; font-size:44px; font-weight:300; letter-spacing:-0.02em;">Organic agentic</div>
+            <p class="body" style="margin-top:16px; font-size:24px;">A unified agentic system across all workflows lets us add clients without adding analysts. RFP-response agents give us reach.</p>
+          </div>
+          <div>
+            <div style="font-family:'Newsreader',serif; font-size:44px; font-weight:300; letter-spacing:-0.02em;">Strategic M&amp;A</div>
+            <p class="body" style="margin-top:16px; font-size:24px;">A $2B boutique OCIO trades at $8–12M (8–12× EBITDA). Acquisitions buy instant AUM, track record, and best practices — and we expand margins from ~20% to up to 75%.</p>
+          </div>
+          <div>
+            <div style="font-family:'Newsreader',serif; font-size:44px; font-weight:300; letter-spacing:-0.02em;">Upmarket &amp; adjacent</div>
+            <p class="body" style="margin-top:16px; font-size:24px;">From the wedge into &gt;$250M institutions, hospitals, pensions, family offices, RIAs — and international markets over time.</p>
+          </div>
+        </div>
+      </div>
+      <div class="s-footer"><span><span class="num">13</span>Scale</span><span>13 / 16</span></div>
+    </section>
+
+    <!-- ============ 14 — Software licensing optionality ============ -->
+    <section class="slide dark" data-title="14 Licensing">
+      <div class="s-header"><span class="brand">Reve</span><span>Optionality</span></div>
+      <div class="stack grow gap-32" style="justify-content:center;">
+        <div>
+          <h3 class="kicker">Long-term optionality</h3>
+          <h2 class="section-title" style="max-width: 24ch;">License the agentic platform to the largest pools of capital.</h2>
+        </div>
+        <p class="body" style="max-width: 90ch;">
+          Large university endowments, sovereign wealth funds, and pensions will keep investing in-house — but they have acute pain in portfolio construction, manager selection, and monitoring. Reve's agentic frameworks plus forward-deployed customization unlock multi-million-dollar contracts.
+        </p>
+        <p class="body" style="max-width: 90ch;">
+          <strong>Defensible against horizontal AI labs</strong> via domain depth, proprietary outcome data, and the modeling capabilities we'll have accumulated.
+        </p>
+      </div>
+      <div class="s-footer"><span><span class="num">14</span>Optionality</span><span>14 / 16</span></div>
+    </section>
+
+    <!-- ============ 15 — Team ============ -->
+    <section class="slide" data-title="15 Team">
+      <div class="s-header"><span class="brand">Reve</span><span>Team</span></div>
+      <div class="stack grow gap-48" style="justify-content:center;">
+        <div>
+          <h3 class="kicker">Founders</h3>
+          <h2 class="section-title">Product and engineering, built<br>across the institutional investing stack.</h2>
+        </div>
+        <div class="team-grid">
+          <div class="team-card">
+            <div class="name">Eytan Schindelhaim</div>
+            <div class="role">CEO</div>
+            <div class="bio">Head of product at Opto Investments. Prior product leadership at Cadre and Addepar. A decade building software for institutional investors and wealth platforms.</div>
+          </div>
+          <div class="team-card">
+            <div class="name">Sreenath Are</div>
+            <div class="role">CTO</div>
+            <div class="bio">Principal software engineer at PDT Partners. Prior senior engineering at Addepar and Sandbar. Deep experience building production systems for portfolio analytics and quant trading.</div>
+          </div>
+        </div>
+      </div>
+      <div class="s-footer"><span><span class="num">15</span>Team</span><span>15 / 16</span></div>
+    </section>
+
+    <!-- ============ 16 — Closing ============ -->
+    <section class="slide dark" data-title="16 Closing">
+      <div class="s-header"><span class="brand">Reve</span><span>Closing</span></div>
+      <div class="stack grow center gap-48">
+        <h3 class="kicker">The pitch</h3>
+        <p class="title" style="text-align:center; max-width: 24ch;">
+          The investment platform institutions <span class="italic accent">deserve</span>.
+        </p>
+        <div class="rule" style="width: 200px; background: var(--dark-line);"></div>
+        <p style="font-family:'JetBrains Mono',monospace; font-size:18px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--dark-muted);">
+          eytan@revecio.com &nbsp; · &nbsp; revecio.com
+        </p>
+      </div>
+      <div class="s-footer"><span><span class="num">16</span>Closing</span><span>16 / 16</span></div>
+    </section>
+
+  </div>
+</div>
+
+<div class="navbar" id="navbar">
+  <button id="prev">←</button>
+  <span class="pos" id="pos">1 / 16</span>
+  <button id="next">→</button>
+  <span style="opacity:0.5; margin-left:8px;">F · fullscreen</span>
+</div>
+
+<script>
+  const slides = Array.from(document.querySelectorAll('.slide'));
+  const wrap = document.getElementById('wrap');
+  const pos = document.getElementById('pos');
+  const navbar = document.getElementById('navbar');
+  let idx = 0;
+
+  function show(i) {
+    idx = Math.max(0, Math.min(slides.length - 1, i));
+    slides.forEach((s, j) => s.classList.toggle('active', j === idx));
+    pos.textContent = (idx + 1) + ' / ' + slides.length;
+    history.replaceState(null, '', '#' + (idx + 1));
+  }
+  function next() { show(idx + 1); }
+  function prev() { show(idx - 1); }
+  function fit() {
+    const sx = window.innerWidth / 1920;
+    const sy = window.innerHeight / 1080;
+    const s = Math.min(sx, sy);
+    wrap.style.transform = 'scale(' + s + ')';
+  }
+  window.addEventListener('resize', fit); fit();
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') { next(); e.preventDefault(); }
+    else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { prev(); e.preventDefault(); }
+    else if (e.key === 'Home') show(0);
+    else if (e.key === 'End') show(slides.length - 1);
+    else if (e.key === 'f' || e.key === 'F') {
+      if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+      else document.exitFullscreen();
+    } else if (/^[0-9]$/.test(e.key)) {
+      const n = parseInt(e.key, 10);
+      if (n >= 1 && n <= 9) show(n - 1);
+    }
+  });
+  document.getElementById('next').addEventListener('click', next);
+  document.getElementById('prev').addEventListener('click', prev);
+
+  // Hide navbar after idle
+  let hideTimer;
+  function bumpNavbar() {
+    navbar.classList.remove('hidden');
+    clearTimeout(hideTimer);
+    hideTimer = setTimeout(() => navbar.classList.add('hidden'), 2500);
+  }
+  document.addEventListener('mousemove', bumpNavbar);
+  document.addEventListener('keydown', bumpNavbar);
+  bumpNavbar();
+
+  // Click left/right halves to navigate
+  document.addEventListener('click', (e) => {
+    if (e.target.closest('.navbar') || e.target.closest('a') || e.target.closest('button')) return;
+    if (e.clientX < window.innerWidth / 2) prev(); else next();
+  });
+
+  // Jump to slide from URL hash
+  const h = parseInt((location.hash || '').slice(1), 10);
+  if (h >= 1 && h <= slides.length) show(h - 1);
+</script>
+</body>
+</html>
