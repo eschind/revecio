@@ -6,6 +6,8 @@
     { "source": "/investors/admin", "destination": "/api/investors/admin" },
     { "source": "/investors/admin/", "destination": "/api/investors/admin" },
     { "source": "/investors/admin/:path*", "destination": "/api/investors/admin" },
+    { "source": "/investors/deck", "destination": "/api/investors/deck" },
+    { "source": "/investors/deck/", "destination": "/api/investors/deck" },
     { "source": "/investors/:slug/download.pdf", "destination": "/api/investors/download" },
     { "source": "/investors/:slug", "destination": "/api/investors" }
   ],
