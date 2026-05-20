@@ -656,10 +656,7 @@ ${FONTS}
           ${documents.map((d) => `
             <li>
               <a class="doc-card" href="/investors/${encodeURIComponent(d.slug)}">
-                <div>
-                  <div class="doc-card-title">${escapeHtml(d.title)}</div>
-                  <div class="doc-card-meta">Updated ${new Date(d.updated_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</div>
-                </div>
+                <div class="doc-card-title">${escapeHtml(d.title)}</div>
                 <span class="doc-card-arrow">→</span>
               </a>
             </li>
