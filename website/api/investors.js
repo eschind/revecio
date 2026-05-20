@@ -1,3 +1,6 @@
+import { statSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { dirname, join } from 'node:path';
 import {
   ensureSchema,
   recordVisit,
@@ -15,6 +18,19 @@ import {
 import { sendVisitNotification } from '../lib/notify.js';
 import { renderGate, renderMemo, renderDocumentList } from '../lib/templates.js';
 import { ensureAtLeastOneDocument } from '../lib/doc-store.js';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const DECK_PATH = join(__dirname, '..', 'lib', 'deck.html');
+function deckEntry() {
+  let mtime = new Date();
+  try { mtime = statSync(DECK_PATH).mtime; } catch {}
+  return {
+    slug: 'deck',
+    title: 'Reve Investor Deck',
+    updated_at: mtime.toISOString(),
+    visible: true,
+  };
+}
 
 const isEmail = (s) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
 const trim = (v, max = 320) => String(v ?? '').trim().slice(0, max);
@@ -94,9 +110,10 @@ export default async function handler(req, res) {
       }));
     }
 
-    // No slug — show the list of visible documents
+    // No slug — show the list of visible documents (with the deck prepended)
     const docs = await listDocuments({ visibleOnly: true });
-    return sendHtml(res, 200, renderDocumentList({ viewerEmail: session.email, documents: docs }));
+    const allDocs = [deckEntry(), ...docs];
+    return sendHtml(res, 200, renderDocumentList({ viewerEmail: session.email, documents: allDocs }));
   } catch (err) {
     console.error('[investors] handler error:', err);
     return sendHtml(res, 500, renderGate({ error: 'Something went wrong. Please try again.' }));
