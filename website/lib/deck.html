@@ -187,7 +187,15 @@
   }
   .navbar button { background: none; border: 1px solid rgba(244,241,234,0.25); color: inherit; padding: 4px 10px; border-radius: 999px; cursor: pointer; font: inherit; }
   .navbar button:hover { border-color: rgba(244,241,234,0.6); }
-  .navbar .pos { min-width: 56px; text-align: center; }
+  .navbar .pos { min-width: 60px; display: inline-flex; align-items: center; justify-content: center; cursor: text; }
+  .navbar .pos input {
+    background: transparent; border: none; color: inherit; font: inherit;
+    text-align: right; width: 2.2em; padding: 0; margin: 0 4px 0 0; outline: none;
+    cursor: pointer;
+  }
+  .navbar .pos input:focus { cursor: text; background: rgba(244,241,234,0.1); border-radius: 3px; }
+  .navbar .pos input::-webkit-outer-spin-button,
+  .navbar .pos input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
   .navbar.hidden { opacity: 0; pointer-events: none; transition: opacity 0.3s; }
 
   @media print {
@@ -1744,7 +1752,10 @@
 
 <div class="navbar" id="navbar">
   <button id="prev">←</button>
-  <span class="pos" id="pos">1 / 31</span>
+  <span class="pos" id="pos">
+    <input id="pos-input" type="text" inputmode="numeric" pattern="[0-9]*" value="1" aria-label="Go to slide" />
+    <span id="pos-suffix"> / 31</span>
+  </span>
   <button id="next">→</button>
   <span style="opacity:0.5; margin-left:8px;">F · fullscreen</span>
 </div>
@@ -1752,14 +1763,16 @@
 <script>
   const slides = Array.from(document.querySelectorAll('.slide'));
   const wrap = document.getElementById('wrap');
-  const pos = document.getElementById('pos');
+  const posInput = document.getElementById('pos-input');
+  const posSuffix = document.getElementById('pos-suffix');
   const navbar = document.getElementById('navbar');
+  posSuffix.textContent = ' / ' + slides.length;
   let idx = 0;
 
   function show(i) {
     idx = Math.max(0, Math.min(slides.length - 1, i));
     slides.forEach((s, j) => s.classList.toggle('active', j === idx));
-    pos.textContent = (idx + 1) + ' / ' + slides.length;
+    if (document.activeElement !== posInput) posInput.value = (idx + 1);
     history.replaceState(null, '', '#' + (idx + 1));
     document.body.style.background = slides[idx].classList.contains('dark') ? '#14171c' : '#f7f5f0';
   }
@@ -1773,6 +1786,8 @@
   }
   window.addEventListener('resize', fit); fit();
   document.addEventListener('keydown', (e) => {
+    // Don't intercept keys while typing in the slide-number input
+    if (document.activeElement === posInput) return;
     if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') { next(); e.preventDefault(); }
     else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { prev(); e.preventDefault(); }
     else if (e.key === 'Home') show(0);
@@ -1787,6 +1802,23 @@
   });
   document.getElementById('next').addEventListener('click', next);
   document.getElementById('prev').addEventListener('click', prev);
+
+  // Slide-number input: click/focus selects all, Enter navigates, blur reverts
+  posInput.addEventListener('focus', () => posInput.select());
+  posInput.addEventListener('click', () => posInput.select());
+  posInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      const n = parseInt(posInput.value, 10);
+      if (!isNaN(n) && n >= 1 && n <= slides.length) show(n - 1);
+      else posInput.value = (idx + 1);
+      posInput.blur();
+      e.preventDefault();
+    } else if (e.key === 'Escape') {
+      posInput.value = (idx + 1);
+      posInput.blur();
+    }
+  });
+  posInput.addEventListener('blur', () => { posInput.value = (idx + 1); });
 
   let hideTimer;
   function bumpNavbar() {
