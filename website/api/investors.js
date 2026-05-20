@@ -1,6 +1,3 @@
-import { statSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
-import { dirname, join } from 'node:path';
 import {
   ensureSchema,
   recordVisit,
@@ -19,15 +16,11 @@ import { sendVisitNotification } from '../lib/notify.js';
 import { renderGate, renderMemo, renderDocumentList } from '../lib/templates.js';
 import { ensureAtLeastOneDocument } from '../lib/doc-store.js';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const DECK_PATH = join(__dirname, '..', 'lib', 'deck.html');
 function deckEntry() {
-  let mtime = new Date();
-  try { mtime = statSync(DECK_PATH).mtime; } catch {}
   return {
     slug: 'deck',
     title: 'Reve Investor Deck',
-    updated_at: mtime.toISOString(),
+    updated_at: new Date().toISOString(),
     visible: true,
   };
 }
