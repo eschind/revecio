@@ -28,7 +28,7 @@
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body { height: 100%; }
   body {
-    background: #0b0d10;
+    background: var(--bg);
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     color: var(--ink);
     overflow: hidden;
@@ -1391,11 +1391,12 @@
     slides.forEach((s, j) => s.classList.toggle('active', j === idx));
     pos.textContent = (idx + 1) + ' / ' + slides.length;
     history.replaceState(null, '', '#' + (idx + 1));
+    document.body.style.background = slides[idx].classList.contains('dark') ? '#14171c' : '#f7f5f0';
   }
   function next() { show(idx + 1); }
   function prev() { show(idx - 1); }
   function fit() {
-    const sx = window.innerWidth / 2720;
+    const sx = window.innerWidth / 1920;
     const sy = window.innerHeight / 1080;
     const s = Math.min(sx, sy);
     wrap.style.transform = 'scale(' + s + ')';
