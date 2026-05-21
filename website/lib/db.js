@@ -228,6 +228,13 @@ async function isWhitelistEnabled() {
 async function setWhitelistEnabled(enabled) {
   await setSetting('whitelist_enabled', Boolean(enabled));
 }
+async function isDeckVisible() {
+  const v = await getSetting('deck_visible', true);
+  return v !== false;
+}
+async function setDeckVisible(visible) {
+  await setSetting('deck_visible', Boolean(visible));
+}
 
 export {
   getSql,
@@ -256,4 +263,6 @@ export {
   setSetting,
   isWhitelistEnabled,
   setWhitelistEnabled,
+  isDeckVisible,
+  setDeckVisible,
 };

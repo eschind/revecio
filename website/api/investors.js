@@ -5,6 +5,7 @@ import {
   isWhitelistEnabled,
   listDocuments,
   getDocumentBySlug,
+  isDeckVisible,
 } from '../lib/db.js';
 import {
   buildSessionCookie,
@@ -105,7 +106,8 @@ export default async function handler(req, res) {
 
     // No slug — show the list of visible documents (with the deck prepended)
     const docs = await listDocuments({ visibleOnly: true });
-    const allDocs = [deckEntry(), ...docs];
+    const deckShown = await isDeckVisible().catch(() => true);
+    const allDocs = deckShown ? [deckEntry(), ...docs] : docs;
     return sendHtml(res, 200, renderDocumentList({ viewerEmail: session.email, documents: allDocs }));
   } catch (err) {
     console.error('[investors] handler error:', err);

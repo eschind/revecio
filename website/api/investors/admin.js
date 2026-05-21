@@ -6,6 +6,8 @@ import {
   listRecentVisits,
   deleteInternalVisits,
   isWhitelistEnabled,
+  isDeckVisible,
+  setDeckVisible,
   setWhitelistEnabled,
   listDocuments,
   getDocumentBySlug,
@@ -136,11 +138,12 @@ async function renderSection(req, res, adminEmail, url, opts = {}) {
   const { section, slug } = parseSection(req.url);
 
   if (section === 'settings') {
-    const [documents, allowedEmails, whitelistEnabled] = await Promise.all([
-      listDocuments(), listAllowedEmails(), isWhitelistEnabled(),
+    const [documents, allowedEmails, whitelistEnabled, deckVisible] = await Promise.all([
+      listDocuments(), listAllowedEmails(), isWhitelistEnabled(), isDeckVisible(),
     ]);
+    const deckDoc = { slug: 'deck', title: 'Reve Investor Deck', visible: deckVisible, external: true };
     return sendHtml(res, 200, renderAdminSettings({
-      adminEmail, documents, allowedEmails, whitelistEnabled,
+      adminEmail, documents: [deckDoc, ...documents], allowedEmails, whitelistEnabled,
       savedMessage: opts.savedMessage,
     }));
   }
@@ -221,12 +224,13 @@ async function handlePost(req, res, url) {
   if (action === 'toggle-doc-visible') {
     const slug = trim(body.slug, 80);
     const visible = String(body.visible || '').toLowerCase() === 'true';
-    if (slug) await setDocumentVisible(slug, visible);
+    if (slug === 'deck') await setDeckVisible(visible);
+    else if (slug) await setDocumentVisible(slug, visible);
     return redirect(res, '/investors/admin/settings');
   }
   if (action === 'delete-doc') {
     const slug = trim(body.slug, 80);
-    if (slug) await deleteDocument(slug);
+    if (slug && slug !== 'deck') await deleteDocument(slug);
     return redirect(res, '/investors/admin/settings');
   }
   if (action === 'new-doc') {
