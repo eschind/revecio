@@ -132,7 +132,7 @@ function renderSidebar({ documents, activeSection, activeSlug }) {
   return `<aside class="sidebar">
     <div class="sidebar-group">
       <div class="sidebar-label">Documents</div>
-      ${documents.map((d) => `
+      ${documents.filter((d) => !d.external).map((d) => `
         <a href="/investors/admin/doc/${encodeURIComponent(d.slug)}"
            class="sidebar-link ${activeSection === 'doc' && activeSlug === d.slug ? 'active' : ''}">
           <span>${escapeHtml(d.title)}</span>
@@ -524,7 +524,9 @@ function renderAdminSettings({ adminEmail, documents, allowedEmails, whitelistEn
                 <input type="hidden" name="visible" value="${d.visible ? 'false' : 'true'}" />
                 <button class="btn btn-sm ${d.visible ? 'btn-secondary' : ''}" type="submit">${d.visible ? 'Hide' : 'Show'}</button>
               </form>
-              <a class="btn btn-secondary btn-sm" href="/investors/admin/doc/${encodeURIComponent(d.slug)}">Edit</a>
+              ${d.external
+                ? `<a class="btn btn-secondary btn-sm" href="/investors/${escapeHtml(d.slug)}" target="_blank" rel="noopener">View</a>`
+                : `<a class="btn btn-secondary btn-sm" href="/investors/admin/doc/${encodeURIComponent(d.slug)}">Edit</a>`}
             </div>
           </div>
         `).join('')

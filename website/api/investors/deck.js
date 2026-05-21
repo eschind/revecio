@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { readSession, clientIp } from '../../lib/session.js';
-import { ensureSchema, recordVisit } from '../../lib/db.js';
+import { ensureSchema, recordVisit, isDeckVisible } from '../../lib/db.js';
 import { renderGate } from '../../lib/templates.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -20,6 +20,11 @@ export default async function handler(req, res) {
   }
   try {
     await ensureSchema();
+    if (!(await isDeckVisible())) {
+      res.statusCode = 302;
+      res.setHeader('Location', '/investors');
+      return res.end();
+    }
     await recordVisit({
       email: session.email,
       ip: clientIp(req),
