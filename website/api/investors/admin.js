@@ -4,6 +4,7 @@ import {
   addAllowedEmail,
   removeAllowedEmail,
   listRecentVisits,
+  deleteInternalVisits,
   isWhitelistEnabled,
   setWhitelistEnabled,
   listDocuments,
@@ -145,6 +146,7 @@ async function renderSection(req, res, adminEmail, url, opts = {}) {
   }
 
   if (section === 'activity') {
+    try { await deleteInternalVisits(); } catch (err) { console.error('[admin] cleanup internal visits failed:', err?.message); }
     const [documents, visits] = await Promise.all([
       listDocuments(), listRecentVisits(80),
     ]);
