@@ -185,8 +185,8 @@
     font-family: 'JetBrains Mono', monospace; font-size: 12px;
     z-index: 100; user-select: none; backdrop-filter: blur(8px);
   }
-  .navbar button { background: none; border: 1px solid rgba(244,241,234,0.25); color: inherit; padding: 4px 10px; border-radius: 999px; cursor: pointer; font: inherit; }
-  .navbar button:hover { border-color: rgba(244,241,234,0.6); }
+  .navbar button, .navbar a.nav-link { background: none; border: 1px solid rgba(244,241,234,0.25); color: inherit; padding: 4px 10px; border-radius: 999px; cursor: pointer; font: inherit; text-decoration: none; display: inline-block; }
+  .navbar button:hover, .navbar a.nav-link:hover { border-color: rgba(244,241,234,0.6); }
   .navbar .pos { min-width: 60px; display: inline-flex; align-items: center; justify-content: center; cursor: text; }
   .navbar .pos input {
     background: transparent; border: none; color: inherit; font: inherit;
@@ -1757,6 +1757,7 @@
     <span id="pos-suffix"> / 31</span>
   </span>
   <button id="next">→</button>
+  <a href="/investors/deck/download.pdf" class="nav-link" style="margin-left: 8px;">↓ PDF</a>
   <span style="opacity:0.5; margin-left:8px;">F · fullscreen</span>
 </div>
 
