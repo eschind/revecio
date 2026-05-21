@@ -95,7 +95,11 @@ async function ensureSchema() {
   schemaInitialized = true;
 }
 
+// Internal emails whose visits/downloads should not be tracked or surfaced.
+const INTERNAL_EMAILS = ['eschindelhaim@gmail.com', 'eytan@piratehat.ai'];
+
 async function recordVisit({ email, ip, userAgent, action, documentSlug, documentTitle }) {
+  if (INTERNAL_EMAILS.includes((email || '').toLowerCase())) return;
   const db = getSql();
   await db`
     INSERT INTO visits (email, ip, user_agent, action, document_slug, document_title)
@@ -105,7 +109,12 @@ async function recordVisit({ email, ip, userAgent, action, documentSlug, documen
 
 async function listRecentVisits(limit = 50) {
   const db = getSql();
-  return db`SELECT email, ip, user_agent, action, ts, document_slug, document_title FROM visits ORDER BY ts DESC LIMIT ${limit}`;
+  return db`SELECT email, ip, user_agent, action, ts, document_slug, document_title FROM visits WHERE NOT (email = ANY(${INTERNAL_EMAILS})) ORDER BY ts DESC LIMIT ${limit}`;
+}
+
+async function deleteInternalVisits() {
+  const db = getSql();
+  await db`DELETE FROM visits WHERE email = ANY(${INTERNAL_EMAILS})`;
 }
 
 // ----- legacy memo helpers retained for backwards compat -----
@@ -225,6 +234,7 @@ export {
   ensureSchema,
   recordVisit,
   listRecentVisits,
+  deleteInternalVisits,
   // legacy
   getMemo,
   setMemo,
