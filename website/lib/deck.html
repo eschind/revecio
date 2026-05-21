@@ -84,7 +84,7 @@
   .slide.dark strong { color: var(--dark-ink); }
 
   /* Dash-marker list (default for value props) */
-  ul.bullets { list-style: none; }
+  ul.bullets { list-style: none; padding: 0; margin: 0; }
   ul.bullets li {
     font-size: 28px; line-height: 1.5; color: var(--ink-2);
     padding-left: 36px; position: relative; margin-bottom: 20px;
@@ -98,15 +98,15 @@
   .slide.dark ul.bullets li::before { background: var(--accent-3); }
 
   /* Dot-marker list (for capability lists where dots read more cleanly) */
-  ul.dots { list-style: none; }
+  ul.dots { list-style: none; padding: 0; margin: 0; }
   ul.dots li {
     font-size: 26px; line-height: 1.5; color: var(--ink-2);
-    padding-left: 32px; position: relative; margin-bottom: 16px;
+    padding-left: 24px; position: relative; margin-bottom: 16px;
     max-width: 50ch;
   }
   ul.dots li::before {
-    content: ""; position: absolute; left: 6px; top: 16px;
-    width: 10px; height: 10px; border-radius: 50%; background: var(--accent);
+    content: ""; position: absolute; left: 0; top: 16px;
+    width: 9px; height: 9px; border-radius: 50%; background: var(--accent);
   }
   .slide.dark ul.dots li { color: var(--dark-ink); }
   .slide.dark ul.dots li::before { background: var(--accent-3); }
@@ -349,7 +349,7 @@
       <div class="stack grow gap-64" style="justify-content:center;">
         <div>
           <h3 class="kicker">What's at stake</h3>
-          <h2 class="section-title">The cost of a bad OCIO is enormous —<br>and falls hardest on smaller institutions.</h2>
+          <h2 class="section-title">The cost of bad management is enormous —<br>and falls hardest on smaller institutions.</h2>
         </div>
         <div class="two-col" style="align-items:start; gap: 120px;">
           <div>
@@ -468,7 +468,7 @@
             <div class="copy" style="font-size:22px;">Wider return dispersion, regime shifts, and a more complex opportunity set make portfolio management more challenging.</div>
           </div>
           <div class="pillar">
-            <div class="icon"><svg viewBox="0 0 24 24"><path d="M3 21h18M6 21V11M10 21V8M14 21V13M18 21V6"/><path d="M4 6l5-3 4 2 7-3" stroke-dasharray="2 2"/></svg></div>
+            <div class="icon"><svg viewBox="0 0 24 24"><path d="M3 21h18M6 21V6M10 21V10M14 21V13M18 21V17"/><path d="M4 3L20 14"/></svg></div>
             <div class="heading" style="font-size:36px;">Less public funding</div>
             <div class="copy" style="font-size:22px;">As government support recedes across education, the arts, and health, these institutions lose a vital source of funding.</div>
           </div>
@@ -1597,7 +1597,7 @@
             </p>
 
             <div>
-              <div style="font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:0.14em; text-transform:uppercase; color: var(--muted); margin-bottom: 10px; padding-left: 32px;">How Reve differs</div>
+              <div style="font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:0.14em; text-transform:uppercase; color: var(--muted); margin-bottom: 10px;">How Reve differs</div>
               <ul class="dots" style="max-width: none;">
                 <li style="font-size: 20px;">10× more efficient via agents — $1B+ AUM per employee</li>
                 <li style="font-size: 20px;">Radically transparent 15 bps pricing — half the market rate</li>
@@ -1625,11 +1625,12 @@
             </p>
 
             <div>
-              <div style="font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:0.14em; text-transform:uppercase; color: var(--muted); margin-bottom: 10px; padding-left: 32px;">How Reve differs</div>
+              <div style="font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:0.14em; text-transform:uppercase; color: var(--muted); margin-bottom: 10px;">How Reve differs</div>
               <ul class="dots" style="max-width: none;">
                 <li style="font-size: 20px;">Built for institutional mandates: IPS governance, fiduciary accountability, board reporting</li>
                 <li style="font-size: 20px;">Multi-asset including private markets, alternatives, and illiquids</li>
-                <li style="font-size: 20px;">Endowment-grade portfolio construction tied to spend policy, liability matching, and multi-decade horizons — not individual wealth recipes built for retirement and accumulation</li>
+                <li style="font-size: 20px;">Endowment-grade portfolio construction</li>
+                <li style="font-size: 20px;">Distribution and client interaction are fundamentally different</li>
               </ul>
             </div>
           </div>
