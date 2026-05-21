@@ -141,25 +141,36 @@ async function handleDeckDownload({ res, email, ip, userAgent }) {
     }
 
     const date = todayIso();
-    const watermark = `${email} · ${date} · Confidential`;
-    const safeWatermark = watermark.replace(/"/g, '\\"');
+    const watermarkText = `${email}  ·  ${date}`;
+    const safe = watermarkText
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+    const lightSvg = `<svg xmlns='http://www.w3.org/2000/svg' width='640' height='420'>
+      <text x='320' y='210' font-family='Helvetica, Arial, sans-serif' font-size='20' font-weight='400'
+            fill='rgba(20,23,28,0.14)' transform='rotate(-28 320 210)' text-anchor='middle'>${safe}</text>
+    </svg>`;
+    const darkSvg = `<svg xmlns='http://www.w3.org/2000/svg' width='640' height='420'>
+      <text x='320' y='210' font-family='Helvetica, Arial, sans-serif' font-size='20' font-weight='400'
+            fill='rgba(244,241,234,0.18)' transform='rotate(-28 320 210)' text-anchor='middle'>${safe}</text>
+    </svg>`;
+    const lightUrl = `data:image/svg+xml;utf8,${encodeURIComponent(lightSvg)}`;
+    const darkUrl = `data:image/svg+xml;utf8,${encodeURIComponent(darkSvg)}`;
     const watermarkStyle = `<style>
-      .slide::after {
-        content: "${safeWatermark}";
+      .slide { position: relative; }
+      .slide::before {
+        content: "";
         position: absolute;
-        bottom: 24px;
-        left: 50%;
-        transform: translateX(-50%);
-        font-family: 'JetBrains Mono', monospace;
-        font-size: 13px;
-        letter-spacing: 0.14em;
-        text-transform: uppercase;
-        color: rgba(20,23,28,0.4);
-        z-index: 50;
+        inset: 0;
         pointer-events: none;
-        white-space: nowrap;
+        z-index: 200;
+        background-image: url("${lightUrl}");
+        background-repeat: repeat;
+        background-position: 0 0;
       }
-      .slide.dark::after { color: rgba(244,241,234,0.45); }
+      .slide.dark::before {
+        background-image: url("${darkUrl}");
+      }
     </style>`;
     const html = DECK_HTML.replace('</head>', watermarkStyle + '</head>');
 
