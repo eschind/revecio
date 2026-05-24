@@ -96,7 +96,7 @@ async function ensureSchema() {
 }
 
 // Internal emails whose visits/downloads should not be tracked or surfaced.
-const INTERNAL_EMAILS = ['eschindelhaim@gmail.com', 'eytan@piratehat.ai'];
+const INTERNAL_EMAILS = ['eschindelhaim@gmail.com', 'eytan@piratehat.ai', 'yehiels@yahoo.com'];
 
 async function recordVisit({ email, ip, userAgent, action, documentSlug, documentTitle }) {
   if (INTERNAL_EMAILS.includes((email || '').toLowerCase())) return;

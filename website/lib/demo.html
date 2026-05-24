@@ -1,0 +1,1454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reve — Demo</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,500;1,6..72,300;1,6..72,400&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<style>
+  :root {
+    --bg: #f7f5f0;
+    --bg-2: #efece4;
+    --panel: #ffffff;
+    --ink: #14171c;
+    --ink-2: #2b3038;
+    --muted: #6a6f78;
+    --line: #d9d4c7;
+    --line-soft: #e9e4d6;
+    --accent: #1f7050;
+    --accent-2: #3d6b58;
+    --accent-3: #6b9684;
+    --dark-bg: #14171c;
+    --dark-ink: #f4f1ea;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    background: var(--bg); color: var(--ink);
+    font-family: 'Inter', sans-serif; font-size: 14px; line-height: 1.5;
+    overflow: hidden;
+  }
+
+  .app { display: grid; grid-template-rows: 52px 1fr; height: 100vh; }
+
+  /* Topbar */
+  .topbar {
+    background: var(--dark-bg); color: var(--dark-ink);
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 18px 0 20px;
+    border-bottom: 1px solid #000;
+  }
+  .topbar .left { display: flex; align-items: center; gap: 14px; }
+  .tb-logo { width: 22px; height: 22px; border-radius: 5px; background: var(--dark-ink); color: var(--dark-bg); display: inline-flex; align-items: center; justify-content: center; font-family: 'Newsreader', serif; font-size: 14px; line-height: 1; font-weight: 500; }
+  .tb-title { font-family: 'Newsreader', serif; font-size: 16px; }
+  .tb-divider { color: rgba(244,241,234,0.3); font-size: 12px; }
+  .tb-section { font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(244,241,234,0.6); }
+  .tb-btn { appearance: none; background: transparent; color: var(--dark-ink); border: 1px solid rgba(244,241,234,0.18); font: inherit; font-size: 12px; padding: 5px 12px; border-radius: 999px; cursor: pointer; text-decoration: none; }
+  .tb-btn:hover { background: rgba(244,241,234,0.06); border-color: rgba(244,241,234,0.4); }
+
+  /* Layout */
+  .layout { display: grid; grid-template-columns: 232px 1fr 0; min-height: 0; overflow: hidden; transition: grid-template-columns 0.3s ease; }
+  .layout.with-artifact { grid-template-columns: 232px 1fr 520px; }
+  .layout.with-artifact.expanded { grid-template-columns: 0 380px 1fr; }
+  .layout.expanded .sidebar { opacity: 0; pointer-events: none; transition: opacity 0.2s; }
+
+  /* Sidebar */
+  .sidebar {
+    background: var(--bg-2);
+    border-right: 1px solid var(--line);
+    padding: 16px 12px;
+    overflow-y: auto;
+    display: flex; flex-direction: column; gap: 14px;
+  }
+  .nav-group { display: flex; flex-direction: column; gap: 1px; }
+  .nav-label { font-family: 'JetBrains Mono', monospace; font-size: 10.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); padding: 6px 10px; }
+  .nav-item { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 6px; color: var(--ink-2); text-decoration: none; font-size: 13.5px; cursor: pointer; user-select: none; }
+  .nav-item:hover { background: rgba(20,23,28,0.05); }
+  .nav-item.active { background: var(--ink); color: var(--dark-ink); }
+  .nav-item.disabled { color: var(--muted); cursor: not-allowed; }
+  .nav-item .icon { width: 16px; height: 16px; display: inline-flex; align-items: center; justify-content: center; }
+  .nav-item .icon svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 1.75; }
+  .nav-item .badge { margin-left: auto; font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 0.06em; padding: 2px 6px; background: var(--line); color: var(--muted); border-radius: 4px; }
+  .nav-item.active .badge { background: rgba(244,241,234,0.15); color: rgba(244,241,234,0.7); }
+  .nav-sub { padding-left: 26px; display: flex; flex-direction: column; gap: 1px; }
+  .nav-sub a { padding: 6px 10px; font-size: 13px; color: var(--muted); text-decoration: none; border-radius: 6px; }
+  .nav-sub a:hover { background: rgba(20,23,28,0.05); color: var(--ink-2); }
+  .nav-sub a.active { color: var(--ink); font-weight: 500; }
+
+  /* Conversation main */
+  .conv {
+    display: flex; flex-direction: column;
+    background: var(--bg); min-width: 0; min-height: 0;
+    height: 100%;
+  }
+  .conv-feed { min-height: 0; }
+  .conv-header {
+    padding: 14px 32px; border-bottom: 1px solid var(--line-soft);
+    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    background: var(--bg);
+  }
+  .conv-header .title { font-family: 'Newsreader', serif; font-size: 20px; font-weight: 400; letter-spacing: -0.01em; }
+  .conv-header .client-chip { display: inline-flex; align-items: center; gap: 8px; padding: 4px 12px; background: var(--bg-2); border: 1px solid var(--line); border-radius: 999px; font-size: 12px; white-space: nowrap; max-width: 100%; min-width: 0; overflow: hidden; }
+  .conv-header .client-chip > * { white-space: nowrap; }
+  .conv-header .client-chip .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
+  .conv-header .client-chip .name { font-family: 'Newsreader', serif; font-size: 14px; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+  .conv-header .client-chip .type { color: var(--muted); font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; flex-shrink: 0; }
+  .conv-header .title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+
+  .conv-feed {
+    flex: 1; overflow-y: auto;
+    padding: 28px 32px 24px;
+    display: flex; flex-direction: column; gap: 22px;
+  }
+  .conv-feed .inner { max-width: 760px; width: 100%; margin: 0 auto; display: flex; flex-direction: column; gap: 22px; }
+
+  /* Messages */
+  .msg { display: flex; gap: 12px; }
+  .avatar { width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.04em; font-weight: 500; }
+  .avatar.agent { background: var(--accent); color: var(--bg); }
+  .avatar.user { background: var(--ink); color: var(--dark-ink); }
+  .msg-body { flex: 1; min-width: 0; padding-top: 3px; }
+  .msg-body .sender { font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+  .msg-body .text { font-size: 15px; line-height: 1.6; color: var(--ink); }
+  .msg-body .text p + p { margin-top: 10px; }
+  .msg-body .text strong { font-weight: 500; }
+  .msg-body .text em { font-family: 'Newsreader', serif; font-style: italic; }
+
+  .typing-indicator { display: inline-flex; gap: 4px; align-items: center; padding: 4px 0; }
+  .typing-indicator span { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); animation: bounce 1.4s infinite ease-in-out; }
+  .typing-indicator span:nth-child(2) { animation-delay: 0.15s; }
+  .typing-indicator span:nth-child(3) { animation-delay: 0.3s; }
+  @keyframes bounce { 0%, 80%, 100% { opacity: 0.3; transform: translateY(0); } 40% { opacity: 1; transform: translateY(-3px); } }
+
+  /* Attached files inline */
+  .attached { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .file-chip { display: inline-flex; align-items: center; gap: 8px; padding: 6px 10px; background: var(--bg-2); border: 1px solid var(--line); border-radius: 8px; font-size: 12.5px; }
+  .file-chip .ic { width: 14px; height: 14px; color: var(--accent); flex-shrink: 0; }
+  .file-chip .ic svg { width: 100%; height: 100%; stroke: currentColor; fill: none; stroke-width: 1.75; }
+  .file-chip .nm { max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .file-chip .meta { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--muted); }
+
+  /* Inline tool cards */
+  .tool-card {
+    margin-top: 10px;
+    background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+    padding: 14px 16px;
+  }
+  .tool-card .tc-label { display: flex; align-items: center; gap: 8px; font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); margin-bottom: 10px; }
+  .tool-card .tc-label .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+  .tool-card .fact-row { display: grid; grid-template-columns: 140px 1fr; gap: 10px; padding: 6px 0; align-items: baseline; }
+  .tool-card .fact-row + .fact-row { border-top: 1px solid var(--line-soft); }
+  .tool-card .fact-row .k { color: var(--muted); font-size: 12px; }
+  .tool-card .fact-row .v { color: var(--ink); font-size: 14px; }
+  .tool-card .actions { display: flex; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line-soft); }
+  .tool-card .edit-row { display: grid; grid-template-columns: 140px 1fr; gap: 10px; padding: 8px 0; align-items: center; }
+  .tool-card .edit-row + .edit-row { border-top: 1px solid var(--line-soft); }
+  .tool-card .edit-row label { color: var(--muted); font-size: 12px; }
+  .tool-card .edit-row input, .tool-card .edit-row select { width: 100%; padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px; font: inherit; font-size: 14px; background: #fff; }
+  .tool-card .edit-row input:focus, .tool-card .edit-row select:focus { outline: none; border-color: var(--accent); }
+  .tool-card.confirmed { background: rgba(31,112,80,0.04); border-color: rgba(31,112,80,0.3); }
+  .tool-card .confirmed-row { display: flex; align-items: center; gap: 8px; color: var(--accent); font-size: 13px; font-family: 'JetBrains Mono', monospace; letter-spacing: 0.06em; text-transform: uppercase; }
+
+  .pill-btn {
+    appearance: none; cursor: pointer; font: inherit;
+    background: var(--ink); color: var(--dark-ink); border: 1px solid var(--ink);
+    padding: 6px 14px; border-radius: 999px; font-size: 12.5px;
+  }
+  .pill-btn:hover { background: var(--ink-2); }
+  .pill-btn.ghost { background: transparent; color: var(--ink); border-color: var(--line); }
+  .pill-btn.ghost:hover { border-color: var(--ink); background: rgba(20,23,28,0.04); }
+  .pill-btn.accent { background: var(--accent); border-color: var(--accent); color: var(--dark-ink); }
+  .pill-btn.accent:hover { background: var(--accent-2); border-color: var(--accent-2); }
+
+  /* Composer */
+  .composer-shell { padding: 12px 32px 20px; background: var(--bg); border-top: 1px solid var(--line-soft); }
+  .composer { max-width: 760px; margin: 0 auto; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 4px 16px -8px rgba(20,23,28,0.08); display: flex; flex-direction: column; gap: 6px; padding: 10px 12px 8px; }
+  .composer.dragover { border-color: var(--accent); background: rgba(31,112,80,0.04); }
+  .composer textarea { width: 100%; border: none; resize: none; font: inherit; font-size: 15px; line-height: 1.55; min-height: 38px; max-height: 200px; padding: 4px 6px; background: transparent; }
+  .composer textarea:focus { outline: none; }
+  .composer-row { display: flex; align-items: center; gap: 6px; }
+  .composer-row .left { display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0; }
+  .icon-btn { appearance: none; cursor: pointer; background: transparent; border: 1px solid var(--line); border-radius: 999px; padding: 5px 10px; font: inherit; font-size: 12px; color: var(--ink-2); display: inline-flex; align-items: center; gap: 6px; }
+  .icon-btn:hover { border-color: var(--ink); color: var(--ink); }
+  .icon-btn svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 1.75; }
+  .send-btn { appearance: none; cursor: pointer; background: var(--accent); border: 1px solid var(--accent); color: var(--dark-ink); padding: 7px 16px; border-radius: 999px; font: inherit; font-size: 13px; }
+  .send-btn:hover { background: var(--accent-2); border-color: var(--accent-2); }
+  .send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .composer-files { display: flex; flex-wrap: wrap; gap: 6px; padding: 4px 6px 4px; }
+  .composer-hint { font-size: 11.5px; color: var(--muted); padding: 0 6px; display: flex; align-items: center; gap: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+  .composer-hint > span { white-space: nowrap; }
+  .composer-hint .sep { color: var(--line); }
+  .composer textarea { min-height: 56px; }
+
+  input[type="file"] { display: none; }
+
+  /* Artifact panel */
+  .artifact { background: var(--panel); border-left: 1px solid var(--line); overflow: hidden; display: flex; flex-direction: column; min-width: 0; transform: translateX(100%); transition: transform 0.3s ease; }
+  .layout.with-artifact .artifact { transform: translateX(0); }
+  .artifact-header {
+    padding: 14px 22px; border-bottom: 1px solid var(--line-soft);
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  }
+  .artifact-header .label { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); margin-bottom: 4px; }
+  .artifact-header .title { font-family: 'Newsreader', serif; font-size: 18px; font-weight: 400; }
+  .artifact-close { appearance: none; cursor: pointer; background: transparent; border: none; color: var(--muted); padding: 4px 8px; border-radius: 6px; font: inherit; font-size: 16px; }
+  .artifact-close:hover { background: var(--bg-2); color: var(--ink); }
+  .artifact-body { flex: 1; overflow-y: auto; padding: 28px 32px 60px; }
+  .artifact-body h3 { font-family: 'Newsreader', serif; font-weight: 400; font-size: 18px; margin: 22px 0 6px; letter-spacing: -0.01em; }
+  .artifact-body h3:first-child { margin-top: 0; }
+  .artifact-body p { font-size: 13.5px; line-height: 1.65; color: var(--ink-2); margin-bottom: 8px; }
+  .artifact-body ul { padding-left: 20px; margin-bottom: 8px; }
+  .artifact-body li { font-size: 13.5px; line-height: 1.65; color: var(--ink-2); }
+  .artifact-body table { width: 100%; border-collapse: collapse; margin: 8px 0; }
+  .artifact-body th, .artifact-body td { padding: 6px 10px; border-bottom: 1px solid var(--line-soft); text-align: left; font-size: 12px; }
+  .artifact-body th { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); font-weight: 500; }
+  .artifact-body .ips-meta { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+  .artifact-body .ips-title-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .draft-pill { display: inline-block; font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; padding: 3px 9px; border-radius: 999px; background: rgba(184,176,154,0.25); color: #6c5e3a; border: 1px solid #c9bc9a; }
+  .draft-note { background: rgba(184,176,154,0.15); border-left: 3px solid #b8b09a; padding: 10px 14px; font-size: 12.5px; color: var(--ink-2); border-radius: 4px; margin: 8px 0 12px; }
+  .placeholder-block { background: var(--bg-2); border: 1px dashed var(--line); border-radius: 8px; padding: 18px 20px; margin: 8px 0 12px; }
+  .placeholder-block .ph-label { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); margin-bottom: 6px; }
+  .placeholder-block .ph-body { font-size: 13px; color: var(--ink-2); line-height: 1.55; }
+
+  /* Per-section editing */
+  .ips-section { position: relative; padding: 4px 14px; margin: 0 -14px; border-radius: 6px; transition: background 0.2s; scroll-margin-top: 16px; }
+  .ips-section.active { background: rgba(31,112,80,0.05); box-shadow: inset 3px 0 0 var(--accent); }
+  .ips-section.reviewed { opacity: 0.96; }
+  .ips-section.editing { background: var(--bg); }
+  .ips-section.editing .ips-section-content { background: #fff; outline: 1px solid var(--accent); padding: 10px 14px; border-radius: 6px; }
+  .ips-section-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+  .ips-section-controls { display: flex; gap: 6px; opacity: 0; transition: opacity 0.15s; }
+  .ips-section:hover .ips-section-controls,
+  .ips-section.active .ips-section-controls,
+  .ips-section.editing .ips-section-controls { opacity: 1; }
+  .ips-edit-btn { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; padding: 3px 9px; border-radius: 999px; border: 1px solid var(--line); background: #fff; color: var(--ink-2); cursor: pointer; }
+  .ips-edit-btn:hover { background: var(--bg-2); border-color: var(--ink-2); color: var(--ink); }
+  .ips-edit-btn.primary { background: var(--accent); color: #f4f1ea; border-color: var(--accent); }
+  .ips-edit-btn.primary:hover { background: var(--accent-2); border-color: var(--accent-2); }
+  .section-flash { animation: flash 0.6s ease; }
+  @keyframes flash { 0%, 100% { background: rgba(31,112,80,0.05); } 50% { background: rgba(31,112,80,0.18); } }
+
+  /* Native modal */
+  .modal-backdrop { position: fixed; inset: 0; background: rgba(20,23,28,0.45); backdrop-filter: blur(2px); z-index: 1000; display: none; align-items: center; justify-content: center; padding: 24px; }
+  .modal-backdrop.active { display: flex; }
+  .modal { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 20px 60px -20px rgba(20,23,28,0.4); width: 100%; max-width: 460px; padding: 22px 24px 18px; }
+  .modal h3 { font-family: 'Newsreader', serif; font-weight: 400; font-size: 20px; margin-bottom: 4px; }
+  .modal p.modal-hint { color: var(--muted); font-size: 13px; margin-bottom: 16px; }
+  .modal-field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+  .modal-field label { font-family: 'JetBrains Mono', monospace; font-size: 10.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+  .modal-field input { padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; font: inherit; font-size: 14.5px; background: #fff; }
+  .modal-field input:focus { outline: none; border-color: var(--accent); }
+  .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
+  .modal-actions button { appearance: none; cursor: pointer; font: inherit; font-size: 13px; padding: 8px 16px; border-radius: 999px; border: 1px solid var(--line); background: #fff; color: var(--ink); }
+  .modal-actions button:hover { border-color: var(--ink); }
+  .modal-actions .primary { background: var(--accent); border-color: var(--accent); color: var(--dark-ink); }
+  .modal-actions .primary:hover { background: var(--accent-2); border-color: var(--accent-2); }
+  .modal-actions .primary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* Save CTA card */
+  .save-cta { margin: 36px -14px 0; padding: 20px 28px; background: var(--bg-2); border: 1px solid var(--line); border-radius: 12px; }
+  .save-cta .cta-label { font-family: 'JetBrains Mono', monospace; font-size: 10.5px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent); margin-bottom: 8px; }
+  .save-cta h3 { font-family: 'Newsreader', serif; font-weight: 400; font-size: 22px; margin-bottom: 6px; display: block; }
+  .save-cta p { font-size: 13.5px; color: var(--ink-2); margin-bottom: 14px; line-height: 1.6; }
+  .save-cta .cta-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+  .save-cta button { appearance: none; cursor: pointer; font: inherit; font-size: 13px; padding: 8px 18px; border-radius: 999px; }
+  .save-cta .btn-primary { background: var(--accent); color: var(--dark-ink); border: 1px solid var(--accent); }
+  .save-cta .btn-primary:hover { background: var(--accent-2); border-color: var(--accent-2); }
+  .save-cta .btn-secondary { background: transparent; color: var(--ink); border: 1px solid var(--line); }
+  .save-cta .btn-secondary:hover { border-color: var(--ink); }
+
+  /* Active clients in sidebar */
+  .nav-sub .client-link { display: flex; align-items: center; gap: 8px; padding: 6px 10px; font-size: 12.5px; color: var(--ink-2); text-decoration: none; border-radius: 6px; cursor: pointer; }
+  .nav-sub .client-link:hover { background: rgba(20,23,28,0.05); }
+  .nav-sub .client-link.active { background: var(--ink); color: var(--dark-ink); }
+  .nav-sub .client-link .ci-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .nav-sub .client-link .ci-type { font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 0.06em; text-transform: uppercase; opacity: 0.55; flex-shrink: 0; }
+  .nav-sub .client-empty { padding: 6px 10px; font-size: 11.5px; color: var(--muted); font-style: italic; }
+  .artifact-body h3 .sub-num { color: var(--muted); margin-right: 4px; font-weight: 400; }
+  .artifact-body h4 { font-family: 'Newsreader', serif; font-weight: 500; font-size: 14.5px; margin: 14px 0 4px; letter-spacing: -0.005em; }
+  .artifact-body dl { display: grid; grid-template-columns: 160px 1fr; gap: 6px 16px; margin: 6px 0 12px; }
+  .artifact-body dt { font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); padding-top: 2px; }
+  .artifact-body dd { font-size: 13.5px; line-height: 1.6; color: var(--ink-2); }
+  .artifact-body .ips-title { font-family: 'Newsreader', serif; font-size: 24px; font-weight: 400; margin-bottom: 4px; letter-spacing: -0.01em; }
+  .artifact-body .ips-sub { font-size: 12px; color: var(--muted); margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--line-soft); }
+
+  .draft-streaming { opacity: 0.35; }
+  .draft-cursor { display: inline-block; width: 6px; height: 14px; background: var(--accent); margin-left: 2px; animation: blink 1s infinite; vertical-align: -2px; }
+  @keyframes blink { 50% { opacity: 0.2; } }
+
+  /* Empty state hint */
+  .empty-hint { text-align: center; padding: 16px 0; color: var(--muted); font-size: 12.5px; }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <div class="left">
+      <span class="tb-logo">R</span>
+      <span class="tb-title">Reve</span>
+      <span class="tb-divider">/</span>
+      <span class="tb-section">Onboarding · New client</span>
+    </div>
+    <div>
+      <a class="tb-btn" href="/investors">All materials</a>
+    </div>
+  </header>
+
+  <div class="layout" id="layout">
+    <aside class="sidebar">
+      <div class="nav-group">
+        <div class="nav-label">Workspace</div>
+        <div class="nav-item active">
+          <span class="icon"><svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><path d="M20 8v6M23 11h-6"/></svg></span>
+          Onboarding
+          <span class="badge">1</span>
+        </div>
+        <div class="nav-sub" id="nav-onboarding-sub">
+          <a class="active" id="nav-new-client">New client</a>
+        </div>
+        <div class="nav-label" style="margin-top: 8px;">Active clients</div>
+        <div class="nav-sub" id="nav-active-clients"></div>
+      </div>
+
+      <div class="nav-group">
+        <div class="nav-label">Workflows</div>
+        <div class="nav-item disabled">
+          <span class="icon"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 14l3-3 3 3 5-6"/></svg></span>
+          Portfolio modeling
+          <span class="badge">soon</span>
+        </div>
+        <div class="nav-item disabled">
+          <span class="icon"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></span>
+          Manager research
+          <span class="badge">soon</span>
+        </div>
+        <div class="nav-item disabled">
+          <span class="icon"><svg viewBox="0 0 24 24"><path d="M2 12h4l3 8 4-16 3 8h6"/></svg></span>
+          Monitoring
+          <span class="badge">soon</span>
+        </div>
+        <div class="nav-item disabled">
+          <span class="icon"><svg viewBox="0 0 24 24"><path d="M4 4h16v14H4zM4 8h16M8 12h8M8 15h5"/></svg></span>
+          Reporting
+          <span class="badge">soon</span>
+        </div>
+        <div class="nav-item disabled">
+          <span class="icon"><svg viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg></span>
+          Client service
+          <span class="badge">soon</span>
+        </div>
+      </div>
+
+      <div style="margin-top: auto; padding: 12px 10px; font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--muted); letter-spacing: 0.06em;">DEMO · v0.1</div>
+    </aside>
+
+    <main class="conv">
+      <div class="conv-header">
+        <div class="title">New client onboarding</div>
+        <div id="client-chip" style="display: none;">
+          <span class="client-chip"><span class="dot"></span><span class="name" id="chip-name"></span><span class="type" id="chip-type"></span></span>
+        </div>
+      </div>
+
+      <div class="conv-feed" id="conv-feed">
+        <div class="inner" id="conv-inner"></div>
+      </div>
+
+      <div class="composer-shell">
+        <div class="composer" id="composer">
+          <div class="composer-files" id="composer-files" style="display: none;"></div>
+          <textarea id="composer-input" placeholder="Reply to the agent, or drop materials anywhere to share them…" rows="1"></textarea>
+          <div class="composer-row">
+            <div class="left">
+              <button class="icon-btn" id="attach-btn"><svg viewBox="0 0 24 24"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>Attach</button>
+              <button class="icon-btn" id="link-btn"><svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>Link</button>
+              <input type="file" id="file-input" multiple>
+              <span class="composer-hint" style="margin-left: 6px;">
+                <span id="materials-count"></span>
+                <span id="example-hint" style="display: none;"><kbd style="font-family: 'JetBrains Mono', monospace; font-size: 10px; padding: 1px 5px; border: 1px solid var(--line); border-radius: 3px; background: var(--bg-2);">Tab</kbd> to accept example</span>
+              </span>
+            </div>
+            <button class="send-btn" id="send-btn" disabled>Send</button>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <aside class="artifact" id="artifact">
+      <div class="artifact-header">
+        <div>
+          <div class="label">Artifact</div>
+          <div class="title" id="artifact-title">Investment Policy Statement · Draft</div>
+        </div>
+        <div style="display: flex; gap: 4px; align-items: center;">
+          <button class="artifact-close" id="artifact-expand" title="Expand"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg></button>
+          <button class="artifact-close" id="artifact-close" title="Hide">×</button>
+        </div>
+      </div>
+      <div class="artifact-body" id="artifact-body"></div>
+    </aside>
+  </div>
+
+  <div class="modal-backdrop" id="link-modal" role="dialog" aria-hidden="true">
+    <div class="modal">
+      <h3>Add a link</h3>
+      <p class="modal-hint">Paste a URL to a document, board portal, website, or data source. The agent will read it as part of the materials.</p>
+      <div class="modal-field">
+        <label for="link-url">URL</label>
+        <input id="link-url" type="url" placeholder="https://example.org/about-us" autocomplete="off" />
+      </div>
+      <div class="modal-field">
+        <label for="link-label">Label <span style="text-transform: none; letter-spacing: 0; color: var(--muted); font-family: 'Inter';">(optional)</span></label>
+        <input id="link-label" type="text" placeholder="e.g. Endowment overview page" autocomplete="off" />
+      </div>
+      <div class="modal-actions">
+        <button id="link-cancel">Cancel</button>
+        <button class="primary" id="link-add" disabled>Add link</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="saved-modal" role="dialog" aria-hidden="true">
+    <div class="modal">
+      <h3 id="saved-title">Client saved</h3>
+      <p class="modal-hint" id="saved-body">The IPS draft has been saved to this client's record. Portfolio Modeling will be the next step — capital market assumptions, scenario analysis, and a draft strategic allocation calibrated to the IPS.</p>
+      <div class="modal-actions">
+        <button id="saved-ok" class="primary">Got it</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ============ State ============
+  const state = {
+    org: { name: null, type: null },
+    materials: [],
+    facts: {},     // mission, spending, horizon, cashNeeds, drawdown, constraints, governance
+    phase: 'opening', // opening | materials-pending | confirming-org | interviewing | drafting | reviewing
+    pendingFacts: null,
+    qIdx: 0,
+    questions: [],
+    ipsRendered: false,
+  };
+
+  // ============ DOM ============
+  const feedInner = document.getElementById('conv-inner');
+  const composer = document.getElementById('composer');
+  const composerInput = document.getElementById('composer-input');
+  const composerFiles = document.getElementById('composer-files');
+  const sendBtn = document.getElementById('send-btn');
+  const attachBtn = document.getElementById('attach-btn');
+  const linkBtn = document.getElementById('link-btn');
+  const fileInput = document.getElementById('file-input');
+  const layout = document.getElementById('layout');
+  const artifact = document.getElementById('artifact');
+  const artifactBody = document.getElementById('artifact-body');
+  const artifactClose = document.getElementById('artifact-close');
+  const clientChip = document.getElementById('client-chip');
+  const chipName = document.getElementById('chip-name');
+  const chipType = document.getElementById('chip-type');
+  const materialsCount = document.getElementById('materials-count');
+
+  // ============ Helpers ============
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+  function looksLikeMeta(text) {
+    const t = text.trim();
+    if (t.length < 4) return true;
+    if (t.endsWith('?')) return true;
+    if (/^(ok|so|wait|hmm|huh|um|what do|why|can you|do you|does)/i.test(t)) return true;
+    return false;
+  }
+  function quoteAnswer(text) {
+    if (!text) return '';
+    if (text === '(skipped)' || text.toLowerCase().startsWith('(skipped')) return '';
+    let t = text.trim();
+    // strip leading filler
+    t = t.replace(/^(ok[,\s]+|so[,\s]+|well[,\s]+|um[,\s]+|i guess[,\s]+)/i, '');
+    if (!t) return '';
+    t = t.charAt(0).toUpperCase() + t.slice(1);
+    if (!/[.!?]$/.test(t)) t += '.';
+    return t;
+  }
+  function formatSize(b) {
+    if (b < 1024) return `${b} B`;
+    if (b < 1024*1024) return `${(b/1024).toFixed(1)} KB`;
+    return `${(b/1024/1024).toFixed(1)} MB`;
+  }
+  function scrollFeed() {
+    const f = document.getElementById('conv-feed');
+    f.scrollTop = f.scrollHeight;
+  }
+
+  // ============ Rendering messages ============
+  function addAgent(html, opts = {}) {
+    const msg = document.createElement('div');
+    msg.className = 'msg agent';
+    msg.innerHTML = `
+      <div class="avatar agent">AI</div>
+      <div class="msg-body">
+        <div class="sender">Reve · Onboarding agent</div>
+        <div class="text">${html}</div>
+      </div>`;
+    feedInner.appendChild(msg);
+    scrollFeed();
+    return msg;
+  }
+  function addUser(html, opts = {}) {
+    const msg = document.createElement('div');
+    msg.className = 'msg user';
+    msg.innerHTML = `
+      <div class="avatar user">YOU</div>
+      <div class="msg-body">
+        <div class="sender">You</div>
+        <div class="text">${html}</div>
+      </div>`;
+    feedInner.appendChild(msg);
+    scrollFeed();
+    return msg;
+  }
+  function addTyping() {
+    const msg = document.createElement('div');
+    msg.className = 'msg agent typing';
+    msg.innerHTML = `
+      <div class="avatar agent">AI</div>
+      <div class="msg-body" style="padding-top: 8px;"><div class="typing-indicator"><span></span><span></span><span></span></div></div>`;
+    feedInner.appendChild(msg);
+    scrollFeed();
+    return msg;
+  }
+  function think(ms = 700) { return new Promise((r) => setTimeout(r, ms)); }
+  async function agentReply(htmlOrFn, opts = {}) {
+    const typing = addTyping();
+    await think(opts.delay || 700);
+    typing.remove();
+    const html = typeof htmlOrFn === 'function' ? htmlOrFn() : htmlOrFn;
+    return addAgent(html);
+  }
+
+  // ============ Materials ============
+  function fileIconSvg() {
+    return `<svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>`;
+  }
+  function linkIconSvg() {
+    return `<svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>`;
+  }
+  function chipsHtml(items) {
+    return `<div class="attached">${items.map((m) => `
+      <span class="file-chip">
+        <span class="ic">${m.kind === 'file' ? fileIconSvg() : linkIconSvg()}</span>
+        <span class="nm" title="${escapeHtml(m.name)}">${escapeHtml(m.name)}</span>
+        <span class="meta">${m.kind === 'file' ? formatSize(m.size) : 'LINK'}</span>
+      </span>`).join('')}</div>`;
+  }
+  function refreshComposerFiles() {
+    const pending = state.pendingDrop || [];
+    if (pending.length === 0) { composerFiles.style.display = 'none'; composerFiles.innerHTML = ''; }
+    else { composerFiles.style.display = 'flex'; composerFiles.innerHTML = pending.map((m, i) => `
+      <span class="file-chip">
+        <span class="ic">${m.kind === 'file' ? fileIconSvg() : linkIconSvg()}</span>
+        <span class="nm" title="${escapeHtml(m.name)}">${escapeHtml(m.name)}</span>
+        <span class="meta">${m.kind === 'file' ? formatSize(m.size) : 'LINK'}</span>
+      </span>`).join(''); }
+    refreshSend();
+  }
+  function refreshMaterialsCount() {
+    materialsCount.textContent = state.materials.length > 0 ? `${state.materials.length} materials shared` : '';
+  }
+  function queueFiles(files) {
+    state.pendingDrop = state.pendingDrop || [];
+    Array.from(files).forEach((f) => state.pendingDrop.push({ kind: 'file', name: f.name, size: f.size }));
+    refreshComposerFiles();
+  }
+  function queueLink(url) {
+    state.pendingDrop = state.pendingDrop || [];
+    state.pendingDrop.push({ kind: 'link', name: url });
+    refreshComposerFiles();
+  }
+  function refreshSend() {
+    const hasText = composerInput.value.trim().length > 0;
+    const hasFiles = (state.pendingDrop || []).length > 0;
+    sendBtn.disabled = !(hasText || hasFiles);
+  }
+
+  // ============ Conversation logic ============
+  function inferOrgFromMaterials(items) {
+    const blob = items.map((i) => i.name.toLowerCase()).join(' ');
+    let type = null;
+    if (/(endowment|university|college|tuition|academic|\.edu)/.test(blob)) type = 'endowment';
+    else if (/(symphony|opera|museum|ballet|theatre|theater|cultural|arts)/.test(blob)) type = 'arts';
+    else if (/(foundation|trust|philanthropic|grants?)/.test(blob)) type = 'foundation';
+
+    let name = null;
+
+    // 1) Try URLs: take hostname's first segment, capitalize, append "University"/"College" if .edu
+    for (const it of items) {
+      if (it.kind !== 'link') continue;
+      try {
+        const raw = it.name.startsWith('http') ? it.name : `https://${it.name}`;
+        const url = new URL(raw);
+        const host = url.hostname.replace(/^www\./, '');
+        const parts = host.split('.');
+        const root = parts[0];
+        const tld = parts[parts.length - 1];
+        if (!root || root.length < 2) continue;
+        let candidate = root.charAt(0).toUpperCase() + root.slice(1);
+        const isCollege = /college/i.test(it.name);
+        if (tld === 'edu') candidate += isCollege ? ' College' : ' University';
+        if (!name || candidate.length > name.length) name = candidate;
+      } catch (e) { /* not a URL */ }
+    }
+
+    // 2) Fall back to filename: longest TitleCase sequence
+    if (!name) {
+      for (const it of items) {
+        if (it.kind === 'link') continue;
+        const base = it.name.replace(/\.[a-z0-9]+$/i, '').replace(/[_-]+/g, ' ');
+        const m = base.match(/([A-Z][a-z]+(?:\s+(?:[A-Z][a-z]+|of|and|the))+)/);
+        if (m) {
+          const candidate = m[1].replace(/\s+(of|and|the)\s+/g, ' $1 ').trim();
+          if (!name || candidate.length > name.length) name = candidate;
+        }
+      }
+    }
+
+    return { type, name };
+  }
+
+  const QUESTIONS = {
+    foundation: [
+      { key: 'mission', q: 'To tailor the IPS, can you tell me about the foundation\'s mission and the population it primarily serves?', placeholder: 'e.g. Supporting youth education programs in the greater Boston area.' },
+      { key: 'spending', q: 'What\'s the spending policy — annual payout target as a percentage of corpus, and how is it smoothed?', placeholder: 'e.g. 5% of a 12-quarter trailing average.' },
+      { key: 'cashNeeds', q: 'Over the next 12 months, are there any large grant commitments, capital projects, or unusual cash needs we should plan for?', placeholder: 'e.g. ~$2M committed to a multi-year initiative starting Q2.' },
+      { key: 'drawdown', q: 'What level of short-term portfolio loss would start to disrupt grantmaking — how much drawdown can you absorb?', placeholder: 'e.g. ~15% peak-to-trough without affecting operations.' },
+      { key: 'constraints', q: 'Are there mission-aligned, ESG, or excluded-asset constraints we should encode in the IPS?', placeholder: 'e.g. No fossil fuels; prefer impact investments in housing.' },
+    ],
+    endowment: [
+      { key: 'mission', q: 'To start, tell me about the endowment\'s primary purpose and the beneficiaries it supports.', placeholder: 'e.g. Funding need-based financial aid and faculty research.' },
+      { key: 'spending', q: 'What\'s the spending policy — payout rate, smoothing methodology, and any inflation adjustment?', placeholder: 'e.g. 4.5% of a 3-year trailing average, banded ±1%.' },
+      { key: 'cashNeeds', q: 'Over the next 12–24 months, any major campaign-related inflows, capital expenditures, or other cash events?', placeholder: 'e.g. $50M campaign closing FY26; $20M renovation outflow Q4.' },
+      { key: 'drawdown', q: 'What drawdown level would create real operational stress — how much short-term loss can the institution absorb?', placeholder: 'e.g. ~20% peak-to-trough is manageable.' },
+      { key: 'constraints', q: 'Are there donor-restricted funds, mission-aligned constraints, or excluded asset classes we need to honor?', placeholder: 'e.g. No tobacco or private prisons; 30% of corpus is donor-restricted.' },
+    ],
+    arts: [
+      { key: 'mission', q: 'Walk me through the organization\'s programming focus and the audience it serves.', placeholder: 'e.g. A regional symphony presenting ~80 performances annually.' },
+      { key: 'spending', q: 'What share of operating revenue does the endowment underwrite, and what\'s your spending policy?', placeholder: 'e.g. ~25% of operating budget; 5% of a 12-quarter average.' },
+      { key: 'cashNeeds', q: 'Any major capital projects, building campaigns, or program expansions in the next 12–24 months?', placeholder: 'e.g. $8M facility renovation in FY27.' },
+      { key: 'drawdown', q: 'How much short-term portfolio loss could you absorb before it disrupts programming or staffing?', placeholder: 'e.g. ~15% drawdown manageable.' },
+      { key: 'constraints', q: 'Are there mission-aligned investment preferences or restricted asset types we should encode?', placeholder: 'e.g. Prefer arts-supporting impact investments.' },
+    ],
+  };
+
+  // ============ Phase handlers ============
+  async function startConversation() {
+    state.phase = 'materials-pending';
+    await agentReply(`<p>Hi — I'll help you onboard a new client.</p><p>To start, share whatever materials you have for them: prior IPS, board minutes, financial statements, performance reports, even a link to their site. The more context I have, the less I'll need to ask.</p><p>You can drop files anywhere, or paste a link.</p>`);
+  }
+
+  async function handleSend() {
+    const text = composerInput.value.trim();
+    const dropped = state.pendingDrop || [];
+
+    if (text.length === 0 && dropped.length === 0) return;
+
+    // Render user message with attachments
+    const userText = text ? `<p>${escapeHtml(text).replace(/\n/g, '<br>')}</p>` : '';
+    const userAttach = dropped.length > 0 ? chipsHtml(dropped) : '';
+    if (userText || userAttach) addUser(userText + userAttach);
+
+    composerInput.value = '';
+    composerInput.style.height = 'auto';
+    state.pendingDrop = [];
+    state.currentExample = null;
+    updateExampleHint();
+    refreshComposerFiles();
+
+    // Commit materials
+    if (dropped.length > 0) {
+      state.materials.push(...dropped);
+      refreshMaterialsCount();
+    }
+
+    // Decide agent response based on phase
+    await routeAgentResponse(text, dropped);
+  }
+
+  async function routeAgentResponse(text, dropped) {
+    // First time materials arrive → infer + propose
+    if (state.phase === 'materials-pending' && (dropped.length > 0 || state.materials.length > 0)) {
+      state.phase = 'confirming-org';
+      const inferred = inferOrgFromMaterials(state.materials);
+      const typeLabel = { foundation: 'private/community foundation', endowment: 'university or college endowment', arts: 'arts or cultural organization' }[inferred.type] || null;
+      const fmt = inferred.name && typeLabel ? `<strong>${escapeHtml(inferred.name)}</strong>, looks like a ${typeLabel}` : (inferred.name ? `<strong>${escapeHtml(inferred.name)}</strong>` : (typeLabel ? `a ${typeLabel}` : 'a new client'));
+
+      await agentReply(() => `
+        <p>I read through the ${state.materials.length} ${state.materials.length === 1 ? 'item' : 'items'} you shared. From the contents and filenames, this appears to be for ${fmt}.</p>
+        <p>Quick confirm before I dig in:</p>
+        ${factsCard(inferred)}
+      `);
+      return;
+    }
+
+    // Materials added after org confirmed → acknowledge and continue
+    if (dropped.length > 0 && state.org.type) {
+      await agentReply(`<p>Got it — added to context (${state.materials.length} total).</p>`, { delay: 500 });
+      // Continue interview if mid-flow
+      if (state.phase === 'interviewing') return; // user will reply to outstanding question
+      return;
+    }
+
+    // If user typed during confirm-org phase, treat as free-form clarification
+    if (state.phase === 'confirming-org') {
+      // Try to parse "We are X, a Y" or just use input as the name
+      const lower = text.toLowerCase();
+      let type = state.org.type;
+      if (/endowment|university|college/.test(lower)) type = 'endowment';
+      else if (/symphony|opera|museum|ballet|theater|theatre|arts|cultural/.test(lower)) type = 'arts';
+      else if (/foundation|philanthropic|grants?/.test(lower)) type = 'foundation';
+      if (!state.org.name && text.length > 2) state.org.name = text.replace(/^we are\s+/i, '').replace(/,.*$/, '').trim();
+      if (type) state.org.type = type;
+      showClientChip();
+      await beginInterview();
+      return;
+    }
+
+    // Interviewing — record answer to current question
+    if (state.phase === 'interviewing') {
+      const q = state.questions[state.qIdx];
+      // If the input looks like a meta-question / non-answer, respond and re-ask
+      if (q && text && looksLikeMeta(text)) {
+        await agentReply(`<p>Yes — your reply will become part of the IPS draft I produce after this interview. Let me re-ask:</p><p>${escapeHtml(q.q)}</p>`);
+        composerInput.placeholder = q.placeholder || 'Type your reply…';
+        state.currentExample = q.placeholder || null;
+        updateExampleHint();
+        return;
+      }
+      if (q) state.facts[q.key] = text || '(skipped)';
+      state.qIdx++;
+      if (state.qIdx >= state.questions.length) {
+        await wrapUpInterview();
+      } else {
+        await askNextQuestion();
+      }
+      return;
+    }
+
+    // Section-by-section review phase
+    if (state.phase === 'reviewing-sections') {
+      const t = text.toLowerCase().trim();
+      if (!t) return;
+      // Detect "next" intent — advance to next section
+      if (/^(next|continue|ok|okay|good|fine|looks good|move on|skip|sounds good|got it|yes|yep|yeah)\b/.test(t)) {
+        state.reviewIdx++;
+        await reviewCurrentSection();
+        return;
+      }
+      // Otherwise treat as an edit request for the current section
+      const current = IPS_SECTIONS[state.reviewIdx];
+      if (current) await applyAiEdit(current.id, text);
+      return;
+    }
+
+    if (state.phase === 'reviewing-done') {
+      // Free chat — treat input as a revision request on whatever section was last active
+      const lastActive = artifactBody.querySelector('.ips-section.active, .ips-section.reviewed:last-of-type');
+      if (lastActive) await applyAiEdit(lastActive.id, text);
+      else await agentReply(`<p>Got it — click the Edit button on the section you'd like to change, or tell me which section to update.</p>`);
+      return;
+    }
+  }
+
+  const TYPE_LABELS = { foundation: 'Private / community foundation', endowment: 'University / college endowment', arts: 'Arts / cultural organization' };
+
+  function materialsSummary() {
+    if (state.materials.length === 0) return 'None';
+    const links = state.materials.filter((m) => m.kind === 'link').length;
+    const files = state.materials.length - links;
+    const parts = [];
+    if (files > 0) parts.push(`${files} ${files === 1 ? 'document' : 'documents'}`);
+    if (links > 0) parts.push(`${links} ${links === 1 ? 'link' : 'links'}`);
+    return parts.join(' · ');
+  }
+
+  function factsCardReview(values) {
+    const typeLabel = TYPE_LABELS[values.type] || 'Not yet identified';
+    return `
+      <div class="tc-label"><span class="dot"></span>Extracted from materials</div>
+      <div class="fact-row"><div class="k">Organization</div><div class="v">${values.name ? escapeHtml(values.name) : '<em style="color: var(--muted);">Not detected — correct it below</em>'}</div></div>
+      <div class="fact-row"><div class="k">Type</div><div class="v">${typeLabel}</div></div>
+      <div class="fact-row"><div class="k">Materials</div><div class="v">${escapeHtml(materialsSummary())}</div></div>
+      <div class="actions">
+        <button class="pill-btn accent" data-action="confirm-org">Looks right — continue</button>
+        <button class="pill-btn ghost" data-action="correct-org">Let me correct it</button>
+      </div>`;
+  }
+
+  function factsCardEdit(values) {
+    return `
+      <div class="tc-label"><span class="dot"></span>Update details</div>
+      <div class="edit-row">
+        <label for="edit-org-name">Organization</label>
+        <input type="text" id="edit-org-name" value="${escapeHtml(values.name || '')}" placeholder="e.g. Marquette University" />
+      </div>
+      <div class="edit-row">
+        <label for="edit-org-type">Type</label>
+        <select id="edit-org-type">
+          <option value="foundation" ${values.type === 'foundation' ? 'selected' : ''}>Private / community foundation</option>
+          <option value="endowment" ${values.type === 'endowment' ? 'selected' : ''}>University / college endowment</option>
+          <option value="arts" ${values.type === 'arts' ? 'selected' : ''}>Arts / cultural organization</option>
+        </select>
+      </div>
+      <div class="actions">
+        <button class="pill-btn accent" data-action="save-correction">Save</button>
+        <button class="pill-btn ghost" data-action="cancel-correction">Cancel</button>
+      </div>`;
+  }
+
+  function factsCardConfirmed(values) {
+    return `
+      <div class="confirmed-row">✓ Confirmed</div>
+      <div class="fact-row" style="margin-top: 8px;"><div class="k">Organization</div><div class="v">${escapeHtml(values.name || 'New client')}</div></div>
+      <div class="fact-row"><div class="k">Type</div><div class="v">${TYPE_LABELS[values.type] || ''}</div></div>`;
+  }
+
+  function factsCard(inferred) {
+    const name = inferred.name || '';
+    const type = inferred.type || 'foundation';
+    return `<div class="tool-card" data-orig-name="${escapeHtml(name)}" data-orig-type="${escapeHtml(type)}" data-current-name="${escapeHtml(name)}" data-current-type="${escapeHtml(type)}">${factsCardReview(inferred)}</div>`;
+  }
+
+  function showClientChip() {
+    if (!state.org.name && !state.org.type) return;
+    const typeLabel = { foundation: 'Foundation', endowment: 'Endowment', arts: 'Arts & culture' }[state.org.type] || 'Client';
+    chipName.textContent = state.org.name || 'New client';
+    chipType.textContent = typeLabel;
+    clientChip.style.display = 'block';
+  }
+
+  async function beginInterview() {
+    state.phase = 'interviewing';
+    state.questions = QUESTIONS[state.org.type] || QUESTIONS.foundation;
+    state.qIdx = 0;
+    await agentReply(`<p>Great. Before I draft the IPS, a few clarifying questions — your materials covered some of this, but I want to make sure I have it right.</p>`);
+    await askNextQuestion();
+  }
+
+  async function askNextQuestion() {
+    const q = state.questions[state.qIdx];
+    if (!q) return;
+    composerInput.placeholder = q.placeholder || 'Type your reply…';
+    state.currentExample = q.placeholder || null;
+    updateExampleHint();
+    await agentReply(`<p>${escapeHtml(q.q)}</p>`);
+  }
+
+  function updateExampleHint() {
+    const hint = document.getElementById('example-hint');
+    if (!hint) return;
+    hint.style.display = state.currentExample && !composerInput.value ? 'inline-flex' : 'none';
+  }
+
+  async function wrapUpInterview() {
+    state.phase = 'drafting';
+    composerInput.placeholder = 'Ask the agent for revisions, or share more context…';
+    await agentReply(`<p>That's everything I need. Drafting the IPS now — opening the artifact panel.</p>`);
+    await think(400);
+    openArtifact();
+    await streamIps();
+    await think(400);
+    await beginSectionReview();
+  }
+
+  // ============ Section-by-section review ============
+  async function beginSectionReview() {
+    state.phase = 'reviewing-sections';
+    state.reviewIdx = 0;
+    composerInput.placeholder = 'Say "next" or describe a change…';
+    await agentReply(`<p>The draft is ready. I'll walk through it section by section — what I wrote and why — so you can adjust anything that doesn't fit. You can <strong>type "next"</strong> to move on, <strong>describe a change</strong> for me to apply, or <strong>edit any section directly</strong> using the Edit button on the right.</p><p>I'll skip Section 7 (Strategic Asset Allocation) — that goes through the Portfolio Modeling module next.</p>`);
+    await think(500);
+    await reviewCurrentSection();
+  }
+
+  async function reviewCurrentSection() {
+    // Skip sections flagged as skipReview
+    while (state.reviewIdx < IPS_SECTIONS.length && IPS_SECTIONS[state.reviewIdx].skipReview) {
+      state.reviewIdx++;
+    }
+    if (state.reviewIdx >= IPS_SECTIONS.length) {
+      return finishReview();
+    }
+    const s = IPS_SECTIONS[state.reviewIdx];
+    highlightSection(s.id);
+    await agentReply(`<p><strong>${s.num}. ${escapeHtml(s.title)}</strong></p><p>${escapeHtml(s.rationale)}</p>`);
+  }
+
+  function highlightSection(id) {
+    // Clear all active markers, mark prior ones as reviewed
+    artifactBody.querySelectorAll('.ips-section.active').forEach((el) => {
+      el.classList.remove('active');
+      el.classList.add('reviewed');
+    });
+    const el = artifactBody.querySelector(`#${id}`);
+    if (el) {
+      el.classList.add('active');
+      el.classList.remove('reviewed');
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }
+
+  async function finishReview() {
+    artifactBody.querySelectorAll('.ips-section.active').forEach((el) => {
+      el.classList.remove('active');
+      el.classList.add('reviewed');
+    });
+    state.phase = 'reviewing-done';
+    composerInput.placeholder = 'Ask for further changes, or move to portfolio modeling…';
+    await agentReply(`<p>That's everything in the IPS except Strategic Asset Allocation. Next is the <strong>Portfolio Modeling</strong> module — capital market assumptions, scenario analysis, and a draft strategic allocation calibrated to this IPS — but I'll set that up separately.</p><p>For now, the IPS draft is in the artifact panel. Keep editing if you want, or come back to it any time.</p>`);
+  }
+
+  // ============ Section editing ============
+  function startSectionEdit(id) {
+    const el = artifactBody.querySelector(`#${id}`);
+    if (!el) return;
+    const content = el.querySelector('.ips-section-content');
+    content.dataset.originalHtml = content.innerHTML;
+    content.contentEditable = 'true';
+    el.classList.add('editing');
+    const controls = el.querySelector('.ips-section-controls');
+    controls.innerHTML = `
+      <button class="ips-edit-btn" data-action="cancel-edit" data-id="${id}">Cancel</button>
+      <button class="ips-edit-btn primary" data-action="save-edit" data-id="${id}">Save</button>
+    `;
+    content.focus();
+  }
+  function saveSectionEdit(id) {
+    const el = artifactBody.querySelector(`#${id}`);
+    if (!el) return;
+    const content = el.querySelector('.ips-section-content');
+    content.contentEditable = 'false';
+    el.classList.remove('editing');
+    delete content.dataset.originalHtml;
+    const controls = el.querySelector('.ips-section-controls');
+    controls.innerHTML = `<button class="ips-edit-btn" data-action="edit-section" data-id="${id}">Edit</button>`;
+    el.classList.add('section-flash');
+    setTimeout(() => el.classList.remove('section-flash'), 700);
+  }
+  function cancelSectionEdit(id) {
+    const el = artifactBody.querySelector(`#${id}`);
+    if (!el) return;
+    const content = el.querySelector('.ips-section-content');
+    if (content.dataset.originalHtml != null) content.innerHTML = content.dataset.originalHtml;
+    delete content.dataset.originalHtml;
+    content.contentEditable = 'false';
+    el.classList.remove('editing');
+    const controls = el.querySelector('.ips-section-controls');
+    controls.innerHTML = `<button class="ips-edit-btn" data-action="edit-section" data-id="${id}">Edit</button>`;
+  }
+
+  async function applyAiEdit(sectionId, userPrompt) {
+    const el = artifactBody.querySelector(`#${sectionId}`);
+    if (!el) return;
+    const content = el.querySelector('.ips-section-content');
+    const original = content.innerHTML;
+    const section = IPS_SECTIONS.find((s) => s.id === sectionId);
+    const title = section ? `${section.num}. ${section.title}` : 'Section';
+
+    // Show a thinking indicator while the AI works
+    const typing = addTyping();
+    el.classList.add('section-flash');
+
+    try {
+      const r = await fetch('/api/demo/edit-section', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sectionTitle: title, sectionHtml: original, userPrompt }),
+      });
+      const data = await r.json().catch(() => ({}));
+      typing.remove();
+      if (!r.ok) {
+        const msg = data?.error || `Edit failed (${r.status}).`;
+        await agentReply(`<p>${escapeHtml(msg)}</p>`);
+        return;
+      }
+      const newHtml = (data.html || '').trim();
+      if (!newHtml) {
+        await agentReply(`<p>I couldn't generate an edit for that — try rephrasing or use the Edit button to change the text directly.</p>`);
+        return;
+      }
+      content.innerHTML = newHtml;
+      el.classList.add('section-flash');
+      setTimeout(() => el.classList.remove('section-flash'), 700);
+      await agentReply(`<p>Updated <strong>${escapeHtml(title)}</strong>. Want another change here, or move on?</p>`);
+    } catch (err) {
+      typing.remove();
+      console.error('AI edit failed:', err);
+      await agentReply(`<p>I couldn't reach the AI just now. Try again, or use the <strong>Edit</strong> button on the section to make the change directly.</p>`);
+    }
+  }
+
+  // ============ IPS draft (artifact panel) ============
+  function openArtifact() { layout.classList.add('with-artifact'); }
+  function closeArtifact() { layout.classList.remove('with-artifact'); }
+  artifactClose.addEventListener('click', closeArtifact);
+
+  async function streamIps() {
+    const html = buildIpsHtml();
+    artifactBody.innerHTML = html;
+    // Animate sections fading in
+    const sections = artifactBody.querySelectorAll('h3, p, ul, table, .ips-meta, .ips-title, .ips-sub');
+    sections.forEach((el) => el.classList.add('draft-streaming'));
+    for (const el of sections) {
+      await think(120);
+      el.classList.remove('draft-streaming');
+    }
+  }
+
+  function buildIpsContext() {
+    const name = escapeHtml(state.org.name || 'New Client');
+    const kind = state.org.type || 'foundation';
+    const orgWord = kind === 'endowment' ? 'Endowment' : kind === 'arts' ? 'Organization' : 'Foundation';
+    const typeLabel = { foundation: 'Private / community foundation', endowment: 'University / college endowment', arts: 'Arts / cultural organization' }[kind];
+
+    const mission = quoteAnswer(state.facts.mission || '');
+    const spending = quoteAnswer(state.facts.spending || '');
+    const constraints = quoteAnswer(state.facts.constraints || '');
+
+    const missionPara = mission
+      ? `<p><strong>Mission context.</strong> ${escapeHtml(mission)}</p>`
+      : '';
+
+    const spendingPara = spending
+      ? `<p>${escapeHtml(spending)}</p>`
+      : `<p>A specific spending target, smoothing methodology, and inflation adjustment have not yet been ratified. The IC will adopt these parameters at the next review cycle. Common constructions include a fixed-percentage rule applied to a trailing average market value (typically 3 years or 12 quarters), a Stanford-style hybrid combining a prior-year payout with an inflation factor and a current-year corpus component, or a banded approach with floor/ceiling adjustments.</p>`;
+
+    const constraintsPara = constraints
+      ? `<p><strong>Additional constraints.</strong> ${escapeHtml(constraints)}</p>`
+      : `<p><strong>Additional constraints.</strong> No further constraints have been recorded at this stage; the IC may adopt mission-aligned, ESG, or asset-class restrictions at its discretion.</p>`;
+
+    const esgRefs = /esg|impact|mission|fossil|sustainable|exclud|screen|divest|prohibit/i.test(state.facts.constraints || '');
+    const esgPara = esgRefs && constraints
+      ? `<p>The ${orgWord} has adopted constraints reflecting its mission and values, as recorded in Section 10. Implementation includes documented screens or positive selection criteria, integrated factor consideration where applicable, and quarterly compliance reporting. The constraints are reviewed at least annually for continued alignment with the organization's mission and Board guidance.</p>`
+      : `<p>The ${orgWord} has not adopted formal ESG or mission-aligned constraints in this draft. Where the Board chooses to do so in the future, the OCIO will document the implementation approach — including negative screens, positive selection criteria, integrated ESG factor consideration, or dedicated impact allocation — and report compliance quarterly. Any such policy is reviewed at least annually.</p>`;
+
+    return { name, kind, orgWord, typeLabel, mission, spending, constraints, missionPara, spendingPara, constraintsPara, esgPara };
+  }
+
+  const IPS_SECTIONS = [
+    {
+      id: 'sec-1', num: 1, title: 'Statement of Purpose and Scope',
+      rationale: 'I bounded the IPS to the long-term Portfolio and explicitly excluded operating cash, which is normally governed under a separate policy. I also pulled in your mission context from the interview so the rest of the document is grounded in what the organization is actually for.',
+      body: (c) => `<p>This Investment Policy Statement (the "IPS") establishes the framework governing the investment of assets held by ${c.name} (the "${c.orgWord}"). It articulates the investment philosophy, objectives, governance roles, asset-allocation framework, spending policy, risk tolerance, and operating constraints under which the assets are managed.</p><p>This IPS applies to the ${c.orgWord}'s long-term investment portfolio (the "Portfolio"). Operating cash and short-term reserves required for day-to-day operations are governed under a separate cash-management policy and are not subject to this IPS.</p>${c.missionPara}`,
+    },
+    {
+      id: 'sec-2', num: 2, title: 'Roles and Responsibilities',
+      rationale: 'I laid out a clean fiduciary chain — Board → IC → OCIO → Managers, with Custodian and Auditor as independent third parties. This is the structure most auditors and counsel expect; if your governance differs, we should adjust.',
+      body: (c) => `<p>Responsibility for the Portfolio is allocated across the parties below, each operating within a clearly defined fiduciary chain:</p><dl><dt>Board of Trustees</dt><dd>Retains ultimate fiduciary responsibility for the Portfolio. Reviews and approves this IPS and any material amendments. Receives at least annual reports from the Investment Committee on portfolio performance, compliance, and material issues.</dd><dt>Investment Committee</dt><dd>Acting under authority delegated by the Board, the IC oversees implementation of this IPS. The IC approves the strategic asset allocation and material changes thereto; appoints, monitors, and terminates the OCIO; reviews performance and compliance at least quarterly; and recommends IPS amendments for Board approval.</dd><dt>OCIO (Reve)</dt><dd>Acts as a fiduciary to the Portfolio with discretionary authority over manager selection, portfolio construction within IPS ranges, trade execution, rebalancing, tax-aware implementation, liquidity management, and ongoing oversight. Provides quarterly performance and compliance reports and is available to support Board and IC meetings.</dd><dt>Investment Managers</dt><dd>Each retained manager operates within the mandate documented at hire and is subject to ongoing review by the OCIO. Managers report performance and material events to the OCIO on a defined schedule.</dd><dt>Custodian</dt><dd>Holds the Portfolio's assets, processes transactions, produces account statements, and supports the annual audit.</dd><dt>Auditor</dt><dd>Conducts the annual financial audit of the ${c.orgWord} and reports findings to the Board.</dd></dl>`,
+    },
+    {
+      id: 'sec-3', num: 3, title: 'Investment Philosophy',
+      rationale: 'Six core beliefs that fit a perpetual institution: diversification, time horizon, cost discipline, active-only-where-warranted, and governance over heroics. These are widely held — if any conflict with the IC\'s actual views, we should change them.',
+      body: () => `<p>Management of the Portfolio reflects the following core beliefs:</p><ul><li>Long-term investors are best served by maintaining policy discipline through market cycles; market timing is not a reliable source of return.</li><li>Diversification across asset classes, geographies, factors, and economic regimes is the most important tool for managing risk.</li><li>Time horizon is the primary determinant of asset allocation; perpetual capital can bear illiquidity and volatility that operating capital cannot.</li><li>Active management is warranted where credible evidence of persistent skill or structural inefficiency exists; otherwise, low-cost passive implementation is preferred.</li><li>Costs compound; minimizing fees, friction, and tax drag is a structural source of long-term return.</li><li>Governance and process discipline matter more, over time, than any single allocation decision.</li></ul>`,
+    },
+    {
+      id: 'sec-4', num: 4, title: 'Return Objectives and Time Horizon',
+      rationale: 'I tied the return objective to real (inflation-adjusted) returns since that\'s what preserves the corpus across generations. The specific real-return target gets set after Portfolio Modeling — that\'s why this section talks framework, not numbers.',
+      body: () => `<h4>Time horizon</h4><p>The Portfolio is managed in perpetuity. Investment decisions are made with a multi-generational horizon in mind, with particular attention to both nominal returns and real (inflation-adjusted) outcomes.</p><h4>Return objective</h4><p>The Portfolio's long-term return objective is to generate a total real return sufficient to (a) fund the spending policy described in Section 6, (b) preserve the real value of the corpus over rolling ten-year periods, and (c) compensate for investment costs, management fees, and taxes where applicable.</p><h4>Inflation reference and policy benchmark</h4><p>Real returns are measured against a recognized U.S. inflation index appropriate to the organization's cost basis. Long-term portfolio performance is measured against a policy benchmark composed of asset-class indices weighted by the strategic targets adopted in Section 7. The policy benchmark is documented and reviewed annually by the IC.</p>`,
+    },
+    {
+      id: 'sec-5', num: 5, title: 'Risk Tolerance and Risk Management',
+      rationale: 'I deliberately didn\'t put a single drawdown number here — modern IPSes treat risk as multi-dimensional (capital, spending, liquidity, concentration, manager/ops). Five dimensions plus stress testing. If the IC wants a specific drawdown tolerance stated, we can add it.',
+      body: () => `<p>Risk is understood broadly and managed across multiple dimensions rather than reduced to a single metric.</p><h4>Dimensions of risk</h4><ul><li><strong>Capital impairment.</strong> The risk of permanent loss. Managed through diversification, manager due diligence, and avoidance of speculative or untested strategies.</li><li><strong>Spending support.</strong> The risk of failing to support the spending policy in periods of market stress. Managed through liquidity buffers, conservative spending construction, and policy provisions for adverse environments.</li><li><strong>Liquidity.</strong> The risk of being unable to meet obligations or rebalance when needed. Managed through tiered liquidity, capital-call planning, and stress testing (see Section 8).</li><li><strong>Concentration.</strong> The risk that any single position, manager, sector, factor, or counterparty exposure is material enough to drive outcomes. Managed through concentration limits and ongoing exposure monitoring.</li><li><strong>Manager and operational.</strong> The risk of key-person, governance, or operational failure at a manager. Managed through ongoing due diligence and event-driven review.</li></ul><h4>Stress testing</h4><p>The Portfolio is stress-tested at least annually against historical drawdown scenarios and hypothetical regime shifts (e.g., persistent inflation, prolonged equity bear market, illiquidity events). Results are reported to the IC and inform any IPS or allocation refinements.</p>`,
+    },
+    {
+      id: 'sec-6', num: 6, title: 'Spending Policy',
+      rationale: 'This reflects what you described in the interview. Real IPSes typically lock in payout rate, smoothing methodology, and any inflation adjustment — once the IC ratifies a specific construction we\'ll plug it in.',
+      body: (c) => `${c.spendingPara}<p>The spending policy is reviewed annually by the IC for continued alignment with corpus performance, organizational needs, and market conditions. Material changes require Board approval.</p>`,
+    },
+    {
+      id: 'sec-7', num: 7, title: 'Strategic Asset Allocation', skipReview: true,
+      rationale: 'We\'ll handle this in the Portfolio Modeling module — for now it\'s a placeholder pointing forward.',
+      body: () => `<div class="placeholder-block"><div class="ph-label">Pending portfolio modeling</div><div class="ph-body">The strategic asset allocation will be established by the IC, with the OCIO's recommendation, following the next Portfolio Modeling exercise. The output will include target weights and policy ranges for each asset class, the policy benchmark composition, the Portfolio's liquidity profile, and capital deployment plans for any illiquid commitments. Until those targets are formally adopted, the Portfolio is managed under prior-period guidance and the constraints described in Sections 5, 8, and 10.</div></div>`,
+    },
+    {
+      id: 'sec-8', num: 8, title: 'Liquidity Management',
+      rationale: 'Three tiers — immediate, intermediate, long-term — so operations can promise spending and capital calls always have a source without forced selling. Forward liquidity is projected on a rolling basis.',
+      body: () => `<p>The Portfolio's liquidity profile is managed across three tiers:</p><ul><li><strong>Immediate (T+1 to T+10).</strong> Cash, money-market, and short-duration Treasury holdings sufficient to meet near-term spending and operating draws without forced liquidations.</li><li><strong>Intermediate (T+30 to T+365).</strong> Highly liquid public-market positions that can be unwound on short notice without material market impact.</li><li><strong>Long-term (greater than one year).</strong> Private market, fund-of-fund, and other illiquid positions subject to lockups, redemption gates, or J-curve dynamics.</li></ul><p>Forward liquidity is projected on a rolling basis. Commitments to illiquid programs are sized to preserve the Portfolio's ability to meet spending, capital calls, and policy rebalancing under both historical and hypothetical stress conditions.</p>`,
+    },
+    {
+      id: 'sec-9', num: 9, title: 'Manager Selection and Oversight',
+      rationale: 'Six selection dimensions: team, process, performance, ops, fees, capacity. These are industry-standard. Ongoing oversight is quarterly performance review plus annual ops due diligence plus event-driven re-review.',
+      body: () => `<p>Manager selection considers the following dimensions:</p><ul><li><strong>Team and culture.</strong> Tenure, alignment of incentives, succession planning, ethical conduct, and turnover history.</li><li><strong>Investment process.</strong> Articulated philosophy, repeatable process, and risk-management discipline.</li><li><strong>Performance.</strong> Long-term record vs. benchmark and peers, with attention to attribution rather than headline returns.</li><li><strong>Operations.</strong> Compliance program, internal controls, audit history, and third-party administration.</li><li><strong>Fees and terms.</strong> Total fee load, fee structure, liquidity terms, and alignment provisions.</li><li><strong>Capacity.</strong> Strategy capacity relative to current and prospective assets under management.</li></ul><p>Ongoing oversight includes quarterly performance review, annual operational due diligence, and ad hoc review on any material event (e.g., key-personnel departure, style drift, regulatory action). Termination is considered when concerns arise on any of the dimensions above.</p>`,
+    },
+    {
+      id: 'sec-10', num: 10, title: 'Permitted and Prohibited Investments',
+      rationale: 'Permitted broadly; the prohibitions list is conservative defaults (no direct commodities, uncovered shorts, direct real estate, crypto, or Portfolio-level leverage). Any of these can be loosened with explicit IC approval.',
+      body: (c) => `<p>Permitted investment vehicles include separately managed accounts, commingled funds, mutual funds and ETFs, private fund vehicles (including hedge funds, private equity, venture capital, private credit, and real assets), and direct securities held by the Custodian. All managers must operate under appropriate regulatory standing.</p><p>The following are prohibited absent specific IC approval: direct commodity positions other than through diversified funds; uncovered short positions; direct real-estate ownership; cryptocurrency or digital-asset holdings; and use of leverage at the Portfolio level (manager-level leverage is permitted within an approved strategy mandate).</p>${c.constraintsPara}`,
+    },
+    {
+      id: 'sec-11', num: 11, title: 'Rebalancing Policy',
+      rationale: 'Three trigger types — range-based, cash flow, market-driven. The OCIO monitors continuously but only acts under one of these. Implementation is tax-aware where applicable and material moves are reported to the IC.',
+      body: () => `<p>The OCIO monitors the Portfolio continuously and rebalances toward strategic targets under the following triggers:</p><ul><li><strong>Range-based.</strong> When an asset class drifts outside its policy range.</li><li><strong>Cash flow.</strong> When material inflows or outflows — spending draws, donor gifts, capital calls, distributions — meaningfully shift weights.</li><li><strong>Market-driven.</strong> When a structural dislocation, regime shift, or unusual opportunity warrants action within the framework adopted by the IC.</li></ul><p>Rebalancing is implemented with attention to transaction costs, manager redemption terms, and tax efficiency where applicable. Material rebalancing actions are documented and reported to the IC at its next regular meeting.</p>`,
+    },
+    {
+      id: 'sec-12', num: 12, title: 'Performance Measurement and Reporting',
+      rationale: 'Four levels of measurement (Portfolio, asset class, manager, risk) plus attribution. Quarterly comprehensive to the IC, summaries at every Board meeting, annual strategic review.',
+      body: () => `<p>Performance is measured at four levels:</p><ul><li><strong>Total Portfolio.</strong> Time-weighted return vs. the policy benchmark.</li><li><strong>Asset class.</strong> Composite returns by asset class vs. their respective indices.</li><li><strong>Manager.</strong> Each manager's return vs. the strategy-appropriate benchmark and peer set.</li><li><strong>Risk metrics.</strong> Standard deviation, peak-to-trough drawdown, Sharpe ratio, downside deviation, beta to relevant indices, and exposure decomposition.</li></ul><p>Attribution decomposes total return into asset allocation, manager selection, and policy contributions. Reporting cadence is quarterly to the IC (comprehensive package), at each Board meeting (summary), and annually (strategic review of return objective, asset allocation, liquidity profile, and policy benchmark composition).</p>`,
+    },
+    {
+      id: 'sec-13', num: 13, title: 'Mission-Aligned Investing and ESG',
+      rationale: 'I drafted this based on what you mentioned in the interview about constraints — and left room for the Board to formally adopt a policy if it chooses.',
+      body: (c) => c.esgPara,
+    },
+    {
+      id: 'sec-14', num: 14, title: 'Conflict of Interest and Stewardship',
+      rationale: 'Standard provisions: annual conflict disclosure, recusal on material conflicts, proxy voting delegated to managers with policy review at hire and every three years, manager engagement on stewardship matters.',
+      body: (c) => `<p><strong>Conflicts of interest.</strong> All parties named in Section 2, and any contractor or service provider engaged on behalf of the Portfolio, are subject to a written conflict-of-interest policy requiring annual disclosure and recusal from decisions in which a material conflict exists.</p><p><strong>Proxy voting.</strong> Voting authority on Portfolio securities is delegated to investment managers, who vote in accordance with their stated proxy policies. The OCIO reviews voting policies at hire and at least every three years thereafter.</p><p><strong>Stewardship.</strong> The OCIO engages with managers — and, where appropriate, directly with portfolio companies — on material governance and stewardship matters consistent with this IPS and the ${c.orgWord}'s mission.</p>`,
+    },
+    {
+      id: 'sec-15', num: 15, title: 'Review and Amendment',
+      rationale: 'Annual review by the IC. Material amendments require Board approval; non-material technical updates are IC-only.',
+      body: () => `<p>This IPS shall be reviewed by the IC at least annually. Material amendments — including changes to investment objectives, the asset-allocation framework, the spending policy, or governance structure — require Board approval. Non-material technical updates may be adopted by the IC and reported to the Board at its next regular meeting.</p>`,
+    },
+  ];
+
+  function renderSection(s, ctx) {
+    const content = (state.sectionOverrides && state.sectionOverrides[s.id]) || s.body(ctx);
+    return `
+      <section class="ips-section" id="${s.id}" data-section-id="${s.id}" data-section-num="${s.num}">
+        <div class="ips-section-head">
+          <h3><span class="sub-num">${s.num}.</span> ${escapeHtml(s.title)}</h3>
+          <div class="ips-section-controls">
+            <button class="ips-edit-btn" data-action="edit-section" data-id="${s.id}">Edit</button>
+          </div>
+        </div>
+        <div class="ips-section-content" data-content="${s.id}">${content}</div>
+      </section>
+    `;
+  }
+
+  function buildIpsHtml() {
+    const ctx = buildIpsContext();
+    const today = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+    const sectionsHtml = IPS_SECTIONS.map((s) => renderSection(s, ctx)).join('');
+    return `
+      <div class="ips-meta">Investment Policy Statement · ${today}</div>
+      <div class="ips-title-row">
+        <div class="ips-title">${ctx.name}</div>
+        <span class="draft-pill">Draft</span>
+      </div>
+      <div class="ips-sub">Prepared by Reve · ${escapeHtml(ctx.typeLabel)}</div>
+      ${sectionsHtml}
+      <div class="save-cta" id="save-cta">
+        <div class="cta-label">Next step</div>
+        <h3>Save the IPS and move to Portfolio Modeling</h3>
+        <p>This saves the draft to ${escapeHtml(ctx.name)}'s record. Portfolio Modeling — capital market assumptions, scenario analysis, and a draft strategic allocation calibrated to this IPS — comes next.</p>
+        <div class="cta-actions">
+          <button class="btn-primary" data-action="save-client">Save &amp; continue →</button>
+          <button class="btn-secondary" data-action="keep-editing">Keep editing</button>
+        </div>
+      </div>
+    `;
+  }
+
+  // ============ Event wiring ============
+  composerInput.addEventListener('input', () => {
+    composerInput.style.height = 'auto';
+    composerInput.style.height = Math.min(composerInput.scrollHeight, 200) + 'px';
+    refreshSend();
+    updateExampleHint();
+  });
+  composerInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); if (!sendBtn.disabled) handleSend(); return; }
+    if (e.key === 'Tab' && !e.shiftKey && state.currentExample && composerInput.value.length === 0) {
+      e.preventDefault();
+      composerInput.value = state.currentExample.replace(/^e\.g\.\s+/i, '');
+      composerInput.style.height = 'auto';
+      composerInput.style.height = Math.min(composerInput.scrollHeight, 200) + 'px';
+      refreshSend();
+      updateExampleHint();
+    }
+  });
+  sendBtn.addEventListener('click', handleSend);
+  attachBtn.addEventListener('click', () => fileInput.click());
+  fileInput.addEventListener('change', (e) => { queueFiles(e.target.files); fileInput.value = ''; });
+  // Link modal
+  const linkModal = document.getElementById('link-modal');
+  const linkUrlInput = document.getElementById('link-url');
+  const linkLabelInput = document.getElementById('link-label');
+  const linkAddBtn = document.getElementById('link-add');
+  const linkCancelBtn = document.getElementById('link-cancel');
+  function openLinkModal() {
+    linkUrlInput.value = '';
+    linkLabelInput.value = '';
+    linkAddBtn.disabled = true;
+    linkModal.classList.add('active');
+    linkModal.setAttribute('aria-hidden', 'false');
+    setTimeout(() => linkUrlInput.focus(), 50);
+  }
+  function closeLinkModal() {
+    linkModal.classList.remove('active');
+    linkModal.setAttribute('aria-hidden', 'true');
+  }
+  function submitLinkModal() {
+    const url = linkUrlInput.value.trim();
+    if (!url) return;
+    const label = linkLabelInput.value.trim();
+    queueLink(label ? `${url} — ${label}` : url);
+    closeLinkModal();
+    composerInput.focus();
+  }
+  linkBtn.addEventListener('click', openLinkModal);
+  linkUrlInput.addEventListener('input', () => { linkAddBtn.disabled = linkUrlInput.value.trim().length < 4; });
+  linkAddBtn.addEventListener('click', submitLinkModal);
+  linkCancelBtn.addEventListener('click', closeLinkModal);
+  linkModal.addEventListener('click', (e) => { if (e.target === linkModal) closeLinkModal(); });
+  [linkUrlInput, linkLabelInput].forEach((el) => el.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !linkAddBtn.disabled) { e.preventDefault(); submitLinkModal(); }
+    if (e.key === 'Escape') closeLinkModal();
+  }));
+
+  // Artifact expand toggle
+  const artifactExpand = document.getElementById('artifact-expand');
+  artifactExpand.addEventListener('click', () => {
+    const expanded = layout.classList.toggle('expanded');
+    artifactExpand.title = expanded ? 'Collapse' : 'Expand';
+  });
+
+  // Drag-drop anywhere over composer
+  ['dragenter', 'dragover'].forEach((ev) => composer.addEventListener(ev, (e) => { e.preventDefault(); composer.classList.add('dragover'); }));
+  ['dragleave', 'drop'].forEach((ev) => composer.addEventListener(ev, (e) => { e.preventDefault(); composer.classList.remove('dragover'); }));
+  composer.addEventListener('drop', (e) => { if (e.dataTransfer?.files?.length) queueFiles(e.dataTransfer.files); });
+  // Also support drop anywhere on the main conv area
+  const convEl = document.querySelector('.conv');
+  ['dragenter', 'dragover'].forEach((ev) => convEl.addEventListener(ev, (e) => { e.preventDefault(); }));
+  convEl.addEventListener('drop', (e) => { e.preventDefault(); if (e.dataTransfer?.files?.length) { queueFiles(e.dataTransfer.files); composerInput.focus(); } });
+
+  // Delegated buttons inside agent messages
+  document.addEventListener('click', async (e) => {
+    const btn = e.target.closest('[data-action]');
+    if (!btn) return;
+    const a = btn.dataset.action;
+    const card = btn.closest('.tool-card');
+
+    if (a === 'confirm-org') {
+      const name = card?.dataset.currentName || '';
+      const type = card?.dataset.currentType || 'foundation';
+      state.org.name = name || state.org.name;
+      state.org.type = type || state.org.type;
+      showClientChip();
+      if (card) {
+        card.classList.add('confirmed');
+        card.innerHTML = factsCardConfirmed({ name: state.org.name, type: state.org.type });
+      }
+      await beginInterview();
+    } else if (a === 'correct-org') {
+      if (!card) return;
+      const name = card.dataset.currentName || '';
+      const type = card.dataset.currentType || 'foundation';
+      card.innerHTML = factsCardEdit({ name, type });
+      setTimeout(() => document.getElementById('edit-org-name')?.focus(), 30);
+    } else if (a === 'save-correction') {
+      if (!card) return;
+      const newName = (document.getElementById('edit-org-name')?.value || '').trim();
+      const newType = document.getElementById('edit-org-type')?.value || 'foundation';
+      card.dataset.currentName = newName;
+      card.dataset.currentType = newType;
+      state.org.name = newName;
+      state.org.type = newType;
+      showClientChip();
+      card.classList.add('confirmed');
+      card.innerHTML = factsCardConfirmed({ name: newName, type: newType });
+      await beginInterview();
+    } else if (a === 'cancel-correction') {
+      if (!card) return;
+      const name = card.dataset.origName || '';
+      const type = card.dataset.origType || 'foundation';
+      card.dataset.currentName = name;
+      card.dataset.currentType = type;
+      card.innerHTML = factsCardReview({ name, type });
+    } else if (a === 'edit-section') {
+      startSectionEdit(btn.dataset.id);
+    } else if (a === 'save-edit') {
+      saveSectionEdit(btn.dataset.id);
+    } else if (a === 'cancel-edit') {
+      cancelSectionEdit(btn.dataset.id);
+    }
+  });
+
+  // Click anywhere within a section to make it the active/highlighted one
+  artifactBody.addEventListener('click', (e) => {
+    // Skip clicks on interactive controls (Edit, Save, Cancel buttons; contenteditable content)
+    if (e.target.closest('[data-action]')) return;
+    if (e.target.closest('[contenteditable="true"]')) return;
+    const section = e.target.closest('.ips-section');
+    if (!section || !section.dataset.sectionId) return;
+    const idx = IPS_SECTIONS.findIndex((s) => s.id === section.dataset.sectionId);
+    if (idx < 0) return;
+    // Update active highlight + state.reviewIdx, no chat noise
+    state.reviewIdx = idx;
+    artifactBody.querySelectorAll('.ips-section.active').forEach((el) => el.classList.remove('active'));
+    section.classList.add('active');
+    section.classList.remove('reviewed');
+  });
+
+  // ============ Saved clients (localStorage) ============
+  const STORAGE_KEY = 'reve_demo_clients';
+  const SAMPLE_CLIENTS = [{
+    id: 'sample-marquette',
+    name: 'Marquette University',
+    type: 'endowment',
+    materials: [
+      { kind: 'link', name: 'https://www.marquette.edu/endowment-office/' },
+      { kind: 'file', name: 'FY24-Annual-Report.pdf', size: 4_180_000 },
+      { kind: 'file', name: 'Board-of-Trustees-Investment-Charter.pdf', size: 612_000 },
+      { kind: 'file', name: 'Prior-IPS-2022.pdf', size: 285_000 },
+    ],
+    facts: {
+      mission: 'Catholic, Jesuit university providing education, research, and service to its students and communities. The endowment supports financial aid, faculty research, and academic programs.',
+      spending: '4.5% of a 12-quarter trailing average market value, banded between 4% and 5.5%, with annual review by the Investment Committee.',
+      cashNeeds: 'Roughly $55M in annual operating support; quarterly distributions; no extraordinary capital projects in the next 12 months.',
+      drawdown: 'Approximately 20% peak-to-trough manageable without disrupting core academic programming; beyond that triggers a strategic spending review.',
+      constraints: 'Alignment with Catholic Social Teaching: exclusions for weapons manufacturers, tobacco, predatory lending, and adult entertainment. Preference for impact investments aligned with the university\'s mission.',
+    },
+    sectionOverrides: {},
+    savedAt: '2026-05-20T14:30:00.000Z',
+    isSample: true,
+  }];
+  const activeClientsEl = document.getElementById('nav-active-clients');
+  const newClientLink = document.getElementById('nav-new-client');
+  const savedModal = document.getElementById('saved-modal');
+  const savedBody = document.getElementById('saved-body');
+  const savedTitle = document.getElementById('saved-title');
+  const savedOk = document.getElementById('saved-ok');
+
+  function listLocalClients() {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); } catch { return []; }
+  }
+  function listClients() {
+    // Samples first, then user-saved
+    return [...SAMPLE_CLIENTS, ...listLocalClients()];
+  }
+  function isSampleId(id) { return typeof id === 'string' && id.startsWith('sample-'); }
+  function writeClients(arr) {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(arr)); } catch {}
+  }
+  function captureSectionOverrides() {
+    const overrides = {};
+    IPS_SECTIONS.forEach((s) => {
+      const el = artifactBody.querySelector(`#${s.id} .ips-section-content`);
+      if (el) overrides[s.id] = el.innerHTML;
+    });
+    return overrides;
+  }
+  function saveClient() {
+    if (!state.org.name) return null;
+    const all = listLocalClients();
+    // If we're editing a sample, save as a new copy instead of mutating the sample
+    const savingId = (!state.clientId || isSampleId(state.clientId)) ? `c-${Date.now().toString(36)}` : state.clientId;
+    const existingIdx = all.findIndex((c) => c.id === savingId);
+    const record = {
+      id: savingId,
+      name: state.org.name,
+      type: state.org.type || 'foundation',
+      materials: state.materials,
+      facts: state.facts,
+      sectionOverrides: captureSectionOverrides(),
+      savedAt: new Date().toISOString(),
+    };
+    if (existingIdx >= 0) all[existingIdx] = record;
+    else all.unshift(record);
+    writeClients(all);
+    state.clientId = record.id;
+    renderActiveClients();
+    return record;
+  }
+
+  function loadClient(id) {
+    const client = listClients().find((c) => c.id === id);
+    if (!client) return;
+    // Reset state
+    state.org = { name: client.name, type: client.type };
+    state.materials = client.materials || [];
+    state.facts = client.facts || {};
+    state.clientId = client.id;
+    state.sectionOverrides = client.sectionOverrides || {};
+    state.phase = 'reviewing-done';
+    state.currentExample = null;
+    updateExampleHint();
+    refreshMaterialsCount();
+    showClientChip();
+    // Reset chat
+    feedInner.innerHTML = '';
+    // Render IPS in artifact with overrides applied
+    openArtifact();
+    artifactBody.innerHTML = buildIpsHtml();
+    // After render, apply overrides (renderSection should have already used them via state)
+    // Mark all sections as reviewed (they've been seen before)
+    artifactBody.querySelectorAll('.ips-section').forEach((el) => el.classList.add('reviewed'));
+    renderActiveClients();
+    addAgent(`<p>Loaded <strong>${escapeHtml(client.name)}</strong>. The IPS draft is in the artifact panel — keep editing or describe changes here. We'll pick up Portfolio Modeling when that's available.</p>`);
+    composerInput.placeholder = 'Ask for changes, or click Edit on any section…';
+  }
+
+  function renderActiveClients() {
+    const all = listClients();
+    if (all.length === 0) {
+      activeClientsEl.innerHTML = `<div class="client-empty">No saved clients yet.</div>`;
+      return;
+    }
+    activeClientsEl.innerHTML = all.map((c) => {
+      const typeShort = { foundation: 'FDN', endowment: 'ENDW', arts: 'ARTS' }[c.type] || '';
+      const active = c.id === state.clientId ? ' active' : '';
+      return `<a class="client-link${active}" data-action="load-client" data-id="${escapeHtml(c.id)}"><span class="ci-name">${escapeHtml(c.name)}</span><span class="ci-type">${typeShort}</span></a>`;
+    }).join('');
+  }
+
+  function showSavedModal(record) {
+    savedTitle.textContent = `Saved · ${record.name}`;
+    savedBody.innerHTML = `${escapeHtml(record.name)} is now in your active clients. Portfolio Modeling — capital market assumptions, scenario analysis, and a draft strategic allocation calibrated to this IPS — will be the next module. You can keep editing the IPS in the artifact panel, or come back to this client any time from the sidebar.`;
+    savedModal.classList.add('active');
+    savedModal.setAttribute('aria-hidden', 'false');
+  }
+  function closeSavedModal() {
+    savedModal.classList.remove('active');
+    savedModal.setAttribute('aria-hidden', 'true');
+  }
+  savedOk.addEventListener('click', closeSavedModal);
+  savedModal.addEventListener('click', (e) => { if (e.target === savedModal) closeSavedModal(); });
+
+  // Use overrides during render (if present)
+  // Wrap renderSection to support overrides
+  const _originalRenderSection = renderSection;
+  // Note: renderSection is a const? Let's check — it's a function declaration. Replace inline via a wrapper.
+
+  // Save / keep-editing button handlers
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-action]');
+    if (!btn) return;
+    const a = btn.dataset.action;
+    if (a === 'save-client') {
+      const rec = saveClient();
+      if (rec) showSavedModal(rec);
+    } else if (a === 'keep-editing') {
+      // No-op — just acknowledge by scrolling to top of artifact
+      artifactBody.scrollTop = 0;
+    } else if (a === 'load-client') {
+      const id = btn.dataset.id;
+      if (id) loadClient(id);
+    }
+  });
+
+  // ============ Init ============
+  state.sectionOverrides = {};
+  state.clientId = null;
+  renderActiveClients();
+  startConversation();
+</script>
+</body>
+</html>
