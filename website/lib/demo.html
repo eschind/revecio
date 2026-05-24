@@ -750,28 +750,58 @@
       return;
     }
 
-    // Section-by-section review phase
-    if (state.phase === 'reviewing-sections') {
+    // IPS review — same intent handling whether mid-walkthrough or post-walkthrough
+    if (state.phase === 'reviewing-sections' || state.phase === 'reviewing-done') {
       const t = text.toLowerCase().trim();
       if (!t) return;
-      // Detect "next" intent — advance to next section
-      if (/^(next|continue|ok|okay|good|fine|looks good|move on|skip|sounds good|got it|yes|yep|yeah)\b/.test(t)) {
-        state.reviewIdx++;
-        await reviewCurrentSection();
+
+      // Navigation: next
+      if (/^(next|continue|move on|move forward|go on|skip|onwards?|forward|proceed|next section|next one|keep going|moving on|let'?s continue|let'?s move on)\b/.test(t)
+          || /^(ok|okay|good|fine|looks good|sounds good|got it|yes|yep|yeah)\b\s*(?:next|continue|move|onwards?)?\s*\.?\s*$/.test(t)) {
+        await advanceReview(+1);
         return;
       }
-      // Otherwise treat as an edit request for the current section
-      const current = IPS_SECTIONS[state.reviewIdx];
-      if (current) await applyAiEdit(current.id, text);
+
+      // Navigation: previous
+      if (/^(prev|previous|back|go back|last one|prior)\b/.test(t)) {
+        await advanceReview(-1);
+        return;
+      }
+
+      // Otherwise — treat as an edit on the currently active section
+      const activeEl = artifactBody.querySelector('.ips-section.active');
+      const activeId = activeEl?.dataset.sectionId || IPS_SECTIONS[state.reviewIdx]?.id;
+      if (activeId) {
+        await applyAiEdit(activeId, text);
+      } else {
+        await agentReply(`<p>Click a section to focus it, then tell me what to change.</p>`);
+      }
       return;
     }
+  }
 
-    if (state.phase === 'reviewing-done') {
-      // Free chat — treat input as a revision request on whatever section was last active
-      const lastActive = artifactBody.querySelector('.ips-section.active, .ips-section.reviewed:last-of-type');
-      if (lastActive) await applyAiEdit(lastActive.id, text);
-      else await agentReply(`<p>Got it — click the Edit button on the section you'd like to change, or tell me which section to update.</p>`);
+  async function advanceReview(delta) {
+    let i = state.reviewIdx + delta;
+    // Skip placeholder sections (e.g. Strategic Asset Allocation)
+    while (i >= 0 && i < IPS_SECTIONS.length && IPS_SECTIONS[i].skipReview) i += delta;
+    if (i < 0) {
+      await agentReply(`<p>That's the first section. We can re-review from the top or jump anywhere by clicking a section.</p>`);
       return;
+    }
+    if (i >= IPS_SECTIONS.length) {
+      state.phase = 'reviewing-done';
+      await agentReply(`<p>That's the last section. We can revisit any section by clicking it, or hit <strong>Save &amp; continue</strong> to move to Portfolio Modeling.</p>`);
+      return;
+    }
+    state.reviewIdx = i;
+    const s = IPS_SECTIONS[i];
+    if (state.phase === 'reviewing-sections') {
+      // Mid-walkthrough — re-narrate
+      await reviewCurrentSection();
+    } else {
+      // Post-walkthrough — just move the highlight and acknowledge briefly
+      highlightSection(s.id);
+      await agentReply(`<p>Looking at <strong>${s.num}. ${escapeHtml(s.title)}</strong>. What would you like to change?</p>`);
     }
   }
 
