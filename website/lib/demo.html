@@ -227,6 +227,16 @@
   .ips-section.editing .ips-section-controls { opacity: 1; }
   .ips-edit-btn { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; padding: 3px 9px; border-radius: 999px; border: 1px solid var(--line); background: #fff; color: var(--ink-2); cursor: pointer; }
   .ips-edit-btn:hover { background: var(--bg-2); border-color: var(--ink-2); color: var(--ink); }
+  .ips-info-btn { appearance: none; cursor: pointer; padding: 0; width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--line); background: #fff; color: var(--accent); font: 600 11px/1 'Newsreader', serif; display: inline-flex; align-items: center; justify-content: center; font-style: italic; }
+  .ips-info-btn:hover { background: var(--accent); color: var(--bg); border-color: var(--accent); }
+  .ips-info-btn.active { background: var(--accent); color: var(--bg); border-color: var(--accent); }
+  .ips-rationale-popover { position: absolute; z-index: 20; top: calc(100% + 6px); right: 0; width: 340px; background: var(--ink); color: var(--dark-ink); padding: 14px 16px; border-radius: 10px; box-shadow: 0 14px 36px -14px rgba(20,23,28,0.45); font-size: 13px; line-height: 1.55; display: none; }
+  .ips-section.show-rationale { z-index: 5; }
+  .ips-section.show-rationale .ips-rationale-popover { display: block; }
+  .ips-rationale-popover::before { content: ''; position: absolute; top: -6px; right: 16px; width: 12px; height: 12px; background: var(--ink); transform: rotate(45deg); }
+  .ips-rationale-popover .rationale-label { font-family: 'JetBrains Mono', monospace; font-size: 9.5px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent-3); margin-bottom: 6px; }
+  .ips-rationale-popover .rationale-body { color: rgba(244,241,234,0.92); }
+  .ips-section-head { position: relative; }
   .ips-edit-btn.primary { background: var(--accent); color: #f4f1ea; border-color: var(--accent); }
   .ips-edit-btn.primary:hover { background: var(--accent-2); border-color: var(--accent-2); }
   .section-flash { animation: flash 0.6s ease; }
@@ -750,34 +760,87 @@
       return;
     }
 
-    // IPS review — same intent handling whether mid-walkthrough or post-walkthrough
+    // IPS review — route every chat message through Claude for semantic intent
     if (state.phase === 'reviewing-sections' || state.phase === 'reviewing-done') {
-      const t = text.toLowerCase().trim();
-      if (!t) return;
-
-      // Navigation: next
-      if (/^(next|continue|move on|move forward|go on|skip|onwards?|forward|proceed|next section|next one|keep going|moving on|let'?s continue|let'?s move on)\b/.test(t)
-          || /^(ok|okay|good|fine|looks good|sounds good|got it|yes|yep|yeah)\b\s*(?:next|continue|move|onwards?)?\s*\.?\s*$/.test(t)) {
-        await advanceReview(+1);
-        return;
-      }
-
-      // Navigation: previous
-      if (/^(prev|previous|back|go back|last one|prior)\b/.test(t)) {
-        await advanceReview(-1);
-        return;
-      }
-
-      // Otherwise — treat as an edit on the currently active section
-      const activeEl = artifactBody.querySelector('.ips-section.active');
-      const activeId = activeEl?.dataset.sectionId || IPS_SECTIONS[state.reviewIdx]?.id;
-      if (activeId) {
-        await applyAiEdit(activeId, text);
-      } else {
-        await agentReply(`<p>Click a section to focus it, then tell me what to change.</p>`);
-      }
+      if (!text.trim()) return;
+      await routeUserMessage(text);
       return;
     }
+  }
+
+  async function routeUserMessage(text) {
+    const activeEl = artifactBody.querySelector('.ips-section.active');
+    const activeId = activeEl?.dataset.sectionId || IPS_SECTIONS[state.reviewIdx]?.id;
+    const current = IPS_SECTIONS.find((s) => s.id === activeId) || IPS_SECTIONS[state.reviewIdx] || IPS_SECTIONS[0];
+
+    const typing = addTyping();
+    let route;
+    try {
+      const r = await fetch('/api/demo/route', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userMessage: text,
+          currentSectionNum: current.num,
+          currentSectionTitle: current.title,
+          sections: IPS_SECTIONS.map((s) => ({ num: s.num, title: s.title })),
+        }),
+      });
+      const data = await r.json().catch(() => ({}));
+      typing.remove();
+      if (!r.ok) {
+        await agentReply(`<p>${escapeHtml(data?.error || 'Could not route message.')}</p>`);
+        return;
+      }
+      route = data;
+    } catch (err) {
+      typing.remove();
+      console.error('Route call failed:', err);
+      await agentReply(`<p>I couldn't reach the AI just now. Try again in a moment.</p>`);
+      return;
+    }
+
+    const intent = route?.intent;
+
+    if (intent === 'next') return advanceReview(+1);
+    if (intent === 'previous') return advanceReview(-1);
+
+    if (intent === 'switch') {
+      const idx = IPS_SECTIONS.findIndex((s) => s.num === Number(route.targetSectionNum));
+      if (idx < 0) {
+        await agentReply(`<p>I couldn't find that section.</p>`);
+        return;
+      }
+      state.reviewIdx = idx;
+      const s = IPS_SECTIONS[idx];
+      highlightSection(s.id);
+      await agentReply(`<p>Looking at <strong>${s.num}. ${escapeHtml(s.title)}</strong>. What would you like to change?</p>`);
+      return;
+    }
+
+    if (intent === 'edit' || intent === 'switch_and_edit') {
+      let targetIdx = state.reviewIdx;
+      if (intent === 'switch_and_edit') {
+        const found = IPS_SECTIONS.findIndex((s) => s.num === Number(route.targetSectionNum));
+        if (found < 0) {
+          await agentReply(`<p>I couldn't find section ${route.targetSectionNum}.</p>`);
+          return;
+        }
+        targetIdx = found;
+        state.reviewIdx = targetIdx;
+        highlightSection(IPS_SECTIONS[targetIdx].id);
+      }
+      await applyAiEdit(IPS_SECTIONS[targetIdx].id, route.editPrompt || text);
+      return;
+    }
+
+    if (intent === 'question' || intent === 'unclear') {
+      await agentReply(`<p>${escapeHtml(route.reply || 'Could you clarify what you\'d like to do?')}</p>`);
+      return;
+    }
+
+    // Fallback for unexpected intent
+    await agentReply(`<p>Could you clarify what you'd like to do — keep moving through the sections, or make a change?</p>`);
   }
 
   async function advanceReview(delta) {
@@ -1168,7 +1231,12 @@
         <div class="ips-section-head">
           <h3><span class="sub-num">${s.num}.</span> ${escapeHtml(s.title)}</h3>
           <div class="ips-section-controls">
+            <button class="ips-info-btn" data-action="show-rationale" data-id="${s.id}" title="Why this section?" aria-label="Why this section">i</button>
             <button class="ips-edit-btn" data-action="edit-section" data-id="${s.id}">Edit</button>
+          </div>
+          <div class="ips-rationale-popover">
+            <div class="rationale-label">Why I wrote it this way</div>
+            <div class="rationale-body">${escapeHtml(s.rationale || '')}</div>
           </div>
         </div>
         <div class="ips-section-content" data-content="${s.id}">${content}</div>
@@ -1313,7 +1381,29 @@
       saveSectionEdit(btn.dataset.id);
     } else if (a === 'cancel-edit') {
       cancelSectionEdit(btn.dataset.id);
+    } else if (a === 'show-rationale') {
+      const id = btn.dataset.id;
+      const sec = artifactBody.querySelector(`#${id}`);
+      // Close any other open popovers
+      artifactBody.querySelectorAll('.ips-section.show-rationale').forEach((el) => {
+        if (el !== sec) {
+          el.classList.remove('show-rationale');
+          el.querySelector('.ips-info-btn')?.classList.remove('active');
+        }
+      });
+      const opened = sec.classList.toggle('show-rationale');
+      btn.classList.toggle('active', opened);
     }
+  });
+
+  // Click outside any open rationale popover closes it
+  document.addEventListener('click', (e) => {
+    if (e.target.closest('[data-action="show-rationale"]')) return;
+    if (e.target.closest('.ips-rationale-popover')) return;
+    artifactBody.querySelectorAll('.ips-section.show-rationale').forEach((el) => {
+      el.classList.remove('show-rationale');
+      el.querySelector('.ips-info-btn')?.classList.remove('active');
+    });
   });
 
   // Click anywhere within a section to make it the active/highlighted one
