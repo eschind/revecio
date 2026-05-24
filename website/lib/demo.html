@@ -249,17 +249,18 @@
   .modal-actions .primary:hover { background: var(--accent-2); border-color: var(--accent-2); }
   .modal-actions .primary:disabled { opacity: 0.4; cursor: not-allowed; }
 
-  /* Save CTA card */
-  .save-cta { margin: 36px -14px 0; padding: 20px 28px; background: var(--bg-2); border: 1px solid var(--line); border-radius: 12px; }
-  .save-cta .cta-label { font-family: 'JetBrains Mono', monospace; font-size: 10.5px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent); margin-bottom: 8px; }
-  .save-cta h3 { font-family: 'Newsreader', serif; font-weight: 400; font-size: 22px; margin-bottom: 6px; display: block; }
-  .save-cta p { font-size: 13.5px; color: var(--ink-2); margin-bottom: 14px; line-height: 1.6; }
-  .save-cta .cta-actions { display: flex; gap: 10px; flex-wrap: wrap; }
-  .save-cta button { appearance: none; cursor: pointer; font: inherit; font-size: 13px; padding: 8px 18px; border-radius: 999px; }
-  .save-cta .btn-primary { background: var(--accent); color: var(--dark-ink); border: 1px solid var(--accent); }
-  .save-cta .btn-primary:hover { background: var(--accent-2); border-color: var(--accent-2); }
-  .save-cta .btn-secondary { background: transparent; color: var(--ink); border: 1px solid var(--line); }
-  .save-cta .btn-secondary:hover { border-color: var(--ink); }
+  /* Artifact footer (sticky save bar) */
+  .artifact-footer { display: none; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 22px; background: var(--panel); border-top: 1px solid var(--line); flex-shrink: 0; }
+  .artifact-footer.visible { display: flex; }
+  .artifact-footer .footer-text { min-width: 0; }
+  .artifact-footer .footer-label { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); margin-bottom: 2px; }
+  .artifact-footer .footer-desc { font-size: 13.5px; color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .artifact-footer .footer-actions { display: flex; gap: 8px; flex-shrink: 0; }
+  .artifact-footer button { appearance: none; cursor: pointer; font: inherit; font-size: 13px; padding: 7px 16px; border-radius: 999px; white-space: nowrap; }
+  .artifact-footer .btn-primary { background: var(--accent); color: var(--dark-ink); border: 1px solid var(--accent); }
+  .artifact-footer .btn-primary:hover { background: var(--accent-2); border-color: var(--accent-2); }
+  .artifact-footer .btn-secondary { background: transparent; color: var(--ink); border: 1px solid var(--line); }
+  .artifact-footer .btn-secondary:hover { border-color: var(--ink); }
 
   /* Active clients in sidebar */
   .nav-sub .client-link { display: flex; align-items: center; gap: 8px; padding: 6px 10px; font-size: 12.5px; color: var(--ink-2); text-decoration: none; border-radius: 6px; cursor: pointer; }
@@ -390,6 +391,16 @@
         </div>
       </div>
       <div class="artifact-body" id="artifact-body"></div>
+      <div class="artifact-footer" id="artifact-footer">
+        <div class="footer-text">
+          <div class="footer-label">Next step</div>
+          <div class="footer-desc">Save the IPS and continue to Portfolio Modeling</div>
+        </div>
+        <div class="footer-actions">
+          <button class="btn-secondary" data-action="keep-editing">Keep editing</button>
+          <button class="btn-primary" data-action="save-client">Save &amp; continue →</button>
+        </div>
+      </div>
     </aside>
   </div>
 
@@ -993,8 +1004,10 @@
   }
 
   // ============ IPS draft (artifact panel) ============
+  const artifactFooter = document.getElementById('artifact-footer');
   function openArtifact() { layout.classList.add('with-artifact'); }
   function closeArtifact() { layout.classList.remove('with-artifact'); }
+  function showArtifactFooter() { artifactFooter.classList.add('visible'); }
   artifactClose.addEventListener('click', closeArtifact);
 
   async function streamIps() {
@@ -1007,6 +1020,7 @@
       await think(120);
       el.classList.remove('draft-streaming');
     }
+    showArtifactFooter();
   }
 
   function buildIpsContext() {
@@ -1144,15 +1158,6 @@
       </div>
       <div class="ips-sub">Prepared by Reve · ${escapeHtml(ctx.typeLabel)}</div>
       ${sectionsHtml}
-      <div class="save-cta" id="save-cta">
-        <div class="cta-label">Next step</div>
-        <h3>Save the IPS and move to Portfolio Modeling</h3>
-        <p>This saves the draft to ${escapeHtml(ctx.name)}'s record. Portfolio Modeling — capital market assumptions, scenario analysis, and a draft strategic allocation calibrated to this IPS — comes next.</p>
-        <div class="cta-actions">
-          <button class="btn-primary" data-action="save-client">Save &amp; continue →</button>
-          <button class="btn-secondary" data-action="keep-editing">Keep editing</button>
-        </div>
-      </div>
     `;
   }
 
@@ -1388,6 +1393,7 @@
     // Render IPS in artifact with overrides applied
     openArtifact();
     artifactBody.innerHTML = buildIpsHtml();
+    showArtifactFooter();
     // After render, apply overrides (renderSection should have already used them via state)
     // Mark all sections as reviewed (they've been seen before)
     artifactBody.querySelectorAll('.ips-section').forEach((el) => el.classList.add('reviewed'));
