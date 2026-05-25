@@ -1135,6 +1135,12 @@
       id: 'nysym-mission', label: 'Mission overview', orgName: 'The New York Symphony', orgType: 'arts',
       match: (n) => /symphony/i.test(n) && /mission|overview|vision/i.test(n),
       facts: { mission: 'The New York Symphony enriches and inspires its community through orchestral music — presenting 120+ concerts a season at Hudson Concert Hall and reaching ~92,000 students and community members through education and engagement, including Symphony in the Schools (140 public schools), Young People’s Concerts, and free Concerts in the Parks.' },
+      people: [
+        { name: 'Robert Kim', role: 'Investment Committee Chair', email: 'r.kim@newyorksymphony.org' },
+        { name: 'Patricia Nolan', role: 'Chief Financial Officer', email: 'p.nolan@newyorksymphony.org' },
+        { name: 'Marcus Bell', role: 'President & CEO', email: 'm.bell@newyorksymphony.org' },
+        { name: 'Eleanor Vance', role: 'Board Chair', email: 'e.vance@newyorksymphony.org' },
+      ],
       text: 'The New York Symphony, founded 1921, is a leading orchestra resident at Hudson Concert Hall in Manhattan. Mission: to enrich and inspire the community through the transformative power of orchestral music — on the concert stage, in schools, and across the five boroughs. About 98 musicians; 120+ concerts per season; ~320,000 annual audience. Programs: the classical subscription season, pops/family/chamber series, and national & international touring; education and community engagement including Symphony in the Schools (teaching-artist residencies in 140 public schools), Young People’s Concerts (40,000+ students), free Concerts in the Parks (50,000+ attendees), and fellowship/pipeline programs for musicians from underrepresented backgrounds. Leadership: Sofia Klein (Music Director), Marcus Bell (President & CEO), Eleanor Vance (Chair of the Board), Patricia Nolan (Chief Financial Officer), Robert Kim (Chair, Finance & Investment Committee). The endowment (~$186M) provides roughly one-fifth of annual operating support.',
     },
     {
@@ -1169,7 +1175,7 @@
 
   // Aggregate structured facts + AUM + a text corpus from the uploaded materials.
   function gatherMaterialsKnowledge(materials) {
-    const k = { orgName: null, orgType: null, aum: null, facts: {}, factSources: {}, corpus: [], matched: [] };
+    const k = { orgName: null, orgType: null, aum: null, facts: {}, factSources: {}, people: [], corpus: [], matched: [] };
     for (const it of (materials || [])) {
       const rec = matchMaterial(it.name || (it.kind === 'link' ? it.name : ''));
       if (!rec) continue;
@@ -1177,6 +1183,7 @@
       if (rec.orgName && !k.orgName) k.orgName = rec.orgName;
       if (rec.orgType && !k.orgType) k.orgType = rec.orgType;
       if (rec.aum && !k.aum) k.aum = rec.aum;
+      if (rec.people && !k.people.length) k.people = rec.people;
       if (rec.facts) for (const key of Object.keys(rec.facts)) { if (!k.facts[key]) { k.facts[key] = rec.facts[key]; k.factSources[key] = rec.label; } }
       if (rec.text) k.corpus.push({ source: rec.label, text: rec.text });
     }
@@ -1196,6 +1203,7 @@
     const parts = [];
     if (state.org.name) parts.push(`Client: ${state.org.name} (${TYPE_LABEL[state.org.type] || state.org.type || 'institution'}).`);
     if (state.aum) parts.push(`Endowment / assets under management: ${fmtAum(state.aum)}.`);
+    if ((state.people || []).length) parts.push(`Key contacts: ${state.people.map((p) => `${p.name} (${p.role})`).join('; ')}.`);
     if (f.mission) parts.push(`Mission / purpose: ${f.mission}`);
     if (f.spending) parts.push(`Spending policy: ${f.spending}`);
     if (f.cashNeeds) parts.push(`Near-term cash needs: ${f.cashNeeds}`);
@@ -1668,6 +1676,7 @@
     state.phase = 'interviewing';
     const know = gatherMaterialsKnowledge(state.materials);
     if (know.aum && !state.aum) state.aum = know.aum;
+    if (know.people.length && !(state.people || []).length) state.people = know.people.map((p) => ({ ...p }));
     const all = QUESTIONS[state.org.type] || QUESTIONS.foundation;
     // Pre-fill any facts the materials already answer, and ask only the rest.
     for (const q of all) { if (know.facts[q.key] && !state.facts[q.key]) state.facts[q.key] = know.facts[q.key]; }
@@ -1679,6 +1688,7 @@
     if (know.facts.spending) pulled.push('the spending policy');
     if (know.facts.cashNeeds) pulled.push('near-term cash needs');
     if (know.aum) pulled.push(`the AUM (${fmtAum(know.aum)})`);
+    if (know.people.length) pulled.push(`${know.people.length} key contacts`);
 
     if (pulled.length) {
       const note = `I already pulled ${listJoin(pulled)} from the materials, so I'll skip those.`;
