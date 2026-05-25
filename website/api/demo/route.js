@@ -1,38 +1,39 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { readSession } from '../../lib/session.js';
 
-const SYSTEM_PROMPT = `You route chat messages from a user who is reviewing an Investment Policy Statement (IPS) draft inside an OCIO product called Reve. The IPS has numbered sections. The user can move between sections or ask for edits.
+const SYSTEM_PROMPT = `You are the routing layer for an OCIO product called Reve. The user is working in a client workspace that contains an Investment Policy Statement (IPS), a Strategic Asset Allocation (SAA) module, and uploaded Materials. The IPS has numbered sections.
 
-You will receive:
-- The current section the user is focused on
-- The list of all sections (number and title)
+You receive:
+- The currently open module ("ips", "portfolio", or "materials")
+- The current IPS section the user is focused on (if applicable)
+- The list of all IPS sections (number and title)
 - The user's chat message
 
-Classify the message into one of these intents and return ONLY a single JSON object (no markdown, no commentary):
+Classify the message and return ONLY a single JSON object (no markdown, no commentary):
 
 {
-  "intent": "next" | "previous" | "switch" | "edit" | "switch_and_edit" | "question" | "unclear",
+  "intent": "open" | "next" | "previous" | "switch" | "edit" | "switch_and_edit" | "question" | "unclear",
+  "targetModule": "ips" | "portfolio" | "materials" | null,
   "targetSectionNum": <number or null>,
   "editPrompt": <string or null>,
   "reply": <string or null>
 }
 
 Rules:
-- "next" — wants to advance to the next section. Examples: "next", "move on", "continue", "let's keep going", "ok next".
-- "previous" — wants to go back. Examples: "back", "previous section", "let's go back".
-- "switch" — wants to focus on a different section but isn't asking to edit it. Examples: "show me section 4", "go to section 7", "switch to spending policy".
-- "edit" — wants to change the CURRENT section. Set targetSectionNum to the current section's number. editPrompt should be a concise plain-English instruction restating what to change.
-- "switch_and_edit" — wants to change a DIFFERENT section. Set targetSectionNum to that section's number (resolve by number if given, or by matching section titles if the user references one by name). editPrompt = the change.
-- "question" — the user is asking a clarifying question about the IPS or what's in a section, not requesting a change. Set reply to a brief, helpful response.
-- "unclear" — you can't tell what they want. Set reply to a brief follow-up question.
+- "open" — user wants to pull up a different vault item. Set targetModule to "ips", "portfolio", or "materials". Examples: "show me the portfolio", "pull up the SAA", "open the IPS", "let's look at the materials", "model the allocation".
+- "next" / "previous" — only when an IPS draft is the current focus and the user wants to advance/retreat through sections. Examples: "next", "move on", "back".
+- "switch" — focus on a different IPS section without editing. Examples: "show me section 4", "go to spending policy".
+- "edit" — change the CURRENT IPS section. editPrompt = concise plain-English instruction restating what to change.
+- "switch_and_edit" — change a DIFFERENT IPS section. Set targetSectionNum and editPrompt.
+- "question" — clarifying question that doesn't change focus. Set reply to a brief, helpful answer.
+- "unclear" — you can't tell. Set reply to a brief follow-up question.
 
 Important:
-- Be liberal with intent detection. "let's move on" or "ok continue" should be "next", not "edit".
-- editPrompt should NOT echo the user's exact words verbatim. Restate what they want done in clear, neutral language.
-- If a user references "section X" by number, set targetSectionNum to X.
-- If a user references a section by title (or partial title), match against the section list and use that number.
-- "ok" or "yes" alone is ambiguous — return "unclear" and ask whether to move on.
-- Never include markdown code fences in your output. Return raw JSON only.`;
+- If the user references the portfolio, SAA, allocation, weights, capital market assumptions, or modeling, that's "open" with targetModule="portfolio".
+- If they reference the IPS or a section by number/title from the IPS module while not currently in IPS, that's "open" with targetModule="ips" (plus optionally targetSectionNum).
+- editPrompt should NOT echo the user's exact words verbatim. Restate clearly and neutrally.
+- "ok" or "yes" alone is ambiguous — return "unclear" and ask what they want next.
+- Never include markdown code fences. Return raw JSON only.`;
 
 function readBody(req) {
   return new Promise((resolve, reject) => {
@@ -79,6 +80,7 @@ export default async function handler(req, res) {
   const userMessage = String(body.userMessage || '').slice(0, 2000);
   const currentSectionNum = Number(body.currentSectionNum) || 0;
   const currentSectionTitle = String(body.currentSectionTitle || '').slice(0, 200);
+  const currentModule = String(body.currentModule || 'ips').slice(0, 32);
   const sections = Array.isArray(body.sections) ? body.sections.slice(0, 30) : [];
 
   if (!userMessage || !sections.length) {
@@ -91,9 +93,10 @@ export default async function handler(req, res) {
   }
 
   const sectionList = sections.map((s) => `  ${s.num}. ${String(s.title).slice(0, 80)}`).join('\n');
-  const userBlock = `Current section: ${currentSectionNum}. ${currentSectionTitle}
+  const userBlock = `Current module: ${currentModule}
+Current section: ${currentSectionNum}. ${currentSectionTitle}
 
-All sections:
+All IPS sections:
 ${sectionList}
 
 User message: ${userMessage}
