@@ -203,6 +203,9 @@
   .ips-answer-card dd { margin: 2px 0 0 16px; }
   .ips-answer-card strong { color: var(--ink); font-weight: 500; }
   .ips-answer-card .placeholder-block { background: transparent; padding: 0; }
+  .ips-view-btn { appearance: none; cursor: pointer; background: transparent; border: 1px solid var(--line); color: var(--ink-2); border-radius: 999px; padding: 5px 14px; font: inherit; font-size: 12px; display: inline-flex; align-items: center; gap: 6px; margin-top: 12px; transition: border-color 0.15s, color 0.15s; }
+  .ips-view-btn:hover { color: var(--ink); border-color: var(--ink); }
+  .ips-view-btn svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 
   .typing-indicator { display: inline-flex; gap: 4px; align-items: center; padding: 4px 0; }
   .typing-indicator span { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); animation: bounce 1.4s infinite ease-in-out; }
@@ -1052,15 +1055,11 @@
         return;
       }
       const s = IPS_SECTIONS[idx];
-      // Surface the relevant section in the artifact alongside the written answer
-      if (state.module !== 'ips') {
-        switchToIpsView();
-        await new Promise((r) => setTimeout(r, 60));
-      }
-      state.reviewIdx = idx;
-      highlightSection(s.id);
+      // Answer inline in chat; offer a CTA to open the full IPS at this section
+      // rather than yanking the user into the expanded view automatically.
       const lead = route?.reply ? `<p>${escapeHtml(route.reply)}</p>` : '';
-      await agentReply(`${lead}<div class="ips-answer-card"><div class="ips-answer-head">IPS · ${s.num}. ${escapeHtml(s.title)}</div>${currentSectionHtml(s)}</div>`);
+      const cta = `<button class="ips-view-btn" data-action="view-ips-section" data-num="${s.num}">View in IPS<svg viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg></button>`;
+      await agentReply(`${lead}<div class="ips-answer-card"><div class="ips-answer-head">IPS · ${s.num}. ${escapeHtml(s.title)}</div>${currentSectionHtml(s)}${cta}</div>`);
       return;
     }
 
@@ -1316,6 +1315,29 @@
     await agentReply(`<p><strong>${s.num}. ${escapeHtml(s.title)}</strong></p><p>${escapeHtml(s.rationale)}</p>`);
   }
 
+  // Eased scroll of the artifact panel to center an element — slower and gentler
+  // than the browser's native smooth scroll, which feels abrupt here.
+  function smoothScrollToSection(el, duration = 700) {
+    const container = artifactBody;
+    if (!el || !container) return;
+    const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const cRect = container.getBoundingClientRect();
+    const eRect = el.getBoundingClientRect();
+    const delta = (eRect.top - cRect.top) - (container.clientHeight - el.clientHeight) / 2;
+    const start = container.scrollTop;
+    const maxScroll = container.scrollHeight - container.clientHeight;
+    const end = Math.max(0, Math.min(start + delta, maxScroll));
+    if (reduce || Math.abs(end - start) < 2) { container.scrollTop = end; return; }
+    const startTime = performance.now();
+    const ease = (t) => (t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2); // easeInOutQuad
+    function step(now) {
+      const t = Math.min(1, (now - startTime) / duration);
+      container.scrollTop = start + (end - start) * ease(t);
+      if (t < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+
   function highlightSection(id) {
     // Clear all active markers, mark prior ones as reviewed
     artifactBody.querySelectorAll('.ips-section.active').forEach((el) => {
@@ -1326,7 +1348,7 @@
     if (el) {
       el.classList.add('active');
       el.classList.remove('reviewed');
-      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      smoothScrollToSection(el);
     }
   }
 
@@ -1724,6 +1746,17 @@
       card.dataset.currentName = name;
       card.dataset.currentType = type;
       card.innerHTML = factsCardReview({ name, type });
+    } else if (a === 'view-ips-section') {
+      const num = Number(btn.dataset.num);
+      const idx = IPS_SECTIONS.findIndex((s) => s.num === num);
+      if (idx < 0) return;
+      const s = IPS_SECTIONS[idx];
+      if (state.module !== 'ips') {
+        switchToIpsView();
+        await new Promise((r) => setTimeout(r, 80));
+      }
+      state.reviewIdx = idx;
+      highlightSection(s.id);
     } else if (a === 'edit-section') {
       startSectionEdit(btn.dataset.id);
     } else if (a === 'save-edit') {
