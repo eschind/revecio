@@ -96,6 +96,7 @@ export default async function handler(req, res) {
   const currentSectionTitle = String(body.currentSectionTitle || '').slice(0, 200);
   const currentModule = String(body.currentModule || 'ips').slice(0, 32);
   const sections = Array.isArray(body.sections) ? body.sections.slice(0, 30) : [];
+  const history = Array.isArray(body.history) ? body.history.slice(-10) : [];
 
   if (!userMessage || !sections.length) {
     res.statusCode = 400;
@@ -107,13 +108,18 @@ export default async function handler(req, res) {
   }
 
   const sectionList = sections.map((s) => `  ${s.num}. ${String(s.title).slice(0, 80)}`).join('\n');
+  const historyBlock = history.length
+    ? `\nConversation so far (oldest first; agent answers are summarized):\n${history.map((h) => `  ${h.role === 'user' ? 'USER' : 'AGENT'}: ${String(h.text || '').slice(0, 350)}`).join('\n')}\n`
+    : '';
   const userBlock = `Current module: ${currentModule}
-Current section: ${currentSectionNum}. ${currentSectionTitle}
+Current IPS section in focus: ${currentSectionNum}. ${currentSectionTitle}
 
 All IPS sections:
 ${sectionList}
+${historyBlock}
+Latest user message: ${userMessage}
 
-User message: ${userMessage}
+Use the conversation so far to resolve references like "it", "that", "what about", "what if". For example, if the user asked about Sharpe and then says "what would it be with MVO", the intent is "optimize" with query="sharpe".
 
 Return only the JSON object.`;
 

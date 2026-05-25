@@ -684,6 +684,16 @@
   }
 
   // ============ Rendering messages ============
+  function plainTextFromHtml(html) {
+    const div = document.createElement('div');
+    div.innerHTML = html;
+    return (div.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 500);
+  }
+  function recordChat(role, html) {
+    state.chatHistory = state.chatHistory || [];
+    state.chatHistory.push({ role, text: plainTextFromHtml(html) });
+    if (state.chatHistory.length > 20) state.chatHistory = state.chatHistory.slice(-20);
+  }
   function addAgent(html, opts = {}) {
     const msg = document.createElement('div');
     msg.className = 'msg agent';
@@ -695,6 +705,7 @@
       </div>`;
     feedInner.appendChild(msg);
     scrollFeed();
+    if (!opts.skipHistory) recordChat('agent', html);
     return msg;
   }
   function addUser(html, opts = {}) {
@@ -708,6 +719,7 @@
       </div>`;
     feedInner.appendChild(msg);
     scrollFeed();
+    if (!opts.skipHistory) recordChat('user', html);
     return msg;
   }
   function addTyping() {
@@ -959,6 +971,8 @@
           currentSectionNum: current.num,
           currentSectionTitle: current.title,
           sections: IPS_SECTIONS.map((s) => ({ num: s.num, title: s.title })),
+          // Exclude the current message (already pushed into history by addUser)
+          history: (state.chatHistory || []).slice(0, -1).slice(-10),
         }),
       });
       const data = await r.json().catch(() => ({}));
@@ -1056,17 +1070,6 @@
       return;
     }
 
-    // Safety net: if the LLM didn't classify an obvious analytic question, try regex-matching it.
-    if (guessOptimizationIntent(text)) {
-      await runInlineOptimization(guessAnalyticQuery(text) || 'metrics');
-      return;
-    }
-    const analyticGuess = guessAnalyticQuery(text);
-    if (analyticGuess) {
-      const html = answerAnalysisQuery(analyticGuess);
-      if (html) { await agentReply(html); return; }
-    }
-
     if (intent === 'question' || intent === 'unclear') {
       await agentReply(`<p>${escapeHtml(route.reply || 'Could you clarify what you\'d like to do?')}</p>`);
       return;
@@ -1074,11 +1077,6 @@
 
     // Fallback for unexpected intent
     await agentReply(`<p>Could you clarify what you'd like to do — open something, ask for a metric, or make an edit?</p>`);
-  }
-
-  function guessOptimizationIntent(text) {
-    const t = (text || '').toLowerCase();
-    return /\b(mvo|mean[\s-]?variance|optimi[sz]e|optimi[sz]ation|optimal|max[\s-]?sharpe|run the optimizer)\b/.test(t);
   }
 
   async function runInlineOptimization(query) {
@@ -1101,18 +1099,6 @@
     await agentReply(`<p>Ran mean-variance optimization — max Sharpe under IPS bounds + ${pmFmtPct(LIQ_FLOOR, 0)} Tier-1 floor. Sharpe: <strong>${optMetrics.sharpe.toFixed(2)}</strong>, return ${pmFmtPct(optMetrics.ret,1)}, vol ${pmFmtPct(optMetrics.vol,1)}.</p>${html}<p style="font-size:12.5px;color:var(--muted);">Open the Asset allocation item to inspect or adopt this as the SAA.</p>`);
   }
 
-  // Pattern-match common analytic phrases so they get answered even when the router hesitates.
-  function guessAnalyticQuery(text) {
-    const t = (text || '').toLowerCase();
-    if (/\bsharpe\b/.test(t)) return 'sharpe';
-    if (/\b(real return|after inflation|real growth)\b/.test(t)) return 'real_return';
-    if (/\b(expected return|10[\s-]?year return|10y return|annual(ized)? return)\b/.test(t)) return 'return';
-    if (/\b(volatility|annualized risk|portfolio risk|standard deviation|how risky)\b/.test(t)) return 'vol';
-    if (/\b(liquidity|coverage|cushion|capital calls?|spending need|spending coverage)\b/.test(t)) return 'liquidity';
-    if (/\b(asset (mix|allocation)|allocation|weights|holdings|portfolio mix|current mix)\b/.test(t)) return 'allocation';
-    if (/\b(summari[sz]e|headline metrics?|key metrics|all the (numbers|metrics))\b/.test(t)) return 'metrics';
-    return null;
-  }
 
   async function advanceReview(delta) {
     let i = state.reviewIdx + delta;
@@ -1821,6 +1807,7 @@
     document.querySelectorAll('.nav-item').forEach((el) => el.classList.remove('active'));
     // Reset chat
     feedInner.innerHTML = '';
+    state.chatHistory = [];
     renderActiveClients();
     enterClientWorkspace();
     const saaLine = state.saa ? ' Strategic Asset Allocation is adopted.' : '';
@@ -2307,6 +2294,7 @@
     artifactFooter.classList.remove('visible');
     artifactBody.innerHTML = '';
     feedInner.innerHTML = '';
+    state.chatHistory = [];
     clientChip.style.display = 'none';
     composerInput.value = '';
     composerInput.style.height = 'auto';
