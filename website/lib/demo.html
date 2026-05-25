@@ -1914,17 +1914,17 @@
   // Capital market assumptions: J.P. Morgan 2025 Long-Term Capital Market Assumptions,
   // USD, 10–15 year horizon. Returns are arithmetic; volatilities are annualized.
   const CMA = [
-    { id: 'us_eq',   name: 'U.S. Equity',                 ret: 0.067, vol: 0.170, tier: 1 },
-    { id: 'intl_eq', name: 'Intl Developed Equity',       ret: 0.081, vol: 0.175, tier: 1 },
-    { id: 'em_eq',   name: 'Emerging Markets Equity',     ret: 0.072, vol: 0.220, tier: 1 },
+    { id: 'us_eq',   name: 'U.S. Equity',                 ret: 0.067, vol: 0.165, tier: 1 },
+    { id: 'intl_eq', name: 'Intl Developed Equity',       ret: 0.090, vol: 0.170, tier: 1 },
+    { id: 'em_eq',   name: 'Emerging Markets Equity',     ret: 0.085, vol: 0.210, tier: 1 },
     { id: 'core_fi', name: 'Core Fixed Income (U.S. Agg)',ret: 0.046, vol: 0.045, tier: 1 },
     { id: 'tips',    name: 'TIPS',                        ret: 0.044, vol: 0.055, tier: 1 },
-    { id: 'hy',      name: 'High-Yield Credit',           ret: 0.064, vol: 0.090, tier: 1 },
-    { id: 'hf',      name: 'Diversified Hedge Funds',     ret: 0.058, vol: 0.065, tier: 2 },
-    { id: 'pe',      name: 'Private Equity',              ret: 0.099, vol: 0.225, tier: 3 },
-    { id: 'pc',      name: 'Private Credit',              ret: 0.085, vol: 0.100, tier: 3 },
-    { id: 'ra',      name: 'Real Assets',                 ret: 0.067, vol: 0.115, tier: 2 },
-    { id: 'cash',    name: 'Cash',                        ret: 0.035, vol: 0.005, tier: 1 },
+    { id: 'hy',      name: 'High-Yield Credit',           ret: 0.066, vol: 0.090, tier: 1 },
+    { id: 'hf',      name: 'Diversified Hedge Funds',     ret: 0.060, vol: 0.065, tier: 2 },
+    { id: 'pe',      name: 'Private Equity',              ret: 0.100, vol: 0.220, tier: 3 },
+    { id: 'pc',      name: 'Private Credit',              ret: 0.088, vol: 0.100, tier: 3 },
+    { id: 'ra',      name: 'Real Assets',                 ret: 0.072, vol: 0.115, tier: 2 },
+    { id: 'cash',    name: 'Cash',                        ret: 0.034, vol: 0.005, tier: 1 },
   ];
   const CMA_BY = Object.fromEntries(CMA.map((c) => [c.id, c]));
 
@@ -1957,29 +1957,33 @@
     return projectToBoundsAndSimplex(raw);
   }
 
-  // Factor model for correlations: [equity, rates, credit, illiq]
-  const FACTORS = {
-    us_eq:   [1.00,  0.00, 0.10, 0.00],
-    intl_eq: [0.90,  0.00, 0.10, 0.00],
-    em_eq:   [0.80, -0.10, 0.20, 0.00],
-    core_fi: [0.00,  1.00, 0.15, 0.00],
-    tips:    [0.00,  0.85, 0.00, 0.00],
-    hy:      [0.55,  0.20, 0.85, 0.00],
-    hf:      [0.45,  0.05, 0.20, 0.10],
-    pe:      [0.85,  0.00, 0.15, 0.45],
-    pc:      [0.30,  0.10, 0.70, 0.45],
-    ra:      [0.55,  0.20, 0.20, 0.20],
-    cash:    [0.00,  0.10, 0.00, 0.00],
-  };
-  function _dot(a, b) { let s = 0; for (let i = 0; i < a.length; i++) s += a[i] * b[i]; return s; }
-  function _corr(a, b) { return _dot(a, b) / (Math.sqrt(_dot(a, a) * _dot(b, b)) + 1e-12); }
+  // Pairwise correlation matrix (empirically calibrated, 10y annual). Symmetric.
+  const _ORDER = ['us_eq','intl_eq','em_eq','core_fi','tips','hy','hf','pe','pc','ra','cash'];
+  const _UPPER = [
+    //          intl  em    fi    tips  hy    hf    pe    pc    ra    cash
+    /* us_eq */ [0.85, 0.75, 0.10, 0.15, 0.65, 0.65, 0.78, 0.45, 0.60, 0.00],
+    /* intl  */ [      0.80, 0.10, 0.15, 0.60, 0.60, 0.68, 0.40, 0.55, 0.00],
+    /* em    */ [            0.05, 0.10, 0.55, 0.50, 0.55, 0.38, 0.50,-0.05],
+    /* fi    */ [                  0.72, 0.18, 0.10, 0.05, 0.25, 0.20, 0.18],
+    /* tips  */ [                        0.15, 0.10, 0.05, 0.15, 0.30, 0.10],
+    /* hy    */ [                              0.50, 0.55, 0.65, 0.45, 0.05],
+    /* hf    */ [                                    0.50, 0.35, 0.35, 0.10],
+    /* pe    */ [                                          0.45, 0.55, 0.00],
+    /* pc    */ [                                                0.40, 0.10],
+    /* ra    */ [                                                      0.05],
+  ];
   const CORR = {};
-  Object.keys(FACTORS).forEach((a) => {
+  _ORDER.forEach((a, i) => {
     CORR[a] = {};
-    Object.keys(FACTORS).forEach((b) => { CORR[a][b] = a === b ? 1 : _corr(FACTORS[a], FACTORS[b]); });
+    _ORDER.forEach((b, j) => {
+      if (i === j) CORR[a][b] = 1;
+      else if (i < j) CORR[a][b] = _UPPER[i][j - i - 1];
+      else CORR[a][b] = _UPPER[j][i - j - 1];
+    });
   });
 
-  const RF = 0.035;            // risk-free for Sharpe
+  const RF = 0.034;            // risk-free for Sharpe (JPM 2025 cash CMA)
+  const INFLATION = 0.024;     // 10y headline CPI assumption (JPM 2025)
   const LIQ_FLOOR = 0.50;      // Tier-1 minimum
 
   function portfolioMetrics(weights) {
@@ -1997,11 +2001,10 @@
     }
     const vol = Math.sqrt(Math.max(0, varSum));
     const sharpe = vol > 0 ? (ret - RF) / vol : 0;
-    // 1-year 5th-percentile (parametric normal, illustrative)
-    const cvar = ret - 1.645 * vol;
+    const realRet = ret - INFLATION;
     const tiers = { 1: 0, 2: 0, 3: 0 };
     for (const id of ids) tiers[CMA_BY[id].tier] += (weights[id] || 0);
-    return { ret, vol, sharpe, cvar, tiers };
+    return { ret, vol, sharpe, realRet, tiers };
   }
 
   function projectToBoundsAndSimplex(w) {
@@ -2113,7 +2116,7 @@
         <div class="pm-metric"><div class="pm-metric-label">10y expected return</div><div class="pm-metric-value" data-m="ret">—</div><div class="pm-metric-sub">arithmetic, annualized</div></div>
         <div class="pm-metric"><div class="pm-metric-label">Annualized volatility</div><div class="pm-metric-value" data-m="vol">—</div><div class="pm-metric-sub">portfolio σ</div></div>
         <div class="pm-metric"><div class="pm-metric-label">Sharpe ratio</div><div class="pm-metric-value" data-m="sharpe">—</div><div class="pm-metric-sub">rf = ${pmFmtPct(RF, 1)}</div></div>
-        <div class="pm-metric"><div class="pm-metric-label">1y 5th-pctile return</div><div class="pm-metric-value" data-m="cvar">—</div><div class="pm-metric-sub">μ − 1.645σ</div></div>
+        <div class="pm-metric"><div class="pm-metric-label">Real return (10y)</div><div class="pm-metric-value" data-m="real">—</div><div class="pm-metric-sub">CPI ${pmFmtPct(INFLATION, 1)}</div></div>
       </div>
 
       <div class="pm-card">
@@ -2178,7 +2181,7 @@
     artifactBody.querySelector('[data-m="ret"]').textContent = pmFmtPct(metrics.ret, 2);
     artifactBody.querySelector('[data-m="vol"]').textContent = pmFmtPct(metrics.vol, 2);
     artifactBody.querySelector('[data-m="sharpe"]').textContent = metrics.sharpe.toFixed(2);
-    artifactBody.querySelector('[data-m="cvar"]').textContent = pmFmtPct(metrics.cvar, 1);
+    artifactBody.querySelector('[data-m="real"]').textContent = pmFmtPct(metrics.realRet, 2);
 
     const tot = artifactBody.querySelector('#pm-total');
     tot.textContent = (total * 100).toFixed(1) + '%';
