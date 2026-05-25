@@ -62,6 +62,19 @@
   .layout.sidebar-collapsed .client-link .ci-delete,
   .layout.sidebar-collapsed .nav-sub .client-empty { display: none; }
   .layout.sidebar-collapsed .ci-avatar { margin: 0; }
+  .layout.sidebar-collapsed .client-workflows { display: none; }
+
+  /* Client workflows sub-nav (shown under active client) */
+  .client-workflows { display: flex; flex-direction: column; gap: 1px; padding: 4px 0 6px 14px; margin: 2px 0 4px; border-left: 1px solid var(--line); margin-left: 10px; }
+  .wf-link { display: flex; align-items: center; gap: 8px; padding: 5px 10px; font-size: 12px; color: var(--ink-2); text-decoration: none; border-radius: 5px; cursor: pointer; user-select: none; }
+  .wf-link:hover { background: rgba(20,23,28,0.04); }
+  .wf-link.active { background: var(--ink); color: var(--dark-ink); }
+  .wf-link.disabled { color: var(--muted); cursor: not-allowed; }
+  .wf-link.disabled:hover { background: transparent; }
+  .wf-link .wf-icon { width: 14px; height: 14px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .wf-link .wf-icon svg { width: 14px; height: 14px; }
+  .wf-link .wf-label { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .wf-link .badge { font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 0.06em; padding: 1px 5px; background: var(--line); color: var(--muted); border-radius: 3px; flex-shrink: 0; }
 
   /* Client avatar (visible only in collapsed mode) */
   .ci-avatar { display: none; width: 26px; height: 26px; border-radius: 6px; background: var(--bg-2); border: 1px solid var(--line); color: var(--ink-2); align-items: center; justify-content: center; font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 500; letter-spacing: 0.02em; flex-shrink: 0; }
@@ -294,7 +307,7 @@
   /* Active clients in sidebar */
   .nav-sub .client-link { display: flex; align-items: center; gap: 8px; padding: 6px 10px; font-size: 12.5px; color: var(--ink-2); text-decoration: none; border-radius: 6px; cursor: pointer; }
   .nav-sub .client-link:hover { background: rgba(20,23,28,0.05); }
-  .nav-sub .client-link.active { background: var(--ink); color: var(--dark-ink); }
+  .nav-sub .client-link.active { background: rgba(20,23,28,0.05); color: var(--ink); font-weight: 500; }
   .nav-sub .client-link .ci-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .nav-sub .client-link .ci-type { font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 0.06em; text-transform: uppercase; opacity: 0.55; flex-shrink: 0; }
   .nav-sub .client-link .ci-delete { display: none; width: 16px; height: 16px; align-items: center; justify-content: center; border-radius: 4px; font-size: 14px; line-height: 1; color: var(--muted); flex-shrink: 0; cursor: pointer; background: transparent; border: 0; padding: 0; }
@@ -399,34 +412,6 @@
         </div>
         <div class="nav-label" style="margin-top: 8px;">Active clients</div>
         <div class="nav-sub" id="nav-active-clients"></div>
-      </div>
-
-      <div class="nav-group">
-        <div class="nav-label">Workflows</div>
-        <div class="nav-item" id="nav-portfolio" data-action="open-portfolio" title="Open Portfolio Modeling">
-          <span class="icon"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 14l3-3 3 3 5-6"/></svg></span>
-          <span class="nav-text">Portfolio modeling</span>
-        </div>
-        <div class="nav-item disabled" title="Manager research (coming soon)">
-          <span class="icon"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></span>
-          <span class="nav-text">Manager research</span>
-          <span class="badge">soon</span>
-        </div>
-        <div class="nav-item disabled" title="Monitoring (coming soon)">
-          <span class="icon"><svg viewBox="0 0 24 24"><path d="M2 12h4l3 8 4-16 3 8h6"/></svg></span>
-          <span class="nav-text">Monitoring</span>
-          <span class="badge">soon</span>
-        </div>
-        <div class="nav-item disabled" title="Reporting (coming soon)">
-          <span class="icon"><svg viewBox="0 0 24 24"><path d="M4 4h16v14H4zM4 8h16M8 12h8M8 15h5"/></svg></span>
-          <span class="nav-text">Reporting</span>
-          <span class="badge">soon</span>
-        </div>
-        <div class="nav-item disabled" title="Client service (coming soon)">
-          <span class="icon"><svg viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg></span>
-          <span class="nav-text">Client service</span>
-          <span class="badge">soon</span>
-        </div>
       </div>
 
     </aside>
@@ -1607,7 +1592,6 @@
     refreshMaterialsCount();
     showClientChip();
     document.querySelectorAll('.nav-item').forEach((el) => el.classList.remove('active'));
-    document.getElementById('nav-new-client').classList.add('active');
     // Reset chat
     feedInner.innerHTML = '';
     // Render IPS in artifact with overrides applied
@@ -1632,11 +1616,48 @@
     }
     activeClientsEl.innerHTML = all.map((c) => {
       const typeShort = { foundation: 'FDN', endowment: 'ENDW', arts: 'ARTS' }[c.type] || '';
-      const active = c.id === state.clientId ? ' active' : '';
+      const isActive = c.id === state.clientId;
+      const active = isActive ? ' active' : '';
       const initials = c.name.split(/\s+/).filter(Boolean).slice(0, 2).map((s) => s[0].toUpperCase()).join('') || '?';
       const del = isSampleId(c.id) ? '' : `<button class="ci-delete" data-action="delete-client" data-id="${escapeHtml(c.id)}" title="Delete client" aria-label="Delete client">×</button>`;
-      return `<a class="client-link${active}" data-action="load-client" data-id="${escapeHtml(c.id)}" title="${escapeHtml(c.name)}"><span class="ci-avatar">${escapeHtml(initials)}</span><span class="ci-name">${escapeHtml(c.name)}</span><span class="ci-type">${typeShort}</span>${del}</a>`;
+      const link = `<a class="client-link${active}" data-action="load-client" data-id="${escapeHtml(c.id)}" title="${escapeHtml(c.name)}"><span class="ci-avatar">${escapeHtml(initials)}</span><span class="ci-name">${escapeHtml(c.name)}</span><span class="ci-type">${typeShort}</span>${del}</a>`;
+      const workflows = isActive ? renderClientWorkflows() : '';
+      return link + workflows;
     }).join('');
+  }
+
+  function renderClientWorkflows() {
+    const m = state.module || 'ips';
+    const item = (workflow, label, iconSvg, opts = {}) => {
+      const cls = ['wf-link'];
+      if (opts.disabled) cls.push('disabled');
+      if (!opts.disabled && m === workflow) cls.push('active');
+      const dataAction = opts.disabled ? '' : ` data-action="open-workflow" data-workflow="${workflow}"`;
+      const badge = opts.badge ? `<span class="badge">${opts.badge}</span>` : '';
+      const title = opts.disabled ? ` title="${label} (coming soon)"` : ` title="${label}"`;
+      return `<a class="${cls.join(' ')}"${dataAction}${title}><span class="wf-icon">${iconSvg}</span><span class="wf-label">${label}</span>${badge}</a>`;
+    };
+    const svg = (d) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
+    return `<div class="client-workflows">
+      ${item('ips', 'IPS draft', svg('<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><polyline points="14 3 14 8 19 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/>'))}
+      ${item('portfolio', 'Portfolio modeling', svg('<path d="M3 3v18h18"/><path d="M7 14l3-3 3 3 5-6"/>'))}
+      ${item('research', 'Manager research', svg('<circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/>'), { disabled: true, badge: 'soon' })}
+      ${item('monitoring', 'Monitoring', svg('<path d="M2 12h4l3 8 4-16 3 8h6"/>'), { disabled: true, badge: 'soon' })}
+      ${item('reporting', 'Reporting', svg('<path d="M4 4h16v14H4zM4 8h16M8 12h8M8 15h5"/>'), { disabled: true, badge: 'soon' })}
+      ${item('service', 'Client service', svg('<path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>'), { disabled: true, badge: 'soon' })}
+    </div>`;
+  }
+
+  function switchToIpsView() {
+    if (!state.org.name) return;
+    state.module = 'ips';
+    artifactTitle.textContent = IPS_ARTIFACT_TITLE;
+    openArtifact();
+    artifactBody.innerHTML = buildIpsHtml();
+    artifactBody.querySelectorAll('.ips-section').forEach((el) => el.classList.add('reviewed'));
+    restoreIpsFooter();
+    showArtifactFooter();
+    renderActiveClients();
   }
 
   function showSavedModal(record) {
@@ -2086,13 +2107,11 @@
 
   function openPortfolioModule() {
     if (!state.org.name) {
-      addAgent(`<p>Onboard a client first — or load Marquette from the sidebar — and we'll build the SAA from their IPS.</p>`);
+      addAgent(`<p>Open a client first — pick one from the sidebar — and we'll build the SAA from their IPS.</p>`);
       return;
     }
-    // Mark sidebar item active
-    document.querySelectorAll('.nav-item').forEach((el) => el.classList.remove('active'));
-    document.getElementById('nav-portfolio').classList.add('active');
     renderPortfolioModule();
+    renderActiveClients();
     addAgent(`<p>Opened <strong>Portfolio Modeling</strong> for ${escapeHtml(state.org.name)}. Starting from the IPS-range midpoints. You can edit individual weights, run the optimizer, or adopt straight away.</p>`);
   }
 
@@ -2111,13 +2130,12 @@
     if (state.clientId && !isSampleId(state.clientId)) saveClient();
     // Switch back to the IPS view, scrolled to Section 7
     state.module = 'ips';
-    document.querySelectorAll('.nav-item').forEach((el) => el.classList.remove('active'));
-    document.getElementById('nav-new-client').classList.add('active');
     artifactTitle.textContent = IPS_ARTIFACT_TITLE;
     artifactBody.innerHTML = buildIpsHtml();
     artifactBody.querySelectorAll('.ips-section').forEach((el) => el.classList.add('reviewed'));
     restoreIpsFooter();
     showArtifactFooter();
+    renderActiveClients();
     setTimeout(() => {
       const sec = document.getElementById('sec-7');
       if (sec) {
@@ -2185,8 +2203,10 @@
       try { localStorage.setItem('reve_demo_sidebar_collapsed', collapsed ? '1' : '0'); } catch {}
       btn.title = collapsed ? 'Expand sidebar' : 'Collapse sidebar';
       btn.setAttribute('aria-label', btn.title);
-    } else if (a === 'open-portfolio') {
-      openPortfolioModule();
+    } else if (a === 'open-workflow') {
+      const wf = btn.dataset.workflow;
+      if (wf === 'portfolio') openPortfolioModule();
+      else if (wf === 'ips') switchToIpsView();
     } else if (a === 'pm-run') {
       const desc = document.getElementById('pm-footer-desc');
       if (desc) desc.textContent = 'Running 4,000-sample Monte Carlo optimization…';
