@@ -462,7 +462,7 @@
 
     <main class="conv">
       <div class="conv-header">
-        <div class="title">New client onboarding</div>
+        <div class="title">Client workspace</div>
         <div id="client-chip" style="display: none;">
           <span class="client-chip"><span class="dot"></span><span class="name" id="chip-name"></span><span class="type" id="chip-type"></span></span>
         </div>
@@ -621,7 +621,7 @@
     msg.innerHTML = `
       <div class="avatar agent">AI</div>
       <div class="msg-body">
-        <div class="sender">Reve · Onboarding agent</div>
+        <div class="sender">Reve · Agent</div>
         <div class="text">${html}</div>
       </div>`;
     feedInner.appendChild(msg);
@@ -1778,7 +1778,7 @@
 
   function itemHeadHtml(label, rightHtml = '') {
     if (!layout.classList.contains('client-open')) return '';
-    return `<div class="item-head"><button class="back-to-vault" data-action="back-to-vault" title="Back to vault (Esc)"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>Vault</button><span style="color: var(--muted); font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;">${escapeHtml(label)}</span><span style="flex: 1;"></span>${rightHtml}<button class="item-close-btn" data-action="back-to-vault" title="Close (Esc)" aria-label="Close"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>`;
+    return `<div class="item-head"><button class="back-to-vault" data-action="back-to-vault" title="Back (Esc)"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>Back</button><span style="color: var(--muted); font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;">${escapeHtml(label)}</span><span style="flex: 1;"></span>${rightHtml}<button class="item-close-btn" data-action="back-to-vault" title="Close (Esc)" aria-label="Close"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>`;
   }
   function enterItemView() {
     if (layout.classList.contains('client-open')) layout.classList.add('expanded');
@@ -2088,8 +2088,12 @@
         </tr>`;
     }).join('');
 
+    const pmActions = `
+      <button class="save-changes-btn" data-action="pm-run" id="pm-run-btn" style="background: transparent; color: var(--ink); border-color: var(--line);" title="Re-run optimization">Re-run MVO</button>
+      <button class="save-changes-btn" data-action="pm-adopt" id="pm-adopt-btn" title="Adopt this allocation as the Strategic Asset Allocation">Adopt as SAA</button>
+    `;
     artifactBody.innerHTML = `
-      ${itemHeadHtml('Strategic Asset Allocation')}
+      ${itemHeadHtml('Strategic Asset Allocation', pmActions)}
       <div class="pm-header">
         <div class="pm-title">${escapeHtml(state.org.name || 'Portfolio')} · Strategic Asset Allocation</div>
         <button class="pm-method-btn" data-action="pm-toggle-method" aria-expanded="false"><span class="pm-info-dot">i</span>Method</button>
@@ -2138,7 +2142,7 @@
 
       <div class="pm-card">
         <div class="pm-card-label">Risk / return frontier <span style="color: var(--muted); text-transform: none; letter-spacing: 0; font-family: 'Newsreader', serif; font-size: 12px; margin-left: 8px;">— run optimization to populate</span></div>
-        <div class="pm-chart-wrap"><div class="pm-empty-chart" id="pm-chart-empty">Click <strong style="margin: 0 4px; color: var(--ink);">Run mean-variance optimization</strong> to sample the IPS-feasible space.</div><svg class="pm-chart" id="pm-chart" style="display: none;" viewBox="0 0 480 280" preserveAspectRatio="none"></svg></div>
+        <div class="pm-chart-wrap"><div class="pm-empty-chart" id="pm-chart-empty">Running 4,000-sample Monte Carlo optimization…</div><svg class="pm-chart" id="pm-chart" style="display: none;" viewBox="0 0 480 280" preserveAspectRatio="none"></svg></div>
         <div class="pm-legend">
           <span><i style="background:#bcc4cd"></i>Feasible (liquidity-constrained)</span>
           <span><i style="background:var(--accent)"></i>Current allocation</span>
@@ -2146,9 +2150,26 @@
         </div>
       </div>
     `;
-    setPortfolioFooter();
+    // In client-open mode, the footer is hidden — buttons live in the item head instead.
+    if (!layout.classList.contains('client-open')) setPortfolioFooter();
     recomputePortfolio();
-    if (state_pm.mvo) drawFrontierChart();
+    // Auto-run MVO the first time the module is opened
+    if (!state_pm.mvo) {
+      setTimeout(() => {
+        state_pm.mvo = runMVO();
+        if (state_pm.mvo.optimal) {
+          state_pm.weights = { ...state_pm.mvo.optimal.w };
+          artifactBody.querySelectorAll('.pm-w-input').forEach((inp) => {
+            const id = inp.dataset.asset;
+            inp.value = (state_pm.weights[id] * 100).toFixed(1);
+          });
+        }
+        recomputePortfolio();
+        drawFrontierChart();
+      }, 30);
+    } else {
+      drawFrontierChart();
+    }
   }
 
   function recomputePortfolio() {
@@ -2275,18 +2296,23 @@
   }
 
   function refreshPortfolioFooterState({ totalOk, liquidityOk }) {
-    const desc = document.getElementById('pm-footer-desc');
-    const adoptBtn = artifactFooter.querySelector('[data-action="pm-adopt"]');
-    if (!desc || !adoptBtn) return;
-    if (!totalOk) {
-      desc.textContent = 'Weights must sum to 100.0% before adopting.';
-      adoptBtn.disabled = true; adoptBtn.style.opacity = '0.4'; adoptBtn.style.cursor = 'not-allowed';
-    } else if (!liquidityOk) {
-      desc.textContent = `Tier-1 liquidity below the ${pmFmtPct(LIQ_FLOOR, 0)} policy floor.`;
-      adoptBtn.disabled = true; adoptBtn.style.opacity = '0.4'; adoptBtn.style.cursor = 'not-allowed';
+    const adoptBtn = document.getElementById('pm-adopt-btn') || artifactFooter.querySelector('[data-action="pm-adopt"]');
+    if (!adoptBtn) return;
+    const canAdopt = totalOk && liquidityOk;
+    if (canAdopt) {
+      adoptBtn.removeAttribute('disabled');
+      adoptBtn.title = 'Adopt the current allocation as the Strategic Asset Allocation';
     } else {
-      desc.textContent = 'Adopt the current allocation as the Strategic Asset Allocation (Section 7).';
-      adoptBtn.disabled = false; adoptBtn.style.opacity = ''; adoptBtn.style.cursor = '';
+      adoptBtn.setAttribute('disabled', '');
+      adoptBtn.title = !totalOk
+        ? 'Weights must sum to 100.0% before adopting.'
+        : `Tier-1 liquidity below the ${pmFmtPct(LIQ_FLOOR, 0)} policy floor.`;
+    }
+    const desc = document.getElementById('pm-footer-desc');
+    if (desc) {
+      desc.textContent = canAdopt
+        ? 'Adopt the current allocation as the Strategic Asset Allocation (Section 7).'
+        : (!totalOk ? 'Weights must sum to 100.0% before adopting.' : `Tier-1 liquidity below the ${pmFmtPct(LIQ_FLOOR, 0)} policy floor.`);
     }
   }
 
