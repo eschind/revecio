@@ -444,6 +444,36 @@
   .vault-hint strong { color: var(--ink-2); font-weight: 500; }
   .cs-section { margin-bottom: 12px; }
   .cs-section-label { font-family: 'JetBrains Mono', monospace; font-size: 9.5px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin: 6px 4px 4px; }
+  .client-info-card { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; margin: 4px 4px 6px; background: #fff; display: flex; flex-direction: column; gap: 8px; }
+  .ci-card-row { display: flex; align-items: baseline; gap: 10px; }
+  .ci-card-row-people { align-items: flex-start; }
+  .ci-card-label { font-family: 'JetBrains Mono', monospace; font-size: 9.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); width: 64px; flex-shrink: 0; }
+  .ci-card-aum { font-family: 'Newsreader', serif; font-size: 18px; color: var(--ink); line-height: 1.1; letter-spacing: -0.005em; }
+  .ci-card-people { display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 1; }
+  .ci-person { display: flex; flex-direction: column; line-height: 1.25; }
+  .ci-person-name { font-size: 12.5px; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ci-person-role { font-size: 10.5px; color: var(--muted); font-family: 'JetBrains Mono', monospace; letter-spacing: 0.02em; }
+  .ci-person-empty { color: var(--muted); font-style: italic; font-size: 11.5px; }
+
+  /* Profile editor */
+  .pf-section { margin: 18px 0; padding-bottom: 14px; border-bottom: 1px solid var(--line-soft); }
+  .pf-section:last-of-type { border-bottom: none; }
+  .pf-section-label { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+  .pf-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 14px; }
+  .pf-field { display: flex; flex-direction: column; gap: 4px; }
+  .pf-label { font-size: 11px; color: var(--muted); font-family: 'JetBrains Mono', monospace; letter-spacing: 0.04em; }
+  .pf-input, .pf-textarea { font: inherit; font-size: 13px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px; background: #fff; color: var(--ink); resize: vertical; }
+  .pf-textarea { line-height: 1.5; min-height: 50px; }
+  .pf-input:focus, .pf-textarea:focus { outline: none; border-color: var(--accent); }
+  .pf-person-row { display: grid; grid-template-columns: 1fr 1fr 1.2fr 24px; gap: 6px; margin-bottom: 6px; align-items: center; }
+  .pf-person-remove, .pf-mat-remove { appearance: none; cursor: pointer; background: transparent; border: 0; color: var(--muted); font-size: 16px; padding: 0; width: 22px; height: 22px; border-radius: 4px; }
+  .pf-person-remove:hover, .pf-mat-remove:hover { background: rgba(177,58,58,0.08); color: #b13a3a; }
+  .pf-add-btn { appearance: none; cursor: pointer; background: transparent; border: 1px dashed var(--line); color: var(--muted); border-radius: 6px; padding: 6px 12px; font: inherit; font-size: 12px; margin-top: 4px; margin-right: 6px; }
+  .pf-add-btn:hover { color: var(--ink); border-color: var(--ink); }
+  .pf-mat-row { display: grid; grid-template-columns: 50px 1fr 24px; gap: 8px; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--line-soft); }
+  .pf-mat-name { font-size: 12.5px; color: var(--ink-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pf-upload-row { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+  .pf-upload-hint { font-size: 11px; color: var(--muted); flex: 1; min-width: 200px; }
 
   /* Item view: a back-to-vault breadcrumb */
   .item-head { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
@@ -572,6 +602,8 @@
   // ============ State ============
   const state = {
     org: { name: null, type: null },
+    aum: null,         // numeric, USD
+    people: [],        // [{ name, role, email }]
     materials: [],
     facts: {},     // mission, spending, horizon, cashNeeds, drawdown, constraints, governance
     phase: 'opening', // opening | materials-pending | confirming-org | interviewing | drafting | reviewing
@@ -579,7 +611,7 @@
     qIdx: 0,
     questions: [],
     ipsRendered: false,
-    module: 'ips',  // 'ips' | 'portfolio' | 'vault' | 'materials'
+    module: 'ips',  // 'ips' | 'portfolio' | 'vault' | 'materials' | 'profile'
     saa: null,      // adopted Strategic Asset Allocation
     ipsDirty: false, // true when there are unsaved IPS edits
   };
@@ -1613,6 +1645,12 @@
     id: 'sample-marquette',
     name: 'Marquette University',
     type: 'endowment',
+    aum: 1_220_000_000,
+    people: [
+      { name: 'Susan Liu', role: 'Chief Investment Officer', email: 'susan.liu@marquette.edu' },
+      { name: 'Mark Foster', role: 'VP Finance', email: 'm.foster@marquette.edu' },
+      { name: 'James Reilly', role: 'Investment Committee Chair', email: 'j.reilly@marquette.edu' },
+    ],
     materials: [
       { kind: 'link', name: 'https://www.marquette.edu/endowment-office/' },
       { kind: 'file', name: 'FY24-Annual-Report.pdf', size: 4_180_000 },
@@ -1667,6 +1705,8 @@
       id: savingId,
       name: state.org.name,
       type: state.org.type || 'foundation',
+      aum: state.aum,
+      people: state.people || [],
       materials: state.materials,
       facts: state.facts,
       sectionOverrides: captureSectionOverrides(),
@@ -1689,6 +1729,8 @@
     if (!client) return;
     // Reset state
     state.org = { name: client.name, type: client.type };
+    state.aum = client.aum || null;
+    state.people = client.people || [];
     state.materials = client.materials || [];
     state.facts = client.facts || {};
     state.clientId = client.id;
@@ -1771,6 +1813,14 @@
     updateUrl();
   }
 
+  function fmtAum(n) {
+    if (!n || n <= 0) return '—';
+    if (n >= 1e9) return `$${(n/1e9).toFixed(2)}B`;
+    if (n >= 1e6) return `$${(n/1e6).toFixed(1)}M`;
+    if (n >= 1e3) return `$${(n/1e3).toFixed(0)}K`;
+    return `$${n.toFixed(0)}`;
+  }
+
   function renderClientVault() {
     const m = state.module || 'ips';
     const svg = (d) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
@@ -1788,11 +1838,19 @@
       ? { text: 'Adopted', kind: 'ok' }
       : { text: 'Not modeled', kind: 'muted' };
 
+    const peopleHtml = (state.people || []).slice(0, 3).map((p) =>
+      `<div class="ci-person"><span class="ci-person-name">${escapeHtml(p.name)}</span><span class="ci-person-role">${escapeHtml(p.role || '')}</span></div>`
+    ).join('') || '<div class="ci-person ci-person-empty">— add contacts in Profile</div>';
+    const clientInfoCard = `<div class="client-info-card">
+      <div class="ci-card-row"><div class="ci-card-label">AUM</div><div class="ci-card-aum">${fmtAum(state.aum)}</div></div>
+      <div class="ci-card-row ci-card-row-people"><div class="ci-card-label">Contacts</div><div class="ci-card-people">${peopleHtml}</div></div>
+    </div>`;
     const sections = [
       {
         label: 'Client info',
+        custom: clientInfoCard,
         items: [
-          item({ id: 'profile', action: 'open-workflow', label: 'Profile · AUM, key people', icon: svg('<path d="M20 21v-2a4 4 0 0 0-3-3.87"/><path d="M4 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/><circle cx="10" cy="7" r="4"/><circle cx="17" cy="6" r="3"/>') }),
+          item({ id: 'profile', action: 'open-workflow', label: 'Profile · edit & upload', icon: svg('<path d="M20 21v-2a4 4 0 0 0-3-3.87"/><path d="M4 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/><circle cx="10" cy="7" r="4"/><circle cx="17" cy="6" r="3"/>') }),
           item({ id: 'materials', action: 'open-workflow', label: 'Input materials', icon: svg('<path d="M4 4h12l4 4v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/><polyline points="16 4 16 8 20 8"/>'), status: materialsCount ? `${materialsCount}` : '—', statusKind: 'muted', disabled: materialsCount === 0 }),
         ],
       },
@@ -1828,6 +1886,7 @@
     return sections.map((s) => `
       <div class="cs-section">
         <div class="cs-section-label">${s.label}</div>
+        ${s.custom || ''}
         ${s.items.join('')}
       </div>
     `).join('');
@@ -1842,6 +1901,23 @@
     openArtifact();
   }
 
+  function profileFmtAumInput(n) {
+    if (!n || n <= 0) return '';
+    if (n >= 1e9) return (n/1e9).toFixed(2);
+    if (n >= 1e6) return (n/1e6).toFixed(1);
+    return String(n);
+  }
+  function parseAumInput(raw) {
+    if (!raw) return null;
+    const s = String(raw).trim().toLowerCase().replace(/[\$,]/g, '');
+    const m = s.match(/^([\d.]+)\s*([bmk])?$/);
+    if (!m) return null;
+    const num = parseFloat(m[1]);
+    if (!isFinite(num)) return null;
+    const mult = m[2] === 'b' ? 1e9 : m[2] === 'm' ? 1e6 : m[2] === 'k' ? 1e3 : 1;
+    return Math.round(num * mult);
+  }
+
   function openClientProfileView() {
     if (!state.org.name) return;
     state.module = 'profile';
@@ -1849,29 +1925,141 @@
     enterItemView();
     const typeLabel = TYPE_LABEL[state.org.type] || 'Client';
     const f = state.facts || {};
-    const factRow = (label, value) => value
-      ? `<tr><td style="padding:8px 0;color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:0.06em;text-transform:uppercase;width:170px;vertical-align:top;">${label}</td><td style="padding:8px 0;color:var(--ink-2);font-size:13.5px;line-height:1.55;border-bottom:1px solid var(--line-soft);">${escapeHtml(value)}</td></tr>`
-      : '';
     const matsCount = (state.materials || []).length;
+    const aumInputValue = state.aum && state.aum >= 1e9 ? `${(state.aum/1e9).toFixed(2)}B`
+      : state.aum && state.aum >= 1e6 ? `${(state.aum/1e6).toFixed(1)}M`
+      : (state.aum ? String(state.aum) : '');
+
+    const peopleRows = (state.people || []).map((p, i) => `
+      <div class="pf-person-row" data-person-idx="${i}">
+        <input class="pf-input pf-person-name" data-field="name" placeholder="Name" value="${escapeHtml(p.name || '')}" />
+        <input class="pf-input pf-person-role" data-field="role" placeholder="Role" value="${escapeHtml(p.role || '')}" />
+        <input class="pf-input pf-person-email" data-field="email" placeholder="Email" value="${escapeHtml(p.email || '')}" />
+        <button class="pf-person-remove" data-action="pf-remove-person" data-idx="${i}" title="Remove" aria-label="Remove">×</button>
+      </div>
+    `).join('');
+
+    const matRows = (state.materials || []).map((m, i) => `
+      <div class="pf-mat-row" data-mat-idx="${i}">
+        <span class="mat-kind">${m.kind === 'link' ? 'LINK' : 'FILE'}</span>
+        <span class="pf-mat-name">${escapeHtml(m.name)}</span>
+        <button class="pf-mat-remove" data-action="pf-remove-mat" data-idx="${i}" title="Remove" aria-label="Remove">×</button>
+      </div>
+    `).join('');
+
+    const factField = (label, key) => `
+      <div class="pf-field">
+        <label class="pf-label">${label}</label>
+        <textarea class="pf-textarea" data-fact="${key}" rows="3">${escapeHtml(f[key] || '')}</textarea>
+      </div>
+    `;
+
     artifactBody.innerHTML = `
-      ${itemHeadHtml('Profile')}
+      ${itemHeadHtml('Profile', '<button class="save-changes-btn" id="profile-save-btn" data-action="save-profile" disabled>Save profile</button>')}
       <div class="ips-title">${escapeHtml(state.org.name)} · Profile</div>
-      <div class="ips-sub">Core facts captured during onboarding. AUM and key people are placeholder fields — wire to a real source when integrated.</div>
-      <table style="width:100%;border-collapse:collapse;margin-top:10px;">
-        <tr><td style="padding:8px 0;color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:0.06em;text-transform:uppercase;width:170px;">Organization</td><td style="padding:8px 0;color:var(--ink-2);font-size:13.5px;border-bottom:1px solid var(--line-soft);">${escapeHtml(state.org.name)} · ${escapeHtml(typeLabel)}</td></tr>
-        <tr><td style="padding:8px 0;color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:0.06em;text-transform:uppercase;width:170px;">AUM</td><td style="padding:8px 0;color:var(--muted);font-size:13.5px;border-bottom:1px solid var(--line-soft);font-style:italic;">— (not yet wired)</td></tr>
-        <tr><td style="padding:8px 0;color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:0.06em;text-transform:uppercase;width:170px;vertical-align:top;">Key people</td><td style="padding:8px 0;color:var(--muted);font-size:13.5px;border-bottom:1px solid var(--line-soft);font-style:italic;">— (not yet wired)</td></tr>
-        ${factRow('Mission', f.mission)}
-        ${factRow('Spending policy', f.spending)}
-        ${factRow('Cash needs', f.cashNeeds)}
-        ${factRow('Drawdown tolerance', f.drawdown)}
-        ${factRow('Constraints', f.constraints)}
-        ${factRow('Governance', f.governance)}
-        <tr><td style="padding:8px 0;color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:0.06em;text-transform:uppercase;width:170px;">Input materials</td><td style="padding:8px 0;color:var(--ink-2);font-size:13.5px;">${matsCount} ${matsCount === 1 ? 'item' : 'items'} · <a href="#" data-action="open-workflow" data-workflow="materials" style="color:var(--ink);border-bottom:1px dotted var(--muted);text-decoration:none;">view</a></td></tr>
-      </table>
+      <div class="ips-sub">Edit core facts, contacts, and AUM. New materials are uploaded below — the agent will use them on the next review.</div>
+
+      <div class="pf-section">
+        <div class="pf-section-label">Organization</div>
+        <div class="pf-grid">
+          <div class="pf-field"><label class="pf-label">Name</label><input class="pf-input" id="pf-org-name" value="${escapeHtml(state.org.name)}" /></div>
+          <div class="pf-field"><label class="pf-label">Type</label>
+            <select class="pf-input" id="pf-org-type">
+              <option value="foundation"${state.org.type==='foundation'?' selected':''}>Foundation</option>
+              <option value="endowment"${state.org.type==='endowment'?' selected':''}>Endowment</option>
+              <option value="arts"${state.org.type==='arts'?' selected':''}>Arts &amp; culture</option>
+            </select>
+          </div>
+          <div class="pf-field"><label class="pf-label">AUM</label><input class="pf-input" id="pf-aum" placeholder="e.g. 1.22B or 50M" value="${aumInputValue}" /></div>
+        </div>
+      </div>
+
+      <div class="pf-section">
+        <div class="pf-section-label">Contacts</div>
+        <div id="pf-people-list">${peopleRows}</div>
+        <button class="pf-add-btn" data-action="pf-add-person">+ Add contact</button>
+      </div>
+
+      <div class="pf-section">
+        <div class="pf-section-label">Facts</div>
+        ${factField('Mission', 'mission')}
+        ${factField('Spending policy', 'spending')}
+        ${factField('Cash needs', 'cashNeeds')}
+        ${factField('Drawdown tolerance', 'drawdown')}
+        ${factField('Constraints', 'constraints')}
+        ${factField('Governance', 'governance')}
+      </div>
+
+      <div class="pf-section">
+        <div class="pf-section-label">Input materials · ${matsCount}</div>
+        <div id="pf-mat-list">${matRows}</div>
+        <div class="pf-upload-row">
+          <input type="file" id="pf-file-input" multiple style="display: none;" />
+          <button class="pf-add-btn" data-action="pf-upload-file">+ Add file</button>
+          <button class="pf-add-btn" data-action="pf-add-link">+ Add link</button>
+          <span class="pf-upload-hint">Uploads are added to the client record. The agent will scan them for IPS-relevant context on the next conversation turn.</span>
+        </div>
+      </div>
     `;
     artifactFooter.classList.remove('visible');
     updateUrl();
+    bindProfileEvents();
+  }
+
+  function bindProfileEvents() {
+    const onChange = () => {
+      const btn = document.getElementById('profile-save-btn');
+      if (btn) btn.removeAttribute('disabled');
+    };
+    artifactBody.querySelectorAll('.pf-input, .pf-textarea').forEach((el) => {
+      el.addEventListener('input', onChange);
+      el.addEventListener('change', onChange);
+    });
+    const fileInputEl = document.getElementById('pf-file-input');
+    if (fileInputEl) {
+      fileInputEl.addEventListener('change', (e) => {
+        const files = Array.from(e.target.files || []);
+        if (!files.length) return;
+        files.forEach((f) => state.materials.push({ kind: 'file', name: f.name, size: f.size }));
+        onProfileMaterialsAdded(files.map((f) => f.name));
+      });
+    }
+  }
+
+  function onProfileMaterialsAdded(names) {
+    openClientProfileView();  // re-render to show new entries
+    const btn = document.getElementById('profile-save-btn');
+    if (btn) btn.removeAttribute('disabled');
+    addAgent(`<p>Added <strong>${names.length} new ${names.length === 1 ? 'material' : 'materials'}</strong>: ${names.map((n) => escapeHtml(n)).join(', ')}. I'll fold these into context on the next review — ask me to scan them for IPS updates whenever you're ready.</p>`);
+  }
+
+  function saveProfileChanges() {
+    const nameInput = document.getElementById('pf-org-name');
+    const typeInput = document.getElementById('pf-org-type');
+    const aumInput = document.getElementById('pf-aum');
+    if (nameInput && nameInput.value.trim()) state.org.name = nameInput.value.trim();
+    if (typeInput) state.org.type = typeInput.value;
+    if (aumInput) state.aum = parseAumInput(aumInput.value);
+    // Contacts
+    const people = [];
+    artifactBody.querySelectorAll('.pf-person-row').forEach((row) => {
+      const get = (f) => row.querySelector(`[data-field="${f}"]`)?.value.trim() || '';
+      const name = get('name');
+      if (!name) return;
+      people.push({ name, role: get('role'), email: get('email') });
+    });
+    state.people = people;
+    // Facts
+    artifactBody.querySelectorAll('[data-fact]').forEach((ta) => {
+      const k = ta.dataset.fact;
+      const v = ta.value.trim();
+      if (v) state.facts[k] = v; else delete state.facts[k];
+    });
+    // Persist (or fork sample to new client)
+    if (state.clientId) saveClient();
+    // Refresh
+    openClientProfileView();
+    addAgent(`<p>Saved profile updates.</p>`);
   }
 
   function openMaterialsView() {
@@ -1964,6 +2152,8 @@
 
   function startFresh() {
     state.org = { name: null, type: null };
+    state.aum = null;
+    state.people = [];
     state.materials = [];
     state.facts = {};
     state.phase = 'opening';
@@ -2627,6 +2817,45 @@
     } else if (a === 'back-to-vault') {
       e.preventDefault();
       backToVault();
+    } else if (a === 'save-profile') {
+      e.preventDefault();
+      saveProfileChanges();
+    } else if (a === 'pf-add-person') {
+      e.preventDefault();
+      state.people = state.people || [];
+      state.people.push({ name: '', role: '', email: '' });
+      openClientProfileView();
+      const btn = document.getElementById('profile-save-btn');
+      if (btn) btn.removeAttribute('disabled');
+    } else if (a === 'pf-remove-person') {
+      e.preventDefault();
+      const idx = Number(btn.dataset.idx);
+      if (!isNaN(idx)) {
+        state.people.splice(idx, 1);
+        openClientProfileView();
+        const sb = document.getElementById('profile-save-btn');
+        if (sb) sb.removeAttribute('disabled');
+      }
+    } else if (a === 'pf-upload-file') {
+      e.preventDefault();
+      const fi = document.getElementById('pf-file-input');
+      if (fi) fi.click();
+    } else if (a === 'pf-add-link') {
+      e.preventDefault();
+      const url = prompt('Paste a URL (homepage, IPS, board minutes, etc.)');
+      if (url && url.trim()) {
+        state.materials.push({ kind: 'link', name: url.trim() });
+        onProfileMaterialsAdded([url.trim()]);
+      }
+    } else if (a === 'pf-remove-mat') {
+      e.preventDefault();
+      const idx = Number(btn.dataset.idx);
+      if (!isNaN(idx)) {
+        state.materials.splice(idx, 1);
+        openClientProfileView();
+        const sb = document.getElementById('profile-save-btn');
+        if (sb) sb.removeAttribute('disabled');
+      }
     } else if (a === 'toggle-sidebar') {
       const collapsed = layout.classList.toggle('sidebar-collapsed');
       try { localStorage.setItem('reve_demo_sidebar_collapsed', collapsed ? '1' : '0'); } catch {}
