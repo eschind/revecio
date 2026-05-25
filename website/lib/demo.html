@@ -1098,7 +1098,11 @@
   // ============ IPS draft (artifact panel) ============
   const artifactFooter = document.getElementById('artifact-footer');
   function openArtifact() { layout.classList.add('with-artifact'); }
-  function closeArtifact() { layout.classList.remove('with-artifact'); }
+  function closeArtifact() {
+    layout.classList.remove('with-artifact');
+    layout.classList.remove('expanded');
+    if (artifactExpand) artifactExpand.title = 'Expand';
+  }
   function showArtifactFooter() { artifactFooter.classList.add('visible'); }
   artifactClose.addEventListener('click', closeArtifact);
 
