@@ -787,6 +787,9 @@
   .save-changes-btn { appearance: none; cursor: pointer; font: inherit; font-size: 11.5px; padding: 4px 12px; border-radius: 999px; background: var(--accent); border: 1px solid var(--accent); color: var(--dark-ink); transition: opacity 0.15s; }
   .save-changes-btn:hover { background: var(--accent-2); border-color: var(--accent-2); }
   .save-changes-btn:disabled { background: transparent; color: var(--muted); border-color: var(--line); cursor: default; }
+  .ips-finalize-btn { background: transparent; color: var(--ink); border-color: var(--ink); }
+  .ips-finalize-btn:hover { background: var(--ink); color: var(--dark-ink); }
+  .ips-live-pill { display: inline-flex; align-items: center; padding: 4px 12px; border-radius: 999px; font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.12em; background: rgba(31,112,80,0.14); color: var(--accent); border: 1px solid rgba(31,112,80,0.3); }
   .item-close-btn { appearance: none; cursor: pointer; background: transparent; border: 1px solid var(--line); color: var(--muted); border-radius: 6px; width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center; padding: 0; flex-shrink: 0; }
   .item-close-btn:hover { color: var(--ink); border-color: var(--ink); background: var(--bg-2); }
 </style>
@@ -4417,9 +4420,15 @@
     updateUrl();
   }
 
-  function ipsSaveBtnHtml() {
-    const disabled = !state.ipsDirty ? ' disabled' : '';
-    return `<button class="save-changes-btn" id="ips-save-btn" data-action="save-client"${disabled}>Save changes</button>`;
+  function ipsHeadActionsHtml() {
+    const saveDisabled = !state.ipsDirty ? ' disabled' : '';
+    const saveBtn = `<button class="save-changes-btn" id="ips-save-btn" data-action="save-client"${saveDisabled}>Save changes</button>`;
+    // Finalize is offered when the IPS is still a Draft (and the user has a client to finalize against).
+    const isDraft = (state.ipsStatus || 'Draft') === 'Draft';
+    const finalizeBtn = isDraft
+      ? `<button class="save-changes-btn ips-finalize-btn" id="ips-finalize-btn" data-action="finalize-ips" title="Approve and switch to Live status">Finalize IPS →</button>`
+      : `<span class="ips-live-pill" title="IPS is live since adoption">LIVE</span>`;
+    return saveBtn + finalizeBtn;
   }
   function refreshIpsSaveBtn() {
     const btn = document.getElementById('ips-save-btn');
@@ -4431,13 +4440,25 @@
     state.ipsDirty = true;
     refreshIpsSaveBtn();
   }
+  function finalizeIps() {
+    if (!state.org.name) return;
+    if (state.ipsStatus === 'Live') return;
+    const ok = window.confirm('Approve and finalize this IPS? Status will switch from Draft to Live.');
+    if (!ok) return;
+    state.ipsStatus = 'Live';
+    if (state.clientId && !isSampleId(state.clientId)) saveClient();
+    // Re-render the IPS view and vault item to reflect the new status
+    switchToIpsView();
+    renderClientWorkspace();
+    addAgent(`<p>IPS <strong>finalized</strong>. Status now reads <strong>Live</strong>. Any future edits should be tracked as amendments.</p>`);
+  }
 
   function switchToIpsView() {
     if (!state.org.name) return;
     state.module = 'ips';
     artifactTitle.textContent = IPS_ARTIFACT_TITLE;
     enterItemView();
-    const head = itemHeadHtml('Investment Policy Statement', ipsSaveBtnHtml());
+    const head = itemHeadHtml('Investment Policy Statement', ipsHeadActionsHtml());
     artifactBody.innerHTML = head + buildIpsHtml();
     artifactBody.querySelectorAll('.ips-section').forEach((el) => el.classList.add('reviewed'));
     restoreIpsFooter();
@@ -5271,6 +5292,9 @@
       feedInner.querySelectorAll('.walkthrough-next').forEach((el) => { if (el !== btn) el.setAttribute('disabled', ''); });
       btn.setAttribute('disabled', '');
       advanceReview(+1);
+    } else if (a === 'finalize-ips') {
+      e.preventDefault();
+      finalizeIps();
     } else if (a === 'pf-edit') {
       e.preventDefault();
       profileEdit[btn.dataset.section] = true;
