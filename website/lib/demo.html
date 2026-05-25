@@ -408,6 +408,7 @@
   .layout.client-open.expanded { grid-template-columns: 0 380px 1fr; }
   .layout.client-open .sidebar { opacity: 0; pointer-events: none; transition: opacity 0.2s; }
   .layout.client-open .artifact-header { display: none; }
+  .layout.client-open .artifact-footer { display: none !important; }
 
   .back-to-clients { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; color: var(--muted); text-decoration: none; font-size: 12px; cursor: pointer; border-radius: 6px; border: 1px solid transparent; }
   .back-to-clients:hover { color: var(--ink); background: rgba(20,23,28,0.05); }
@@ -426,6 +427,9 @@
   .item-head { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
   .back-to-vault { appearance: none; cursor: pointer; background: transparent; border: 1px solid var(--line); color: var(--muted); border-radius: 999px; padding: 4px 10px 4px 6px; font: inherit; font-size: 11.5px; display: inline-flex; align-items: center; gap: 4px; }
   .back-to-vault:hover { color: var(--ink); border-color: var(--ink); }
+  .save-changes-btn { appearance: none; cursor: pointer; font: inherit; font-size: 11.5px; padding: 4px 12px; border-radius: 999px; background: var(--accent); border: 1px solid var(--accent); color: var(--dark-ink); transition: opacity 0.15s; }
+  .save-changes-btn:hover { background: var(--accent-2); border-color: var(--accent-2); }
+  .save-changes-btn:disabled { background: transparent; color: var(--muted); border-color: var(--line); cursor: default; }
 </style>
 </head>
 <body>
@@ -551,8 +555,9 @@
     qIdx: 0,
     questions: [],
     ipsRendered: false,
-    module: 'ips',  // 'ips' | 'portfolio'
+    module: 'ips',  // 'ips' | 'portfolio' | 'vault' | 'materials'
     saa: null,      // adopted Strategic Asset Allocation
+    ipsDirty: false, // true when there are unsaved IPS edits
   };
 
   // ============ DOM ============
@@ -1179,6 +1184,8 @@
     controls.innerHTML = `<button class="ips-edit-btn" data-action="edit-section" data-id="${id}">Edit</button>`;
     el.classList.add('section-flash');
     setTimeout(() => el.classList.remove('section-flash'), 700);
+    state.sectionOverrides[id] = content.innerHTML;
+    markIpsDirty();
   }
   function cancelSectionEdit(id) {
     const el = artifactBody.querySelector(`#${id}`);
@@ -1225,6 +1232,8 @@
       content.innerHTML = newHtml;
       el.classList.add('section-flash');
       setTimeout(() => el.classList.remove('section-flash'), 700);
+      state.sectionOverrides[sectionId] = newHtml;
+      markIpsDirty();
       await agentReply(`<p>Updated <strong>${escapeHtml(title)}</strong>. Want another change here, or move on?</p>`);
     } catch (err) {
       typing.remove();
@@ -1644,6 +1653,8 @@
     else all.unshift(record);
     writeClients(all);
     state.clientId = record.id;
+    state.ipsDirty = false;
+    refreshIpsSaveBtn();
     renderActiveClients();
     enterClientWorkspace();
     return record;
@@ -1659,6 +1670,7 @@
     state.clientId = client.id;
     state.sectionOverrides = client.sectionOverrides || {};
     state.saa = client.saa || null;
+    state.ipsDirty = false;
     state.module = 'ips';
     state_pm.weights = null;
     state_pm.mvo = null;
@@ -1762,9 +1774,9 @@
     return items.join('');
   }
 
-  function itemHeadHtml(label) {
+  function itemHeadHtml(label, rightHtml = '') {
     if (!layout.classList.contains('client-open')) return '';
-    return `<div class="item-head"><button class="back-to-vault" data-action="back-to-vault" title="Back to vault"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>Vault</button><span style="color: var(--muted); font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;">${escapeHtml(label)}</span></div>`;
+    return `<div class="item-head"><button class="back-to-vault" data-action="back-to-vault" title="Back to vault"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>Vault</button><span style="color: var(--muted); font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;">${escapeHtml(label)}</span><span style="flex: 1;"></span>${rightHtml}</div>`;
   }
   function enterItemView() {
     if (layout.classList.contains('client-open')) layout.classList.add('expanded');
@@ -1796,12 +1808,27 @@
     artifactFooter.classList.remove('visible');
   }
 
+  function ipsSaveBtnHtml() {
+    const disabled = !state.ipsDirty ? ' disabled' : '';
+    return `<button class="save-changes-btn" id="ips-save-btn" data-action="save-client"${disabled}>Save changes</button>`;
+  }
+  function refreshIpsSaveBtn() {
+    const btn = document.getElementById('ips-save-btn');
+    if (!btn) return;
+    if (state.ipsDirty) btn.removeAttribute('disabled');
+    else btn.setAttribute('disabled', '');
+  }
+  function markIpsDirty() {
+    state.ipsDirty = true;
+    refreshIpsSaveBtn();
+  }
+
   function switchToIpsView() {
     if (!state.org.name) return;
     state.module = 'ips';
     artifactTitle.textContent = IPS_ARTIFACT_TITLE;
     enterItemView();
-    const head = itemHeadHtml('Investment Policy Statement');
+    const head = itemHeadHtml('Investment Policy Statement', ipsSaveBtnHtml());
     artifactBody.innerHTML = head + buildIpsHtml();
     artifactBody.querySelectorAll('.ips-section').forEach((el) => el.classList.add('reviewed'));
     restoreIpsFooter();
@@ -1855,6 +1882,7 @@
     state.clientId = null;
     state.sectionOverrides = {};
     state.saa = null;
+    state.ipsDirty = false;
     state.module = 'ips';
     state.currentExample = null;
     state.reviewIdx = 0;
@@ -2281,6 +2309,7 @@
       liquidityFloor: LIQ_FLOOR,
     };
     state.sectionOverrides['sec-7'] = buildSaaSectionHtml(state.saa);
+    state.ipsDirty = true;
     // Persist if this is a saved client (not the read-only sample)
     if (state.clientId && !isSampleId(state.clientId)) saveClient();
     // Switch to the IPS view, scrolled to Section 7
