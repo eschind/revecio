@@ -2449,7 +2449,53 @@
         setTimeout(() => sec.classList.remove('section-flash'), 700);
       }
     }, 50);
-    addAgent(`<p>Adopted. <strong>Section 7</strong> of the IPS now reflects the policy targets, ranges, and modeled portfolio metrics.</p>`);
+    addAgent(buildAdoptionMessage(state.saa));
+  }
+
+  function buildAdoptionMessage(saa) {
+    const m = saa.metrics;
+    const spendingRate = inferSpendingRate(state.facts?.spending);
+    const t1 = m.tiers[1], t2 = m.tiers[2], t3 = m.tiers[3];
+    const need = spendingRate + t3 * CALL_RATE;
+    const avail = t1 + t2 * T2_ACCESS + t3 * T3_DISTRIB;
+    const cushion = need > 0 ? avail / need : 0;
+
+    // Group asset classes by family
+    const groups = [
+      { label: 'Public equity',     ids: ['us_eq', 'intl_eq', 'em_eq'] },
+      { label: 'Fixed income',      ids: ['core_fi', 'tips', 'hy'] },
+      { label: 'Alternatives',      ids: ['hf', 'pe', 'pc', 'ra'] },
+      { label: 'Cash',              ids: ['cash'] },
+    ];
+    const groupRows = groups.map((g) => {
+      const total = g.ids.reduce((s, id) => s + (saa.weights[id] || 0), 0);
+      const breakdown = g.ids
+        .filter((id) => (saa.weights[id] || 0) > 0.001)
+        .map((id) => `${CMA_BY[id].name.replace(/Equity$/, 'Eq.').replace('Diversified ', '').replace('Emerging Markets', 'EM')} ${pmFmtPct(saa.weights[id], 1)}`)
+        .join(' · ');
+      return `<tr><td style="padding:3px 8px 3px 0;color:var(--ink-2);">${g.label}</td><td style="padding:3px 0;text-align:right;font-family:'JetBrains Mono',monospace;font-weight:500;color:var(--ink);">${pmFmtPct(total, 1)}</td><td style="padding:3px 0 3px 12px;font-size:11px;color:var(--muted);">${breakdown}</td></tr>`;
+    }).join('');
+
+    return `<p><strong>Adopted as Strategic Asset Allocation.</strong> Section 7 of the IPS now contains the table below. Click <strong>Save changes</strong> on the IPS to persist.</p>
+      <div style="background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; margin: 8px 0;">
+        <div style="font-family: 'JetBrains Mono', monospace; font-size: 9.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px;">Allocation targets</div>
+        <table style="width:100%; border-collapse: collapse; font-size: 12px;">${groupRows}</table>
+      </div>
+      <div style="background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; margin: 8px 0;">
+        <div style="font-family: 'JetBrains Mono', monospace; font-size: 9.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px;">Modeled metrics · 10y · JPM 2025 LTCMAs</div>
+        <table style="width:100%; border-collapse: collapse; font-size: 12px;">
+          <tr><td style="padding:2px 0;color:var(--ink-2);">Expected return</td><td style="padding:2px 0;text-align:right;font-family:'JetBrains Mono',monospace;color:var(--ink);">${pmFmtPct(m.ret, 2)}</td><td style="padding:2px 0 2px 16px;color:var(--ink-2);">Sharpe (rf ${pmFmtPct(RF,1)})</td><td style="padding:2px 0;text-align:right;font-family:'JetBrains Mono',monospace;color:var(--ink);">${m.sharpe.toFixed(2)}</td></tr>
+          <tr><td style="padding:2px 0;color:var(--ink-2);">Annualized vol</td><td style="padding:2px 0;text-align:right;font-family:'JetBrains Mono',monospace;color:var(--ink);">${pmFmtPct(m.vol, 2)}</td><td style="padding:2px 0 2px 16px;color:var(--ink-2);">Real return (CPI ${pmFmtPct(INFLATION,1)})</td><td style="padding:2px 0;text-align:right;font-family:'JetBrains Mono',monospace;color:var(--ink);">${pmFmtPct(m.realRet, 2)}</td></tr>
+        </table>
+      </div>
+      <div style="background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; margin: 8px 0;">
+        <div style="font-family: 'JetBrains Mono', monospace; font-size: 9.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px;">12-month liquidity coverage</div>
+        <table style="width:100%; border-collapse: collapse; font-size: 12px;">
+          <tr><td style="padding:2px 0;color:var(--ink-2);">1y spending need</td><td style="padding:2px 0;text-align:right;font-family:'JetBrains Mono',monospace;color:var(--ink);">${pmFmtPct(need, 1)}</td><td style="padding:2px 0 2px 16px;color:var(--muted);font-size:11px;">${pmFmtPct(spendingRate,1)} spend + ${pmFmtPct(t3*CALL_RATE,1)} calls</td></tr>
+          <tr><td style="padding:2px 0;color:var(--ink-2);">1y liquidity sources</td><td style="padding:2px 0;text-align:right;font-family:'JetBrains Mono',monospace;color:var(--ink);">${pmFmtPct(avail, 1)}</td><td style="padding:2px 0 2px 16px;color:var(--muted);font-size:11px;">T1 ${pmFmtPct(t1,1)} · T2(${(T2_ACCESS*100).toFixed(0)}%) ${pmFmtPct(t2*T2_ACCESS,1)} · T3(${(T3_DISTRIB*100).toFixed(0)}%) ${pmFmtPct(t3*T3_DISTRIB,1)}</td></tr>
+          <tr><td style="padding:2px 0;color:var(--ink-2);">Coverage cushion</td><td style="padding:2px 0;text-align:right;font-family:'JetBrains Mono',monospace;color:var(--ink);font-weight:500;">${cushion.toFixed(1)}×</td><td style="padding:2px 0 2px 16px;color:var(--muted);font-size:11px;">multiple of annual need</td></tr>
+        </table>
+      </div>`;
   }
 
   function buildSaaSectionHtml(saa) {
