@@ -453,6 +453,71 @@
   .qr-period-btn.active { background: var(--ink); color: var(--dark-ink); border-color: var(--ink); }
   @media (max-width: 760px) { .qr-kpis { grid-template-columns: repeat(2, 1fr); } .qr-bar-row { grid-template-columns: 110px 1fr 48px; } }
 
+  /* ============ Manager memos ============ */
+  .qr-tag.t-held { background: rgba(31,112,80,0.14); color: var(--accent); }
+  .qr-tag.t-pass { background: rgba(180,69,58,0.10); color: var(--qr-neg); }
+  .mm-group { margin-bottom: 22px; }
+  .mm-group-label { font-family: 'JetBrains Mono', monospace; font-size: 9.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin: 0 0 8px; }
+  .mm-card { display: flex; align-items: center; gap: 12px; padding: 13px 15px; border: 1px solid var(--line); border-radius: 9px; margin-bottom: 8px; cursor: pointer; text-decoration: none; background: var(--panel); transition: border-color 0.15s, box-shadow 0.15s; }
+  .mm-card:hover { border-color: var(--ink); box-shadow: 0 1px 6px rgba(20,23,28,0.06); }
+  .mm-card-main { flex: 1; min-width: 0; }
+  .mm-card-name { font-family: 'Newsreader', serif; font-size: 15.5px; color: var(--ink); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .mm-card-sleeve { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.04em; color: var(--muted); margin: 3px 0 5px; text-transform: uppercase; }
+  .mm-card-line { font-size: 12.5px; color: var(--ink-2); line-height: 1.45; }
+  .mm-card-arrow { color: var(--muted); flex-shrink: 0; }
+  .mm-card:hover .mm-card-arrow { color: var(--ink); }
+
+  .mm-back { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; color: var(--muted); text-decoration: none; cursor: pointer; margin-bottom: 14px; }
+  .mm-back:hover { color: var(--ink); }
+  .mm-detail-head { margin-bottom: 14px; }
+  .mm-detail-title { font-family: 'Newsreader', serif; font-size: 25px; letter-spacing: -0.01em; color: var(--ink); display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .mm-detail-sub { font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); margin-top: 5px; }
+  .mm-verdict-banner { border-radius: 10px; padding: 14px 16px; margin: 16px 0 20px; border-left: 3px solid var(--accent); background: var(--bg-2); }
+  .mm-verdict-banner.mm-v-passed { border-left-color: var(--qr-neg); }
+  .mm-verdict-banner.mm-v-watch { border-left-color: #b8862b; }
+  .mm-verdict-label { font-family: 'JetBrains Mono', monospace; font-size: 9.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 5px; }
+  .mm-verdict-banner p { font-size: 14px; line-height: 1.55; color: var(--ink); font-family: 'Newsreader', serif; font-style: italic; margin: 0; }
+
+  .mm-meta { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1px; background: var(--line-soft); border: 1px solid var(--line-soft); border-radius: 9px; overflow: hidden; margin-bottom: 22px; }
+  .mm-meta-item { background: var(--panel); padding: 9px 13px; }
+  .mm-meta-k { font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 0.07em; text-transform: uppercase; color: var(--muted); }
+  .mm-meta-v { font-size: 13px; color: var(--ink); margin-top: 3px; }
+
+  .mm-section { margin-bottom: 22px; }
+  .mm-section h4 { font-family: 'Newsreader', serif; font-weight: 500; font-size: 17px; color: var(--ink); margin: 0 0 7px; }
+  .mm-section p { font-size: 13.5px; line-height: 1.66; color: var(--ink-2); margin: 6px 0; }
+  .mm-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .mm-chip { font-family: 'JetBrains Mono', monospace; font-size: 10.5px; padding: 4px 10px; border: 1px solid var(--line); border-radius: 999px; color: var(--ink-2); background: var(--bg-2); }
+  .mm-cases { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .mm-case { border: 1px solid var(--line); border-radius: 9px; padding: 12px 14px; border-top: 3px solid var(--muted); }
+  .mm-case-win { border-top-color: var(--accent); }
+  .mm-case-loss { border-top-color: var(--qr-neg); }
+  .mm-case-tag { font-family: 'JetBrains Mono', monospace; font-size: 8.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+  .mm-case-win .mm-case-tag { color: var(--accent); }
+  .mm-case-loss .mm-case-tag { color: var(--qr-neg); }
+  .mm-case-title { font-size: 13.5px; font-weight: 600; color: var(--ink); margin: 4px 0 5px; }
+  .mm-case p { font-size: 12.5px; line-height: 1.55; color: var(--ink-2); margin: 0; }
+
+  .mm-agent { border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; margin-top: 26px; background: linear-gradient(180deg, rgba(31,112,80,0.05), var(--panel) 120px); }
+  .mm-agent-head { display: flex; align-items: center; gap: 11px; padding-bottom: 14px; border-bottom: 1px solid var(--line-soft); margin-bottom: 14px; }
+  .mm-agent-avatar { width: 30px; height: 30px; border-radius: 50%; background: var(--accent); color: var(--bg); display: inline-flex; align-items: center; justify-content: center; font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.04em; flex-shrink: 0; }
+  .mm-agent-name { font-size: 14px; color: var(--ink); font-weight: 600; }
+  .mm-agent-role { font-size: 11px; color: var(--muted); }
+  .mm-agent-head > div { flex: 1; }
+  .mm-agent-verdict { font-family: 'JetBrains Mono', monospace; font-size: 9.5px; letter-spacing: 0.06em; text-transform: uppercase; padding: 4px 10px; border-radius: 999px; background: rgba(31,112,80,0.14); color: var(--accent); }
+  .mm-agent-verdict.mm-v-passed { background: rgba(180,69,58,0.10); color: var(--qr-neg); }
+  .mm-agent-verdict.mm-v-watch { background: rgba(184,134,43,0.14); color: #8a6418; }
+  .mm-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 6px; }
+  .mm-col-label { font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 6px; }
+  .mm-col-pos { color: var(--accent); }
+  .mm-col-neg { color: var(--qr-neg); }
+  .mm-cols ul { margin: 0; padding-left: 18px; font-size: 12.5px; line-height: 1.5; color: var(--ink-2); }
+  .mm-cols li { margin: 4px 0; }
+  .mm-agent h5 { font-family: 'JetBrains Mono', monospace; font-size: 9.5px; letter-spacing: 0.09em; text-transform: uppercase; color: var(--muted); margin: 16px 0 4px; }
+  .mm-agent p { font-size: 13.5px; line-height: 1.66; color: var(--ink-2); margin: 4px 0; }
+  .mm-rec { font-weight: 500; color: var(--ink) !important; }
+  @media (max-width: 680px) { .mm-meta, .mm-cases, .mm-cols { grid-template-columns: 1fr; } }
+
   .draft-streaming { opacity: 0.35; }
   .draft-cursor { display: inline-block; width: 6px; height: 14px; background: var(--accent); margin-left: 2px; animation: blink 1s infinite; vertical-align: -2px; }
   @keyframes blink { 50% { opacity: 0.2; } }
@@ -1824,6 +1889,13 @@
       if (target) smoothScrollToSection(target);
     } else if (a === 'qr-period') {
       openQuarterlyReportView(btn.dataset.id);
+    } else if (a === 'open-memo') {
+      openManagerMemoView(btn.dataset.id);
+    } else if (a === 'memos-back') {
+      openManagerMemosView();
+    } else if (a === 'mm-filter') {
+      mmFilter = btn.dataset.filter || 'all';
+      openManagerMemosView();
     } else if (a === 'view-ips-section') {
       const num = Number(btn.dataset.num);
       const idx = IPS_SECTIONS.findIndex((s) => s.num === num);
@@ -2349,7 +2421,7 @@
         label: 'Documents',
         items: [
           item({ id: 'reports', action: 'open-workflow', label: 'Quarterly reports', icon: svg('<path d="M3 3v18h18"/><polyline points="7 14 11 10 15 14 21 8"/>'), status: 'Q1 2026', statusKind: 'ok' }),
-          item({ id: 'memos', label: 'Manager memos', icon: svg('<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>'), disabled: true, status: 'soon' }),
+          item({ id: 'memos', action: 'open-workflow', label: 'Manager memos', icon: svg('<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>'), status: `${MANAGER_MEMOS.length}`, statusKind: 'muted' }),
         ],
       },
       {
@@ -3126,6 +3198,568 @@
       <div class="qr-period-bar">${pills}</div>
       ${buildQuarterlyReportHtml(r)}
     `;
+    artifactFooter.classList.remove('visible');
+    updateUrl();
+  }
+
+  // ============ Manager memos ============
+  // Investment Committee memos written by the Manager Selection Agent. Covers the
+  // actively-managed fictitious mandates the endowment holds, plus a pipeline of
+  // managers the agent evaluated and passed on. Each memo carries metadata, a
+  // strategy deep dive, track record vs benchmark, team, portfolio/underlying
+  // holdings, sources of performance, case studies, and the agent's assessment of
+  // fit to the SAA, the IPS (incl. Catholic Social Teaching exclusions and the
+  // 50% Tier-1 floor), and the current/projected market environment.
+  const MANAGER_MEMOS = [
+    {
+      id: 'cascade-park', name: 'Cascade Park U.S. Large Growth', status: 'held', sleeve: 'U.S. Equity', vehicle: 'Separately managed account',
+      oneLiner: 'High-conviction growth with real valuation guardrails — earns its place in the U.S. equity sleeve.',
+      meta: [['Strategy', 'U.S. large-cap growth, ~35 holdings'], ['Vehicle', 'Separately managed account (SMA)'], ['Firm AUM', '$28B'], ['Strategy AUM', '$6.4B'], ['Inception', '2009'], ['Fee', '0.45% on SMA'], ['Liquidity', 'Daily (Tier 1)'], ['Benchmark', 'Russell 1000 Growth'], ['HQ', 'Boston, MA'], ['Endowment allocation', '$90M · 33% of U.S. equity']],
+      strategy: `A focused, fundamentally-driven growth strategy that holds roughly 35 names with three-to-five-year horizons. The team underwrites durable revenue compounders — recurring-revenue software, payments, medical devices — and explicitly caps what it will pay, using reverse-DCF to avoid the "growth at any price" trap that sank many peers in 2022. Position sizing is conviction-weighted, with a 6% single-name cap.`,
+      track: { rows: [['Trailing 1 year', 14.2, 13.0], ['3 years (ann.)', 9.8, 9.0], ['5 years (ann.)', 13.1, 12.5], ['Since inception (ann.)', 12.0, 11.2]], note: 'Net of the 0.45% SMA fee, vs Russell 1000 Growth. SMA inception at the endowment: 2019.' },
+      team: `Led by founder-CIO Diane Mercer (28 years, ex-Putnam) and co-PM Raj Patel (15 years). Eight sector analysts; flat structure with low turnover. The firm is employee-owned with a documented succession plan that broadened equity to the next generation in 2023 — a meaningful de-risking of the key-person concern we flag for founder-led shops.`,
+      holdings: `Concentrated in technology and health care, with a deliberate underweight to mega-cap index heavyweights where the team sees limited incremental upside. Active share runs ~80%. The SMA structure lets us apply the endowment's mission-alignment screens at the account level rather than relying on a commingled fund's policy.`,
+      topHoldings: ['Cloud infrastructure', 'Payments network', 'Med-tech devices', 'Design software', 'Specialty semis'],
+      sources: `Five-year attribution is roughly 70% stock selection, 30% sector allocation — i.e., the alpha is bottom-up, not a persistent growth-factor bet, which is what we want from an active fee. Selection in software and health care has been the consistent driver; the 2022 drawdown was milder than peers precisely because of the valuation discipline.`,
+      cases: [
+        { type: 'win', title: 'Trimmed a payments compounder into strength', body: `Bought a payments network in 2020, rode a 3x re-rating, then trimmed methodically in 2024 as the reverse-DCF implied returns thinned — booking the gain rather than round-tripping it. A clean example of the sell discipline.` },
+        { type: 'loss', title: 'A consumer-internet name that broke', body: `A 2021 consumer-internet position fell ~40% on a demand air-pocket. The team exited within two quarters once the thesis (durable engagement) was disproven, capping the damage — but it was a reminder that even disciplined growth shops mis-underwrite TAM.` },
+      ],
+      agent: {
+        strengths: ['Genuine bottom-up alpha (selection-driven, not factor beta)', 'Valuation discipline that limited the 2022 drawdown', 'Resolved succession + employee ownership lowers key-person risk', 'SMA structure accommodates the mission-alignment screens'],
+        concerns: ['~35 names means real tracking error; expect lumpy quarters', 'Growth tilt is rate-sensitive in a higher-for-longer scenario'],
+        portfolioFit: `Cascade Park is the growth anchor opposite Harbor & Main's value mandate inside the 22% U.S. equity target — a deliberate barbell that keeps the sleeve close to core while harvesting selection alpha on both sides. The SMA wrapper is important: it lets us hard-code the Catholic Social Teaching exclusions (weapons, tobacco, predatory lending, adult entertainment) at the account level, which a commingled growth fund could not guarantee.`,
+        marketFit: `In the current disinflation-plus-easing backdrop, a quality-growth book with falling discount rates is a tailwind, and Q1 2026 bore that out. The risk case is a re-acceleration of inflation that forces higher-for-longer; the valuation guardrails partially hedge this, but the IC should expect this manager to lag in a sharp value rotation. We size it accordingly.`,
+        recommendation: `Retain at the current weight. No action required; revisit only if active share compresses or the valuation discipline visibly loosens.`,
+      },
+    },
+
+    {
+      id: 'harbor-main', name: 'Harbor & Main U.S. Value', status: 'held', sleeve: 'U.S. Equity', vehicle: 'Separately managed account',
+      oneLiner: 'Patient, balance-sheet-first value — the ballast to the growth sleeve and a natural home for the exclusions.',
+      meta: [['Strategy', 'U.S. large-cap value, ~45 holdings'], ['Vehicle', 'Separately managed account (SMA)'], ['Firm AUM', '$14B'], ['Strategy AUM', '$3.1B'], ['Inception', '2004'], ['Fee', '0.40% on SMA'], ['Liquidity', 'Daily (Tier 1)'], ['Benchmark', 'Russell 1000 Value'], ['HQ', 'Chicago, IL'], ['Endowment allocation', '$68M · 25% of U.S. equity']],
+      strategy: `Classic relative-value with a quality overlay: free-cash-flow yield, conservative balance sheets, and management that returns capital. ~45 names, low turnover (~25%/yr). The team avoids deep-value "melting ice cubes," screening out structurally challenged businesses — a discipline that has kept the value trap rate low.`,
+      track: { rows: [['Trailing 1 year', 9.5, 9.0], ['3 years (ann.)', 8.2, 7.6], ['5 years (ann.)', 10.4, 9.8], ['Since inception (ann.)', 9.1, 8.4]], note: 'Net of 0.40% SMA fee, vs Russell 1000 Value.' },
+      team: `Co-PMs Ellen Boyd (22 yrs) and Marcus Reyes (18 yrs); six analysts organized by sector. The partnership is stable and the process is well-documented. No succession red flags; both PMs are mid-career.`,
+      holdings: `Overweight financials, industrials, and energy infrastructure; underweight expensive staples. The book naturally screens clean against the mission exclusions — value portfolios rarely brush the excluded categories, and the few edge cases (defense primes) are handled by the SMA screen.`,
+      topHoldings: ['Money-center bank', 'Rail / freight', 'Midstream energy', 'Insurance', 'Industrial distribution'],
+      sources: `Performance is selection plus a structural value-factor exposure. We discount the factor portion when judging skill; on a factor-adjusted basis the manager still adds modest selection alpha, and crucially the downside capture (~88%) is what earns its keep in the sleeve.`,
+      cases: [
+        { type: 'win', title: 'Bank bought through the 2023 stress', body: `Added to a well-capitalized money-center bank during the March 2023 regional-bank panic when the market painted the sector with one brush. The position compounded ~45% over the next 18 months as deposit fears faded.` },
+        { type: 'loss', title: 'A value-trap energy name', body: `Held a levered E&P too long in 2024; the balance-sheet thesis was right but capital discipline at the company was not. Exited at a ~15% loss. The team's post-mortem tightened its leverage screen.` },
+      ],
+      agent: {
+        strengths: ['Low downside capture (~88%) — genuine ballast', 'Quality overlay keeps the value-trap rate low', 'Naturally clean against mission exclusions', 'Stable mid-career partnership, no succession risk'],
+        concerns: ['Value-factor beta means stretches of relative underperformance in growth-led tapes', 'Energy/financials tilt adds cyclicality'],
+        portfolioFit: `The deliberate counterweight to Cascade Park. Together they keep the 22% U.S. equity sleeve near benchmark in style terms while each contributes selection alpha. The low downside capture is especially valuable given the endowment's 4.5% spending draw and the IPS emphasis on preserving real corpus through cycles.`,
+        marketFit: `Value has lagged in the disinflation-led rally, and we expect that to persist while the Fed eases into a soft landing. We hold the mandate anyway — its role is cycle insurance, not quarter-to-quarter beta. If growth concerns or a value rotation emerge (a real tail risk if inflation re-accelerates), this is the sleeve's hedge.`,
+        recommendation: `Retain. The mandate is doing exactly what it is sized to do; resist the temptation to cut it during a growth-led stretch.`,
+      },
+    },
+
+    {
+      id: 'kestrel-intl', name: 'Kestrel International Developed', status: 'held', sleeve: 'Intl Developed Equity', vehicle: 'Commingled fund',
+      oneLiner: 'Newly funded EAFE replacement for Wellington — promising process, but on a short leash given limited tenure.',
+      meta: [['Strategy', 'Intl developed equity, ~60 holdings'], ['Vehicle', 'Commingled fund (with side-letter screen)'], ['Firm AUM', '$22B'], ['Strategy AUM', '$4.0B'], ['Inception', '2012'], ['Fee', '0.55%'], ['Liquidity', 'Daily (Tier 1)'], ['Benchmark', 'MSCI EAFE'], ['HQ', 'London, UK'], ['Endowment allocation', '$50M · funded Q1 2026']],
+      strategy: `Core EAFE with a quality-at-reasonable-price discipline and an explicit currency-aware overlay (unhedged by default, but the team flags FX as a deliberate exposure). ~60 names, moderate active share (~70%). Selected to replace Wellington Global Equity after that mandate's style drift and 18-month underperformance.`,
+      track: { rows: [['Trailing 1 year', 13.0, 13.8], ['3 years (ann.)', 7.8, 7.4], ['5 years (ann.)', 8.0, 7.2], ['Since inception (ann.)', 7.6, 7.0]], note: 'Composite returns vs MSCI EAFE; endowment tenure is < 1 quarter (funded Q1 2026).' },
+      team: `PM Sophie Laurent (19 yrs) with a London-based team of ten. Process is repeatable and well-articulated; the firm is majority partner-owned. The principal risk is simply that we have a short live relationship — the composite is theirs, not ours yet.`,
+      holdings: `Diversified across Europe and Japan with a structural underweight to UK large-cap. The commingled vehicle required a side letter to honor the endowment's exclusions; the manager agreed to an excuse right and customized reporting, mirroring the structure we used for Vista.`,
+      topHoldings: ['European industrials', 'Japanese automation', 'EU healthcare', 'Luxury / consumer', 'Nordic financials'],
+      sources: `Long-run composite alpha is selection-led with a modest quality-factor tilt. The weak Q1 print (+13.0 vs +13.8 EAFE) reflects a transition-period cash drag and the timing of funding, not a process failure — but we are watching.`,
+      cases: [
+        { type: 'win', title: 'Japanese automation re-rating', body: `A multi-year Japanese factory-automation holding compounded strongly as corporate-governance reform and capex cycles turned — a thesis the team underwrote early and sized well.` },
+        { type: 'loss', title: 'European autos misstep', body: `An EU auto name lagged on EV-transition capital intensity; the team was slow to cut. The composite gave back ~80 bp. A modest blemish that informs our watch.` },
+      ],
+      agent: {
+        strengths: ['Clean, repeatable QARP process', 'Side-letter excuse right secures mission-alignment', 'Long composite record ahead of EAFE', 'Fills the sleeve vacated by Wellington with better style fidelity'],
+        concerns: ['Sub-one-quarter tenure at the endowment — no live track yet', 'Transition cash drag dented the first print', 'Unhedged FX adds dollar-cycle volatility'],
+        portfolioFit: `Kestrel carries the 12% international developed target, the sleeve that has been a structural source of recent excess as the dollar weakened. Style fidelity matters here: Wellington's drift toward global-growth blurred the sleeve's role, and Kestrel restores a true EAFE exposure. The side letter resolves the exclusions question that a commingled vehicle otherwise raises.`,
+        marketFit: `International developed is our preferred equity overweight in the current regime — cheaper starting valuations and a softening dollar both help, and Q1 2026 (EAFE +6.2% vs S&P +4.1%) validated the tilt. Unhedged FX is the swing factor: a dollar reversal would pressure returns, so the position is sized within the IPS range rather than maxed.`,
+        recommendation: `Retain on a defined watch. Reassess after four quarters of live results; confirm the transition drag fully unwinds and the QARP discipline holds.`,
+      },
+    },
+
+    {
+      id: 'meridian-core', name: 'Meridian Core Bond', status: 'held', sleeve: 'Core Fixed Income', vehicle: 'Separately managed account',
+      oneLiner: 'The portfolio\'s ballast manager — duration-neutral, sector-rotation alpha, and it did its job in the August 2025 stress.',
+      meta: [['Strategy', 'Core plus aggregate, duration-neutral'], ['Vehicle', 'Separately managed account (SMA)'], ['Firm AUM', '$140B'], ['Strategy AUM', '$31B'], ['Inception', '2001'], ['Fee', '0.22% on SMA'], ['Liquidity', 'Daily (Tier 1)'], ['Benchmark', 'Bloomberg U.S. Aggregate'], ['HQ', 'Newport Beach, CA'], ['Endowment allocation', '$150M · largest single mandate']],
+      strategy: `Core-plus run close to benchmark duration, with alpha sought from sector rotation (securitized vs corporate vs Treasuries), yield-curve positioning, and security selection. Out-of-index exposure (high yield, EM debt) is capped at 15%. The explicit goal is to be the diversifier that works when equities don't.`,
+      track: { rows: [['Trailing 1 year', 5.4, 4.9], ['3 years (ann.)', 1.2, 0.8], ['5 years (ann.)', 1.0, 0.6], ['Since inception (ann.)', 3.2, 2.9]], note: 'Net of 0.22% SMA fee, vs Bloomberg U.S. Aggregate. Low absolute returns reflect the 2022 rate shock embedded in 3–5y windows.' },
+      team: `A deep, institutional team (40+ investment professionals) with sector specialists. Process-driven rather than star-driven, which lowers key-person risk to near zero. The 0.22% fee is competitive for an SMA of this size.`,
+      holdings: `Currently a modest overweight to securitized (agency MBS, high-quality ABS) and an underweight to long corporates, with duration ~0.2yr short of the index. The SMA gives full look-through, which matters for both compliance and the mission screens.`,
+      topHoldings: ['Agency MBS', 'High-quality ABS', 'Short corporates', 'Treasuries', 'TIPS (tactical)'],
+      sources: `Alpha is roughly half sector rotation, half security selection, with curve positioning episodic. The duration-neutral discipline means the manager is not making a rates bet — exactly what we want, since the SAA expresses duration at the policy level, not the manager level.`,
+      cases: [
+        { type: 'win', title: 'August 2025 flight-to-quality', body: `During the August 2025 regional-bank stress, the securitized overweight and a small Treasury add let the SMA return +2.2% vs +2.0% for the Agg, cushioning the total portfolio through the equity drawdown. Textbook diversifier behavior.` },
+        { type: 'loss', title: 'Corporate-spread misjudgment, 2024', body: `An overweight to BBB industrials in early 2024 lagged as spreads widened on supply; the manager added at the wides and recovered most of it by year-end. A modest, well-managed misstep.` },
+      ],
+      agent: {
+        strengths: ['Duration-neutral — no unwanted rates bet', 'Proven flight-to-quality behavior (Aug 2025)', 'Negligible key-person risk; deep team', 'Low fee, full SMA look-through'],
+        concerns: ['Core-plus 15% out-of-index sleeve adds modest credit beta', 'Hard to differentiate from the index in calm credit regimes'],
+        portfolioFit: `At 20% of the SAA (the second-largest class) and $150M, this is the portfolio's shock absorber and the backbone of Tier-1 liquidity. Its duration-neutral mandate is deliberate: the IPS expresses interest-rate posture through the strategic weights, so we do not want the manager freelancing on duration. The August 2025 episode is the clearest evidence the mandate earns its place.`,
+        marketFit: `With the Fed easing and the 10-year having rallied to 4.18%, high-quality duration has been a tailwind, and the core sleeve contributed in Q1 2026. The forward case is constructive but more two-sided; we value that this manager won't chase carry into a re-steepening. It is the position we lean on if the soft landing disappoints.`,
+        recommendation: `Retain. This is a foundational holding; no change contemplated.`,
+      },
+    },
+
+    {
+      id: 'ashford-lane', name: 'Ashford Lane High Yield', status: 'held', sleeve: 'High-Yield Credit', vehicle: 'Commingled fund',
+      oneLiner: 'Up-in-quality high yield with low default experience — a small, well-run satellite in the 2% HY sleeve.',
+      meta: [['Strategy', 'U.S. high yield, up-in-quality (BB/B)'], ['Vehicle', 'Commingled fund'], ['Firm AUM', '$19B'], ['Strategy AUM', '$5.2B'], ['Inception', '2008'], ['Fee', '0.50%'], ['Liquidity', 'Daily (Tier 1)'], ['Benchmark', 'ICE BofA U.S. High Yield'], ['HQ', 'Boston, MA'], ['Endowment allocation', '$24M · the full HY sleeve']],
+      strategy: `A quality-tilted high-yield strategy that lives mostly in BB/B and avoids CCC except opportunistically. The team prioritizes default avoidance over reaching for yield — its realized default rate has run well below the index over a full cycle.`,
+      track: { rows: [['Trailing 1 year', 9.4, 8.6], ['3 years (ann.)', 5.0, 4.6], ['5 years (ann.)', 5.2, 4.8], ['Since inception (ann.)', 6.0, 5.5]], note: 'Net of 0.50% fee, vs ICE BofA U.S. High Yield.' },
+      team: `Credit-research-led with 14 analysts and two PMs; the head of research has been in seat 16 years. Strong workout/restructuring capability, which is the real edge in high yield.`,
+      holdings: `Currently light on CCC and energy, with a cash buffer for opportunistic adds. The commingled vehicle's exclusion policy was reviewed and found acceptable for a sleeve this small; we monitor rather than side-letter given the $24M size.`,
+      topHoldings: ['BB cable / telecom', 'B healthcare', 'Packaging', 'BB energy (select)', 'Cash buffer'],
+      sources: `Excess return is almost entirely default avoidance and security selection, not beta — the strategy typically lags in junk-rallies (CCC-led) and outperforms in stress. That convexity is the point.`,
+      cases: [
+        { type: 'win', title: 'Sidestepped a 2023 retail default', body: `Exited a levered retailer two quarters before its restructuring on deteriorating liquidity metrics, avoiding a near-total loss the index absorbed.` },
+        { type: 'loss', title: 'Underweight the 2024 CCC rally', body: `The up-in-quality posture meant lagging the index by ~120 bp during a 2024 CCC-led rally. Expected behavior, not a mistake — but worth stating plainly.` },
+      ],
+      agent: {
+        strengths: ['Below-index realized default rate over a cycle', 'Workout capability is a genuine edge', 'Convex profile (outperforms in stress)', 'Right-sized for a satellite sleeve'],
+        concerns: ['Will lag in CCC-led junk rallies', 'Commingled vehicle relies on policy, not a side letter'],
+        portfolioFit: `High yield is a deliberate 2% satellite — a yield-and-carry complement to the core bond sleeve, not a core holding. Ashford Lane's up-in-quality posture suits that role: we want resilient carry, not maximum spread. At $24M the commingled exclusion policy is acceptable; if we ever scaled the sleeve materially we would require a side letter.`,
+        marketFit: `Spreads are tight and the easing cycle is supportive of carry, but the asymmetry is poor at these levels — limited upside, real downside if growth disappoints. A default-avoidance manager is the right way to hold a small HY position into that asymmetry. We are not inclined to add to the sleeve here.`,
+        recommendation: `Retain at the current 2% weight. Do not add to HY at current spreads.`,
+      },
+    },
+
+    {
+      id: 'blackwater-ms', name: 'Blackwater Multi-Strategy', status: 'held', sleeve: 'Diversified Hedge Funds', vehicle: 'Commingled fund (quarterly)',
+      oneLiner: 'A true diversifier — low equity beta, steady multi-strat carry, and it held up in the August stress.',
+      meta: [['Strategy', 'Multi-strategy (relative value, event, credit)'], ['Vehicle', 'Commingled fund'], ['Firm AUM', '$32B'], ['Strategy AUM', '$11B'], ['Inception', '2006'], ['Fee', '1.5% / 17.5%'], ['Liquidity', 'Quarterly, 45-day notice (Tier 2)'], ['Benchmark', 'HFRI FoF Composite'], ['HQ', 'New York, NY'], ['Endowment allocation', '$58M · 60% of hedge-fund sleeve']],
+      strategy: `A diversified multi-strategy platform allocating internally across relative-value, event-driven, and credit pods, with centralized risk management and tight gross/net controls. Targets equity beta below 0.2 and an absolute return above cash + 3–4%.`,
+      track: { rows: [['Trailing 1 year', 7.0, 6.0], ['3 years (ann.)', 6.2, 5.0], ['5 years (ann.)', 6.5, 5.2], ['Since inception (ann.)', 6.8, 5.5]], note: 'Net of fees, vs HFRI Fund-of-Funds Composite. Realized equity beta ~0.15.' },
+      team: `A deep multi-PM platform; no single-manager dependency by design. Strong COO/risk function and clean operational due diligence (independent admin, custody, audit). Platform stability is the edge and the risk — fee and capacity discipline must be watched.`,
+      holdings: `Pod-level positions net out to low directional exposure. We receive sufficient transparency for risk aggregation; the mission screens are addressed via a negative-screen side letter at the platform level for shorting and direct longs.`,
+      topHoldings: ['Rates relative-value', 'Merger arbitrage', 'Structured credit', 'Equity market-neutral', 'Convertible arb'],
+      sources: `Returns are carry plus dispersion capture across pods, not market beta — the five-year Sharpe (~1.1) is the headline. Performance is steadiest when volatility is moderate; very low-vol regimes compress the opportunity set.`,
+      cases: [
+        { type: 'win', title: 'August 2025 volatility harvest', body: `The relative-value and event pods monetized the August 2025 volatility spike, posting a positive month while equities sold off — the diversification the sleeve exists to provide.` },
+        { type: 'loss', title: 'Crowded-trade unwind, 2024', body: `A multi-manager crowded-trade unwind in 2024 caused a brief ~2% drawdown across the platform; risk controls cut gross quickly and it recovered within a quarter.` },
+      ],
+      agent: {
+        strengths: ['Low realized equity beta (~0.15) — genuine diversification', 'Strong platform risk management; no single-PM dependency', 'Clean operational due diligence', 'Demonstrated stress-period resilience (Aug 2025)'],
+        concerns: ['1.5/17.5 fee load is a high bar to clear', 'Quarterly liquidity places it in Tier 2 — sizing must respect the 50% Tier-1 floor', 'Multi-manager crowding is a latent risk'],
+        portfolioFit: `Blackwater anchors the 8% hedge-fund allocation, whose job in the SAA is diversification — low-beta return that cushions equity drawdowns and supports the spending policy when public markets wobble. Its quarterly terms put it in Tier 2, so the sleeve is explicitly sized beneath the 50% Tier-1 floor. The August 2025 result is the proof point.`,
+        marketFit: `A more two-sided, data-dependent market with episodic volatility is a favorable backdrop for multi-strat dispersion capture — better than the low-vol melt-up of recent quarters. We are comfortable holding, and would consider this sleeve before adding directional risk if the macro outlook deteriorates.`,
+        recommendation: `Retain. Monitor fees and capacity at platform level; no change.`,
+      },
+    },
+
+    {
+      id: 'tidewater-macro', name: 'Tidewater Macro', status: 'watch', sleeve: 'Diversified Hedge Funds', vehicle: 'Commingled fund (monthly)',
+      oneLiner: 'Strong long-run macro record, but a soft 18 months and a concentrated process keep it on the watchlist.',
+      meta: [['Strategy', 'Discretionary global macro'], ['Vehicle', 'Commingled fund'], ['Firm AUM', '$9B'], ['Strategy AUM', '$3.5B'], ['Inception', '2011'], ['Fee', '2.0% / 20%'], ['Liquidity', 'Monthly, 30-day notice (Tier 2)'], ['Benchmark', 'HFRI Macro Index'], ['HQ', 'Greenwich, CT'], ['Endowment allocation', '$40M · on watch']],
+      strategy: `Discretionary global macro trading rates, FX, and equity-index futures around a top-down regime framework. Concentrated, conviction-driven book — high return potential but a wider drawdown profile and meaningful key-person dependence on the founder.`,
+      track: { rows: [['Trailing 1 year', 2.0, 6.0], ['3 years (ann.)', 4.5, 5.0], ['5 years (ann.)', 7.0, 5.2], ['Since inception (ann.)', 6.5, 5.5]], note: 'Net of 2/20, vs HFRI Macro. Note the weak trailing year that drove the watchlist designation.' },
+      team: `Founder-CIO Tom Hargrove (ex-bank prop desk) drives the book; a small support team of six. The strategy is the founder — there is no obvious succession, which is the central concern alongside the recent results.`,
+      holdings: `Currently positioned for continued disinflation and a steeper curve. Macro futures positions raise no mission-exclusion issues. Transparency is adequate but the discretionary process is inherently harder to risk-model than a systematic book.`,
+      topHoldings: ['Front-end rates (long)', 'Curve steepeners', 'USD shorts', 'Equity-index hedges', 'Gold (tactical)'],
+      sources: `Returns are episodic and bet-driven — big in trending macro years (2022 was excellent), thin when regimes chop. The trailing-year shortfall came from being early on the steepener and under-risked in the Q4 2025 rally.`,
+      cases: [
+        { type: 'win', title: '2022 rate-shock positioning', body: `Caught the 2022 inflation/rate shock with short-duration and long-dollar positioning, returning over +20% that year — the basis for the strong five-year number.` },
+        { type: 'loss', title: 'Under-risked into the 2025 rally', body: `Ran low gross through the Q4 2025 risk-on rally and a soft Q1 2026, returning +0.9% vs HFRI +1.5% in Q1. The pattern — good in stress, lagging in trends — has persisted for 18 months.` },
+      ],
+      agent: {
+        strengths: ['Crisis-alpha profile (strong 2022, Aug 2025)', 'Genuine macro diversification vs the multi-strat', 'Monthly liquidity (better than most macro)'],
+        concerns: ['Founder key-person risk with no succession', '18 months of benchmark-relative underperformance', '2/20 fee on a concentrated, hard-to-model book', 'Drawdown profile wider than the sleeve target'],
+        portfolioFit: `Tidewater is the satellite within the 8% hedge-fund sleeve, intended as crisis-alpha diversification alongside Blackwater. The thesis still holds in theory, but the combination of key-person risk and an 18-month shortfall has moved it to formal watch. Its Tier-2 monthly terms are fine for the sleeve sizing.`,
+        marketFit: `A trending, disinflationary macro environment should favor discretionary macro — yet the manager has under-monetized it, which is precisely what worries us. If the next two quarters of a more two-sided market don't show the process re-engaging, the case for paying 2/20 weakens materially.`,
+        recommendation: `On watch. Formal go/no-go at the Q2 2026 IC meeting after the 18-month review window closes; prepare a redemption and a redeployment plan to Blackwater or a replacement in case of a no-go.`,
+      },
+    },
+
+    {
+      id: 'beacon-hill-pc', name: 'Beacon Hill Private Credit', status: 'held', sleeve: 'Private Credit', vehicle: 'Closed-end fund',
+      oneLiner: 'Conservative senior direct lending with strong documentation — a sound complement to the Ares mandate.',
+      meta: [['Strategy', 'Senior secured direct lending (core middle market)'], ['Vehicle', 'Closed-end fund (drawdown)'], ['Firm AUM', '$26B'], ['Strategy AUM', '$7B'], ['Inception', '2014'], ['Fee', '1.0% / 12.5% over 6% pref'], ['Liquidity', 'Illiquid, ~6-yr (Tier 3)'], ['Benchmark', 'Cliffwater Direct Lending'], ['HQ', 'Boston, MA'], ['Endowment allocation', '$41M NAV']],
+      strategy: `First-lien senior secured loans to sponsor-backed core middle-market companies ($15–50M EBITDA). Emphasis on documentation quality (real covenants, not cov-lite), conservative leverage (~4–5x), and portfolio diversification across ~120 borrowers.`,
+      track: { rows: [['Trailing 1 year', 9.8, 9.4], ['3 years (ann.)', 9.0, 8.6], ['5 years (ann.)', 8.8, 8.4], ['Since inception (ann.)', 9.1, 8.6]], note: 'Net IRR vs Cliffwater Direct Lending Index. ~70% of return is contractual income.' },
+      team: `An experienced direct-lending team with dedicated origination, underwriting, and a separate workout group — the workout capability is the differentiator we underwrite hardest in private credit. Sponsor relationships are deep and recurring.`,
+      holdings: `Diversified across software, healthcare services, and business services; minimal cyclical/commodity exposure. ~95% first-lien, ~92% floating-rate. Side-letter excuse rights cover the mission exclusions and any direct-borrower edge cases.`,
+      topHoldings: ['Software (recurring rev)', 'Healthcare services', 'Business services', 'Specialty distribution', 'Insurance brokerage'],
+      sources: `Return is overwhelmingly contractual income (base rate + ~6% spread) plus modest OID/fees; realized credit losses have been minimal. Floating-rate structure has been a tailwind in the higher-rate regime and a modest headwind as the Fed eases.`,
+      cases: [
+        { type: 'win', title: 'Covenant catch averted a loss', body: `A financial-covenant trip in 2023 brought a borrower to the table early; the team negotiated a paydown and equity cure rather than riding it down — recovering par where a cov-lite peer took a markdown.` },
+        { type: 'loss', title: 'A healthcare borrower restructured', body: `One healthcare-services borrower restructured in 2024 on reimbursement pressure; first-lien position recovered ~85 cents. Contained, and consistent with the conservative book.` },
+      ],
+      agent: {
+        strengths: ['Documentation discipline (true covenants)', 'Dedicated workout group — proven recoveries', 'High contractual-income share; low loss experience', 'Side letter secures mission-alignment'],
+        concerns: ['Floating-rate income steps down as the Fed eases', 'Illiquid Tier-3 — locks capital for ~6 years', 'Private-credit vintage is late-cycle; underwriting bar must stay high'],
+        portfolioFit: `Beacon Hill is the second leg of the 7% private-credit allocation alongside Ares, giving manager and vintage diversification within the sleeve. Private credit is a Tier-3 illiquidity-premium holding sized against the 50% Tier-1 floor and the program's pacing plan; Beacon Hill's conservative, first-lien posture is the right risk profile for an endowment that cannot afford permanent impairment.`,
+        marketFit: `As the Fed eases, floating-rate income steps down — a headwind for absolute returns, though spreads have held. The bigger question is late-cycle underwriting quality; we favor Beacon Hill's documentation discipline precisely because the next downturn will separate disciplined lenders from spread-chasers. We maintain pacing but would not accelerate commitments here.`,
+        recommendation: `Retain; maintain current pacing. Re-underwrite the new-vintage discipline at each commitment.`,
+      },
+    },
+
+    {
+      id: 'brightwater-infra', name: 'Brightwater Infrastructure', status: 'held', sleeve: 'Real Assets', vehicle: 'Open-end fund (semi-liquid)',
+      oneLiner: 'Core-plus infrastructure with contracted, inflation-linked cash flows — a strong real-asset and inflation hedge.',
+      meta: [['Strategy', 'Core-plus infrastructure (regulated + contracted)'], ['Vehicle', 'Open-end fund, quarterly with gates'], ['Firm AUM', '$48B'], ['Strategy AUM', '$15B'], ['Inception', '2010'], ['Fee', '1.1% + 10% over 7%'], ['Liquidity', 'Quarterly w/ gate (Tier 2/3)'], ['Benchmark', 'CPI + 5% / infra index'], ['HQ', 'New York, NY'], ['Endowment allocation', '$46M']],
+      strategy: `Core-plus infrastructure across regulated utilities, contracted power, transport, and digital infrastructure (towers, fiber, data centers). Cash flows are largely contracted or regulated with explicit inflation linkage — the strategic appeal for a perpetual, inflation-sensitive endowment.`,
+      track: { rows: [['Trailing 1 year', 10.5, 8.0], ['3 years (ann.)', 9.0, 7.5], ['5 years (ann.)', 8.5, 7.0], ['Since inception (ann.)', 9.0, 7.4]], note: 'Net of fees, vs a CPI+5% real-return objective and an infrastructure index blend.' },
+      team: `Sector-specialist deal teams with strong asset-management (operational) capability — infrastructure returns are made in operations, not just acquisition. Stable senior team; the firm is a well-resourced platform.`,
+      holdings: `Diversified by sub-sector and geography (North America / Europe), with a growing digital-infrastructure sleeve. Mission screens are satisfied — no fossil-fuel-heavy or excluded exposures; the contracted-power book is renewables-tilted, which aligns with the endowment's impact preference.`,
+      topHoldings: ['Regulated utilities', 'Contracted renewables', 'Communications towers', 'Fiber / data centers', 'Transport concessions'],
+      sources: `Return is contracted yield plus inflation escalators plus modest value-add (operational improvement). Low correlation to public equity and explicit inflation linkage are the portfolio reasons to own it; the digital sleeve has added growth.`,
+      cases: [
+        { type: 'win', title: 'Digital-infrastructure build-out', body: `A communications-tower and fiber platform compounded well on the data/AI capex wave, with contracted, inflation-escalating leases — growth with downside protection.` },
+        { type: 'loss', title: 'A transport concession underdelivered', body: `A toll-road concession lagged underwriting on slower traffic recovery; still cash-generative, but a reminder that GDP-linked assets carry more cyclicality than regulated ones.` },
+      ],
+      agent: {
+        strengths: ['Contracted, inflation-linked cash flows', 'Low correlation to public equity', 'Renewables tilt aligns with the impact preference', 'Strong operational asset-management capability'],
+        concerns: ['Quarterly gates make liquidity contingent in stress (Tier 2/3)', 'Valuations are appraisal-based; marks lag public markets', 'Digital sleeve adds some growth/rate sensitivity'],
+        portfolioFit: `Brightwater carries the larger share of the 7% real-assets allocation, whose SAA role is inflation protection and equity diversification — directly serving the IPS objective of preserving real corpus value at a 4.5% spend. The renewables/contracted-power tilt also satisfies the mission-alignment preference for impact-aligned exposure, a genuine two-birds fit.`,
+        marketFit: `With inflation cooling, the inflation-hedge urgency has eased, but the contracted-yield and digital-infrastructure growth angles remain attractive, and real assets diversify an equity-heavy book. The gated liquidity is the main caution — in a severe stress we treat this as Tier 3, which the sleeve sizing reflects.`,
+        recommendation: `Retain. Continue to favor the contracted/regulated and renewables exposures over GDP-linked assets.`,
+      },
+    },
+
+    {
+      id: 'cardinal-re', name: 'Cardinal Real Estate Partners', status: 'held', sleeve: 'Real Assets', vehicle: 'Closed-end fund',
+      oneLiner: 'Value-add real estate in a soft market — a legitimate hold, but the weakest of the real-asset mandates right now.',
+      meta: [['Strategy', 'Value-add real estate (industrial, residential)'], ['Vehicle', 'Closed-end fund (drawdown)'], ['Firm AUM', '$21B'], ['Strategy AUM', '$5.5B'], ['Inception', '2013'], ['Fee', '1.25% / 15% over 8%'], ['Liquidity', 'Illiquid, ~7-yr (Tier 3)'], ['Benchmark', 'NCREIF ODCE + 200 bp'], ['HQ', 'Dallas, TX'], ['Endowment allocation', '$39M NAV']],
+      strategy: `Value-add real estate concentrated in industrial/logistics and residential (multifamily, student housing), with select office avoidance. Returns from operational improvement, lease-up, and selective development — not financial leverage, which is kept moderate (~55% LTV).`,
+      track: { rows: [['Trailing 1 year', 5.0, 6.0], ['3 years (ann.)', 3.5, 4.0], ['5 years (ann.)', 6.0, 6.5], ['Since inception (ann.)', 7.0, 7.2]], note: 'Net IRR vs NCREIF ODCE + 200 bp. Recent softness reflects the 2023–24 real-estate repricing.' },
+      team: `Experienced sector operators with strong industrial/logistics relationships; the residential team is newer. Moderate key-person exposure to the founding partners. The avoidance of office has been a genuine value-add through the cycle.`,
+      holdings: `Industrial/logistics-heavy with a multifamily complement and effectively zero traditional office. No mission-exclusion issues; student-housing exposure aligns loosely with the education mission, a soft positive.`,
+      topHoldings: ['Logistics / warehouse', 'Multifamily', 'Student housing', 'Self-storage', 'Cold storage'],
+      sources: `Return is income plus value-add NOI growth; the 2023–24 cap-rate repricing has been the headwind, partially offset by strong industrial fundamentals. Development carries the most idiosyncratic risk in the book.`,
+      cases: [
+        { type: 'win', title: 'Industrial lease-up beat plan', body: `A logistics portfolio leased up ahead of underwriting on e-commerce demand, driving NOI growth that offset cap-rate expansion — the bright spot in a soft market.` },
+        { type: 'loss', title: 'Multifamily caught the repricing', body: `A multifamily asset acquired near the 2022 peak marked down on cap-rate expansion; still cash-flowing, but the vintage timing hurt and dragged the 3-year IRR.` },
+      ],
+      agent: {
+        strengths: ['Office avoidance through the downturn', 'Industrial/logistics fundamentals remain strong', 'Moderate leverage (~55% LTV)', 'Student-housing tilt loosely mission-aligned'],
+        concerns: ['Trailing real-estate softness; lagging its benchmark', 'Appraisal-based marks lag and may have further to fall', 'Development risk in the value-add book', 'Illiquid Tier-3, ~7-year lock'],
+        portfolioFit: `Cardinal is the smaller, real-estate leg of the 7% real-assets sleeve, complementing Brightwater's infrastructure. Real estate diversifies equities and provides some inflation linkage, but it is the weakest-performing real-asset mandate at present. It remains within sleeve sizing and the Tier-3 budget, and the office avoidance has limited the damage.`,
+        marketFit: `The 2023–24 real-estate repricing is still working through appraisal marks; we think most but not all of the adjustment is behind us. Industrial fundamentals are a bright spot; broader value-add real estate is a show-me. We are not adding, and would let this mandate run off if a stronger real-asset opportunity emerged.`,
+        recommendation: `Retain but do not add. Re-evaluate at the next commitment cycle; monitor the residential marks.`,
+      },
+    },
+
+    {
+      id: 'summit-lane', name: 'Summit Lane Capital', status: 'passed', sleeve: 'U.S. Equity', vehicle: 'Commingled fund',
+      oneLiner: 'Excellent record, wrong moment — closing to new capital, premium fee, and an unresolved ownership transition.',
+      meta: [['Strategy', 'U.S. large-cap growth, concentrated (~20 names)'], ['Vehicle', 'Commingled fund'], ['Firm AUM', '$41B'], ['Strategy AUM', '$12B (near cap)'], ['Inception', '2007'], ['Fee', '0.70%'], ['Liquidity', 'Daily'], ['Benchmark', 'Russell 1000 Growth'], ['HQ', 'San Francisco, CA'], ['Status', 'Passed — Q3 2025']],
+      strategy: `A highly concentrated (~20-name) growth strategy with an outstanding long-term record. The very concentration that drove returns also drives a wide drawdown profile, and the strategy is approaching its stated capacity cap.`,
+      track: { rows: [['Trailing 1 year', 16.0, 13.0], ['3 years (ann.)', 11.5, 9.0], ['5 years (ann.)', 15.0, 12.5], ['Since inception (ann.)', 13.8, 11.0]], note: 'Net of 0.70% fee, vs Russell 1000 Growth. Record is genuinely top-decile.' },
+      team: `Founder-CIO is the clear driver; the firm announced a multi-year ownership transition that is not yet complete, with the next-generation PMs unproven in lead roles.`,
+      holdings: `~20 names, very high active share, mega-cap-tech-heavy. Commingled-only — the manager declined a side letter for the mission exclusions, which is itself disqualifying for this endowment.`,
+      sources: `Returns are concentrated stock selection — real skill, but also real single-name risk. The strategy would meaningfully overlap and amplify Cascade Park's existing growth exposure.`,
+      cases: [
+        { type: 'win', title: 'Early, large semiconductor position', body: `An early and large semiconductor/AI position compounded several-fold and drove much of the five-year outperformance — the upside of concentration.` },
+        { type: 'loss', title: '2022 drawdown was severe', body: `The same concentration produced a ~40% peak-to-trough drawdown in 2022, far deeper than the endowment's growth sleeve could comfortably carry as a standalone mandate.` },
+      ],
+      agent: {
+        strengths: ['Top-decile long-term record', 'Genuine concentrated-selection skill'],
+        concerns: ['Declined a side letter — cannot honor the mission exclusions', 'Near capacity; closing to new capital', 'Premium 0.70% fee', 'Unresolved ownership/succession transition', '~40% 2022 drawdown — too deep for the sleeve', 'High overlap with the existing Cascade Park mandate'],
+        portfolioFit: `On paper an upgrade to the growth sleeve; in practice a poor fit. It would concentrate and amplify the growth exposure we already get from Cascade Park rather than diversify it, and its drawdown profile is too deep for a sleeve supporting a 4.5% spend. Decisive, though, is the refusal of a side letter: a commingled vehicle that cannot honor the Catholic Social Teaching exclusions is a non-starter under the IPS.`,
+        marketFit: `Its mega-cap-tech concentration is also a concentrated bet on the AI capex theme continuing — attractive in the recent melt-up, but a poor risk/reward at current valuations and into a more two-sided market.`,
+        recommendation: `Passed. The mission-exclusion incompatibility alone is disqualifying; capacity, fee, and succession reinforce it. Revisit only if the firm offers a screened SMA after the ownership transition completes.`,
+      },
+    },
+
+    {
+      id: 'ridgeline-value', name: 'Ridgeline Value Partners', status: 'passed', sleeve: 'U.S. Equity', vehicle: 'Separately managed account',
+      oneLiner: 'Style drift and an unclear succession — the value record we were buying is no longer the strategy on offer.',
+      meta: [['Strategy', 'U.S. large-cap value (drifting to quality-growth)'], ['Vehicle', 'SMA'], ['Firm AUM', '$8B'], ['Strategy AUM', '$2.1B'], ['Inception', '2005'], ['Fee', '0.50%'], ['Liquidity', 'Daily'], ['Benchmark', 'Russell 1000 Value'], ['HQ', 'Minneapolis, MN'], ['Status', 'Passed — Q4 2025']],
+      strategy: `Marketed as relative value, but holdings analysis shows a multi-year drift toward quality-growth — the portfolio's valuation and growth characteristics now sit well above the value benchmark. The label no longer matches the book.`,
+      track: { rows: [['Trailing 1 year', 8.0, 9.0], ['3 years (ann.)', 7.0, 7.6], ['5 years (ann.)', 9.5, 9.8], ['Since inception (ann.)', 8.6, 8.4]], note: 'Net of fee vs Russell 1000 Value; recent underperformance coincides with the style drift.' },
+      team: `The founding value PM is winding down toward retirement; the rising PM favors a different, more growth-tilted approach. Succession is both a key-person risk and the apparent cause of the drift.`,
+      holdings: `Active share vs the value index has fallen as the book migrated up-quality. Would not provide the value ballast the sleeve needs.`,
+      sources: `Recent returns are increasingly a quality-factor bet rather than value selection — exactly the exposure we already source elsewhere.`,
+      cases: [
+        { type: 'win', title: 'Legacy value wins (older vintage)', body: `The strong five-year number rests heavily on classic value calls from the prior PM's tenure — a record that may not be repeatable under the new leadership.` },
+        { type: 'loss', title: 'Drift caused a value-benchmark miss', body: `As the book drifted up-quality, it lagged the value benchmark in value-led stretches while not fully participating in growth rallies — the worst of both, a classic drift symptom.` },
+      ],
+      agent: {
+        strengths: ['Reasonable fee and SMA structure', 'Solid historical record (prior PM)'],
+        concerns: ['Material style drift away from the value mandate', 'Succession/key-person risk driving the drift', 'Would duplicate, not diversify, our growth exposure', 'Falling active share vs the value benchmark'],
+        portfolioFit: `We were evaluating a value manager to pair with Cascade Park; Ridgeline no longer is one. Its drift toward quality-growth would blur the deliberate growth/value barbell and leave the 22% U.S. equity sleeve over-tilted to growth — the opposite of the ballast role we need filled. Harbor & Main is the cleaner fit and was selected instead.`,
+        marketFit: `Style integrity matters most precisely when a rotation comes; a drifted "value" manager would fail to deliver the value protection in the inflation/rotation tail scenario we hold value exposure to hedge.`,
+        recommendation: `Passed in favor of Harbor & Main. Re-engage only if the firm re-anchors the process to its stated value discipline under clear leadership.`,
+      },
+    },
+
+    {
+      id: 'lantern-asia', name: 'Lantern Asia Equity', status: 'passed', sleeve: 'Emerging Markets Equity', vehicle: 'Commingled fund',
+      oneLiner: 'High returns, high octane — single-region concentration, governance flags, and redemption gates we can\'t accept.',
+      meta: [['Strategy', 'Asia ex-Japan / China-heavy EM equity'], ['Vehicle', 'Commingled fund (offshore)'], ['Firm AUM', '$6B'], ['Strategy AUM', '$2.4B'], ['Inception', '2015'], ['Fee', '0.85%'], ['Liquidity', 'Monthly w/ gates'], ['Benchmark', 'MSCI EM'], ['HQ', 'Hong Kong'], ['Status', 'Passed — Q1 2026']],
+      strategy: `A high-conviction Asia-ex-Japan strategy with a large China weight. Strong returns, but the single-region concentration is a poor fit for a diversified EM mandate, and the China exposure carries governance and policy risk.`,
+      track: { rows: [['Trailing 1 year', 12.0, 8.0], ['3 years (ann.)', 6.0, 4.0], ['5 years (ann.)', 9.0, 5.0], ['Since inception (ann.)', 8.0, 4.5]], note: 'Net of fee vs MSCI EM; high tracking error and volatility.' },
+      team: `Founder-led with a capable regional team, but firm governance is thin — limited independent oversight, and the offshore commingled structure complicates transparency.`,
+      holdings: `China/Taiwan/India-heavy; the offshore vehicle offers limited look-through and no realistic path to apply the endowment's mission exclusions. Redemption gates are explicit.`,
+      sources: `Returns are a concentrated regional and China-growth bet — high beta to a single policy regime, not the diversified EM exposure the replacement search requires.`,
+      cases: [
+        { type: 'win', title: 'India and Taiwan tech run', body: `Large India-financials and Taiwan-tech positions drove strong 2023–25 returns.` },
+        { type: 'loss', title: 'China policy drawdown', body: `A 2022 China policy/regulatory shock drove a >25% drawdown — the concentration risk laid bare.` },
+      ],
+      agent: {
+        strengths: ['Strong absolute returns', 'Capable regional research'],
+        concerns: ['Single-region (China-heavy) concentration vs a diversified EM mandate', 'Thin firm governance; offshore opacity', 'No path to apply mission exclusions', 'Redemption gates — liquidity not assured', 'High volatility / drawdown profile'],
+        portfolioFit: `The EM replacement search (post-Acadian) calls for a diversified, all-cap EM manager that can sit in the 6% sleeve as a core exposure. Lantern is a concentrated regional bet — it would import idiosyncratic China policy risk into a sleeve meant to be broad. Governance opacity and the inability to honor the exclusions are independently disqualifying under the IPS.`,
+        marketFit: `EM has lagged on uneven Chinese activity; a China-heavy concentrated fund doubles down on exactly the exposure that has been the asset class's problem. Wrong risk to add into the current environment.`,
+        recommendation: `Passed. Outside the EM search's diversification, governance, and exclusion requirements. The shortlisted diversified managers (Pzena, GMO, William Blair) are the appropriate candidates.`,
+      },
+    },
+
+    {
+      id: 'northwind-tr', name: 'Northwind Total Return', status: 'passed', sleeve: 'Core Fixed Income', vehicle: 'Commingled fund',
+      oneLiner: 'A closet indexer at an active fee, with episodic duration bets — no edge worth paying for.',
+      meta: [['Strategy', 'Core fixed income, "total return"'], ['Vehicle', 'Commingled fund'], ['Firm AUM', '$60B'], ['Strategy AUM', '$18B'], ['Inception', '2003'], ['Fee', '0.40%'], ['Liquidity', 'Daily'], ['Benchmark', 'Bloomberg U.S. Aggregate'], ['HQ', 'Philadelphia, PA'], ['Status', 'Passed — Q3 2025']],
+      strategy: `Marketed as active total return, but tracking error to the Agg has run under 0.5% — a de facto index fund at roughly double an index fee, punctuated by occasional, poorly-timed duration bets.`,
+      track: { rows: [['Trailing 1 year', 5.0, 4.9], ['3 years (ann.)', 0.9, 0.8], ['5 years (ann.)', 0.7, 0.6], ['Since inception (ann.)', 3.0, 2.9]], note: 'Net of 0.40% fee vs the Agg; excess return is within noise of the fee.' },
+      team: `Large, capable team, but the strategy is run to minimize career risk rather than to add value — the structural problem with many large-complex core funds.`,
+      holdings: `Closely hugs the index. The occasional duration tilt (e.g., long duration into the 2022 selloff) has subtracted more than the selection has added.`,
+      sources: `There is no persistent alpha to attribute — returns net of fee track the index within noise, with episodic duration calls adding variance, not return.`,
+      cases: [
+        { type: 'win', title: 'n/a — index-like', body: `No standout positive; the fund performs roughly in line with the Agg by design.` },
+        { type: 'loss', title: 'Long-duration into the 2022 selloff', body: `A duration overweight ahead of the 2022 rate shock cost ~70 bp — the rare time it deviated from the index, it deviated the wrong way.` },
+      ],
+      agent: {
+        strengths: ['Large, stable platform', 'Daily liquidity'],
+        concerns: ['Sub-0.5% tracking error — closet indexer', '0.40% fee for index-like exposure', 'Episodic, poorly-timed duration bets', 'No demonstrable selection alpha'],
+        portfolioFit: `For core fixed income we want either a genuine active diversifier (Meridian, which is duration-neutral and earned its keep in August 2025) or a true low-cost index sleeve (Granite Ridge Aggregate at a fraction of the fee). Northwind is neither — it charges an active fee for index exposure. There is no role for it in the 20% core sleeve.`,
+        marketFit: `In a more two-sided rate environment, a duration-neutral active manager or cheap beta both make sense; paying up for closet-index exposure with the occasional bad duration bet does not, in any regime.`,
+        recommendation: `Passed. Dominated by Meridian (active value) and the Granite Ridge index (low-cost beta) already in the sleeve.`,
+      },
+    },
+
+    {
+      id: 'ironwood-credit', name: 'Ironwood Credit Opportunities', status: 'passed', sleeve: 'Private Credit', vehicle: 'Commingled fund (levered)',
+      oneLiner: 'Tempting headline yield built on structural leverage and quarterly gates — a liquidity and risk mismatch.',
+      meta: [['Strategy', 'Opportunistic / distressed credit, levered'], ['Vehicle', 'Commingled fund w/ fund-level leverage'], ['Firm AUM', '$11B'], ['Strategy AUM', '$3.8B'], ['Inception', '2012'], ['Fee', '1.5% / 20%'], ['Liquidity', 'Quarterly w/ gates + lockup'], ['Benchmark', 'ICE BofA U.S. HY + 300 bp'], ['HQ', 'Greenwich, CT'], ['Status', 'Passed — Q4 2025']],
+      strategy: `Opportunistic credit reaching into stressed/distressed and second-lien, with meaningful fund-level leverage amplifying both returns and risk. The headline yield is attractive; the structure that produces it is the problem.`,
+      track: { rows: [['Trailing 1 year', 11.0, 8.6], ['3 years (ann.)', 7.5, 4.6], ['5 years (ann.)', 8.5, 4.8], ['Since inception (ann.)', 9.0, 5.5]], note: 'Net of 1.5/20 vs HY + 300 bp; returns are leverage-amplified.' },
+      team: `Capable distressed team, but the strategy leans on financing lines that can be pulled in stress — the 2020 episode saw forced de-levering.`,
+      holdings: `Lower-quality, less-liquid credit with second-lien and structured positions; fund-level leverage means a liquidity event at the fund can force selling at the worst time.`,
+      sources: `Excess return is substantially a leverage-and-credit-beta bet, not pure selection — the kind of return that looks like alpha until a credit cycle turns.`,
+      cases: [
+        { type: 'win', title: 'Post-2020 distressed vintage', body: `The 2020–21 distressed vintage was excellent as dislocated credit recovered — genuine skill in a target-rich moment.` },
+        { type: 'loss', title: '2020 forced de-levering', body: `In the March 2020 liquidity crunch, financing lines tightened and the fund de-levered into weakness, locking in losses and gating redemptions — the structural tail risk in action.` },
+      ],
+      agent: {
+        strengths: ['Genuine distressed/workout skill', 'Strong target-rich-vintage returns'],
+        concerns: ['Structural fund-level leverage — forced-selling risk', 'Quarterly gates + lockup mismatch the sleeve\'s liquidity tiering', 'IPS caution on leverage at the portfolio level', '1.5/20 on a leverage-driven return stream', 'Pro-cyclical liquidity (worst when most needed)'],
+        portfolioFit: `Private credit in the SAA is meant to be a steady, senior, illiquidity-premium holding (Beacon Hill, Ares) — not a levered, gated distressed bet. Ironwood's structure conflicts with the IPS's explicit caution on portfolio-level leverage and with our liquidity tiering, since its gates make the position least available exactly when the endowment might need it. The risk profile is wrong for the sleeve.`,
+        marketFit: `Late-cycle, levered, lower-quality credit is precisely the exposure to avoid as the cycle matures and spreads sit tight. The asymmetry favors caution.`,
+        recommendation: `Passed. Structural leverage and gated liquidity are disqualifying for this endowment regardless of the headline return.`,
+      },
+    },
+
+    {
+      id: 'crestline-buyout', name: 'Crestline Buyout Partners VII', status: 'passed', sleeve: 'Private Equity', vehicle: 'Closed-end fund',
+      oneLiner: 'Solid sponsor, but the fee load and a commitment that would overshoot the PE pacing plan made it a pass.',
+      meta: [['Strategy', 'Mid-market buyout (generalist)'], ['Vehicle', 'Closed-end fund (10-yr)'], ['Firm AUM', '$34B'], ['Fund VII target', '$8B'], ['Inception (Fund I)', '2002'], ['Fee', '2.0% / 20% over 8%'], ['Liquidity', 'Illiquid, ~10-yr (Tier 3)'], ['Benchmark', 'Cambridge Buyout'], ['HQ', 'New York, NY'], ['Status', 'Passed — Q3 2025']],
+      strategy: `A competent generalist mid-market buyout franchise with a respectable record. The pass is about portfolio construction and pricing, not manager quality.`,
+      track: { rows: [['Fund IV (net IRR)', 18.0, 15.0], ['Fund V (net IRR)', 16.0, 14.0], ['Fund VI (net IRR, early)', 13.0, 12.0], ['Since inception (ann.)', 16.5, 14.5]], note: 'Net IRRs by vintage vs Cambridge Buyout; Fund VI is early and marks are immature.' },
+      team: `Stable, experienced deal partners; institutional infrastructure. No team concerns — a credible franchise.`,
+      holdings: `Generalist mid-market, some sector concentration in business services and industrials. A standard LPA; would require a side letter for the exclusions, which the GP was willing to grant.`,
+      sources: `Returns are operational-improvement plus multiple expansion; the early Fund VI marks lean on the latter, which we discount in a higher-rate world.`,
+      cases: [
+        { type: 'win', title: 'Business-services roll-up', body: `A Fund V business-services roll-up returned ~3x on buy-and-build execution — the franchise's bread and butter.` },
+        { type: 'loss', title: 'A levered industrial that stalled', body: `A Fund VI industrial deal underwritten on multiple expansion has marked flat as rates rose — illustrative of the vintage timing risk.` },
+      ],
+      agent: {
+        strengths: ['Credible, repeatable mid-market buyout franchise', 'Strong prior-fund net IRRs', 'GP agreed to an exclusions side letter'],
+        concerns: ['2/20 fee load compounds against a 4.5% spend', 'A new $30–40M commitment would push PE above its pacing-plan target', 'Vintage concentration — too much capital in close vintages', 'Early-fund marks lean on multiple expansion'],
+        portfolioFit: `Private equity sits at a 6% SAA target and is currently slightly below it on Vista VIII mark timing — but the binding constraint is pacing, not a single-year weight. Layering a new large primary on top of the existing Vista VIII commitment would concentrate vintages and risk overshooting the long-term PE target, straining the Tier-3 budget against the 50% Tier-1 floor. Good manager, wrong slot in the pacing plan.`,
+        marketFit: `In a higher-rate, normalizing-multiple environment, buyout returns lean more on operational improvement than financial engineering; we would rather deploy PE pacing selectively than commit a large primary at this point in the cycle.`,
+        recommendation: `Passed for pacing and fee reasons, not quality. Reconsider in a future vintage year when the pacing plan has room and as a potential Vista diversifier.`,
+      },
+    },
+
+    {
+      id: 'solstice-ra', name: 'Solstice Real Assets', status: 'passed', sleeve: 'Real Assets', vehicle: 'Open-end fund',
+      oneLiner: 'Stale appraisal marks and weak alignment behind a long lockup — the valuation we\'d be buying isn\'t trustworthy.',
+      meta: [['Strategy', 'Diversified real assets (RE, energy, timber)'], ['Vehicle', 'Open-end fund, annual w/ gates'], ['Firm AUM', '$15B'], ['Strategy AUM', '$4B'], ['Inception', '2009'], ['Fee', '1.3% + 12%'], ['Liquidity', 'Annual w/ gates (Tier 3)'], ['Benchmark', 'CPI + 4%'], ['HQ', 'Houston, TX'], ['Status', 'Passed — Q4 2025']],
+      strategy: `A diversified real-assets fund spanning real estate, energy, and timber. The diversification is genuine, but valuation governance is weak — appraisal marks are infrequent and appear stale relative to public comps.`,
+      track: { rows: [['Trailing 1 year', 6.5, 6.0], ['3 years (ann.)', 5.5, 5.5], ['5 years (ann.)', 7.0, 6.5], ['Since inception (ann.)', 7.5, 6.8]], note: 'Net of fees vs CPI+4%; reported volatility is suspiciously low given the underlying assets.' },
+      team: `Capable operators, but the energy sleeve includes traditional oil & gas exposure that conflicts with the mission preferences, and the GP was unwilling to carve it out.`,
+      holdings: `RE + traditional energy + timber. The traditional fossil-fuel energy exposure brushes the mission-alignment preferences, and the manager declined a tailored exclusion. Annual liquidity with gates.`,
+      sources: `The smooth return stream is partly an artifact of infrequent appraisal marks — return-smoothing that understates true volatility and overstates risk-adjusted metrics.`,
+      cases: [
+        { type: 'win', title: 'Timber stability', body: `The timber sleeve delivered steady, inflation-linked returns — the most attractive part of the book.` },
+        { type: 'loss', title: 'Stale energy marks', body: `The energy sleeve's marks lagged a sharp move in public energy, suggesting the NAV did not reflect realizable value — a governance red flag more than a performance one.` },
+      ],
+      agent: {
+        strengths: ['Genuine multi-real-asset diversification', 'Attractive timber/inflation-linked component'],
+        concerns: ['Stale, infrequent appraisal marks — return smoothing', 'Traditional fossil-fuel energy conflicts with mission preferences; GP declined to carve out', 'Annual liquidity with gates — deep Tier 3', 'Smoothed volatility overstates risk-adjusted appeal'],
+        portfolioFit: `Real assets (7% SAA) are better served by Brightwater's contracted, renewables-tilted infrastructure, which both performs and aligns with the impact preference. Solstice's traditional-energy exposure brushes the Catholic Social Teaching screens, and the GP's refusal to carve it out, combined with weak valuation governance, makes it unsuitable. The annual gated liquidity is also poor for a Tier-3 budget already used by infrastructure and real estate.`,
+        marketFit: `With inflation cooling, the inflation-hedge case is less urgent, raising the bar for a gated, opaquely-marked vehicle. The bar is not met.`,
+        recommendation: `Passed. Mission-alignment conflict and valuation-governance concerns are independently disqualifying. Brightwater covers the sleeve\'s needs.`,
+      },
+    },
+
+    {
+      id: 'vantage-quant', name: 'Vantage Quant Equity', status: 'passed', sleeve: 'U.S. Equity', vehicle: 'Commingled fund',
+      oneLiner: 'A capable systematic shop, but crowded factors, capacity questions, and a recent factor drawdown argue for patience.',
+      meta: [['Strategy', 'Systematic U.S. equity (multi-factor)'], ['Vehicle', 'Commingled fund'], ['Firm AUM', '$25B'], ['Strategy AUM', '$9B'], ['Inception', '2010'], ['Fee', '0.35%'], ['Liquidity', 'Daily'], ['Benchmark', 'Russell 1000'], ['HQ', 'Cambridge, MA'], ['Status', 'Passed — Q1 2026']],
+      strategy: `A multi-factor systematic strategy (value, quality, momentum, low-vol) with a strong research pedigree. The factors are well-constructed but widely harvested across the industry — the edge is thinner than the marketing suggests.`,
+      track: { rows: [['Trailing 1 year', 10.0, 12.0], ['3 years (ann.)', 7.5, 8.5], ['5 years (ann.)', 11.0, 11.5], ['Since inception (ann.)', 10.5, 10.8]], note: 'Net of fee vs Russell 1000; recent underperformance reflects a factor drawdown.' },
+      team: `Strong quant-research bench, academically pedigreed. The process is transparent in approach but a black box in any single position — harder to monitor for drift.`,
+      holdings: `Hundreds of names, low single-name risk, but high overlap with industry factor portfolios — the crowding risk is that everyone deleverages the same factors at once.`,
+      sources: `Returns are factor premia plus modest implementation alpha; the recent shortfall came from a value/quality factor drawdown and momentum reversals — the crowding risk realizing.`,
+      cases: [
+        { type: 'win', title: 'Quality factor through 2022', body: `The quality and low-vol factors held up well through the 2022 drawdown, validating the multi-factor diversification.` },
+        { type: 'loss', title: '2023–24 factor reversal', body: `A sharp momentum reversal and value-factor drawdown in 2023–24 drove a multi-quarter lag vs the cap-weighted index — the systematic crowding risk in action.` },
+      ],
+      agent: {
+        strengths: ['Strong research pedigree; transparent process', 'Low fee for systematic breadth', 'Low single-name risk'],
+        concerns: ['Crowded factor exposures — correlated deleveraging risk', 'Capacity at $9B may dull the smaller-cap factor edge', 'Recent multi-quarter factor drawdown', 'Adds factor beta, not differentiated selection, to the sleeve'],
+        portfolioFit: `The U.S. equity sleeve is already well-served by the Cascade Park / Harbor & Main barbell plus a low-cost index core; a systematic multi-factor sleeve would add factor beta that overlaps both the value mandate and the index, without clearly diversifying them. For the price of its (low) fee it is reasonable, but it does not improve the sleeve's structure.`,
+        marketFit: `Factor crowding tends to bite in exactly the volatile, regime-shifting markets we expect; adding a crowded systematic book into that is not compelling. We would rather keep the sleeve's structure clean.`,
+        recommendation: `Passed for now. Keep on the bench; revisit if the sleeve ever needs a low-cost, factor-diversified complement and after the factor drawdown stabilizes.`,
+      },
+    },
+  ];
+
+  let mmFilter = 'all';
+  let mmOpenId = null;
+
+  function mmStatusTag(status) {
+    return status === 'held' ? '<span class="qr-tag t-held">Held</span>'
+      : status === 'watch' ? '<span class="qr-tag t-watch">On watch</span>'
+      : status === 'passed' ? '<span class="qr-tag t-pass">Passed</span>' : '';
+  }
+  function mmVerdict(status) {
+    return status === 'held' ? 'Recommended' : status === 'watch' ? 'On watch' : 'Passed';
+  }
+
+  function buildMemoDetailHtml(m) {
+    const sign = (v, d = 1) => `${v >= 0 ? '+' : ''}${v.toFixed(d)}%`;
+    const cls = (v) => (v > 0.0001 ? 'qr-pos' : v < -0.0001 ? 'qr-neg' : 'qr-muted');
+    const bp = (v) => `<span class="${cls(v)}">${v >= 0 ? '+' : ''}${v} bp</span>`;
+    const meta = m.meta.map(([k, v]) => `<div class="mm-meta-item"><div class="mm-meta-k">${k}</div><div class="mm-meta-v">${v}</div></div>`).join('');
+    const trackRows = m.track.rows.map(([p, mgr, b]) => `<tr><td>${p}</td><td>${sign(mgr)}</td><td>${sign(b)}</td><td>${bp(Math.round((mgr - b) * 100))}</td></tr>`).join('');
+    const holdingsChips = (m.topHoldings || []).map((h) => `<span class="mm-chip">${h}</span>`).join('');
+    const cases = m.cases.map((c) => `
+      <div class="mm-case mm-case-${c.type}">
+        <div class="mm-case-tag">${c.type === 'win' ? 'Worked' : 'Detracted'}</div>
+        <div class="mm-case-title">${c.title}</div>
+        <p>${c.body}</p>
+      </div>`).join('');
+    const strengths = m.agent.strengths.map((s) => `<li>${s}</li>`).join('');
+    const concerns = m.agent.concerns.map((s) => `<li>${s}</li>`).join('');
+
+    return `
+      <a class="mm-back" data-action="memos-back"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>All memos</a>
+      <div class="mm-detail-head">
+        <div class="mm-detail-title">${m.name} ${mmStatusTag(m.status)}</div>
+        <div class="mm-detail-sub">${m.sleeve} · ${m.vehicle}</div>
+      </div>
+      <div class="mm-verdict-banner mm-v-${m.status}">
+        <div class="mm-verdict-label">Manager Selection Agent · ${mmVerdict(m.status)}</div>
+        <p>${m.oneLiner}</p>
+      </div>
+
+      <div class="mm-meta">${meta}</div>
+
+      <div class="mm-section"><h4>Strategy</h4><p>${m.strategy}</p></div>
+
+      <div class="mm-section">
+        <h4>Track record</h4>
+        <div class="qr-exhibit">
+          <table class="qr-table"><thead><tr><th>Period</th><th>Manager</th><th>Benchmark</th><th>Excess</th></tr></thead><tbody>${trackRows}</tbody></table>
+          ${m.track.note ? `<div class="qr-exhibit-note">${m.track.note}</div>` : ''}
+        </div>
+      </div>
+
+      <div class="mm-section"><h4>Team &amp; firm</h4><p>${m.team}</p></div>
+
+      <div class="mm-section">
+        <h4>Portfolio &amp; underlying investments</h4>
+        <p>${m.holdings}</p>
+        ${holdingsChips ? `<div class="mm-chips">${holdingsChips}</div>` : ''}
+      </div>
+
+      <div class="mm-section"><h4>Sources of performance</h4><p>${m.sources}</p></div>
+
+      <div class="mm-section"><h4>Case studies</h4><div class="mm-cases">${cases}</div></div>
+
+      <div class="mm-agent">
+        <div class="mm-agent-head">
+          <span class="mm-agent-avatar">AI</span>
+          <div><div class="mm-agent-name">Manager Selection Agent</div><div class="mm-agent-role">Assessment &amp; portfolio fit</div></div>
+          <span class="mm-agent-verdict mm-v-${m.status}">${mmVerdict(m.status)}</span>
+        </div>
+        <div class="mm-cols">
+          <div class="mm-col"><div class="mm-col-label mm-col-pos">What works</div><ul class="mm-pos">${strengths}</ul></div>
+          <div class="mm-col"><div class="mm-col-label mm-col-neg">What gives us pause</div><ul class="mm-neg">${concerns}</ul></div>
+        </div>
+        <h5>Fit with the endowment's portfolio</h5>
+        <p>${m.agent.portfolioFit}</p>
+        <h5>Fit with the market environment</h5>
+        <p>${m.agent.marketFit}</p>
+        <h5>Recommendation</h5>
+        <p class="mm-rec">${m.agent.recommendation}</p>
+      </div>
+    `;
+  }
+
+  function memoCardHtml(m) {
+    return `<a class="mm-card" data-action="open-memo" data-id="${m.id}">
+      <div class="mm-card-main">
+        <div class="mm-card-name">${m.name} ${mmStatusTag(m.status)}</div>
+        <div class="mm-card-sleeve">${m.sleeve}</div>
+        <div class="mm-card-line">${m.oneLiner}</div>
+      </div>
+      <svg class="mm-card-arrow" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg>
+    </a>`;
+  }
+
+  function openManagerMemosView() {
+    if (!state.org.name) return;
+    state.module = 'memos';
+    mmOpenId = null;
+    artifactTitle.textContent = 'Manager memos';
+    enterItemView();
+    const counts = { held: 0, watch: 0, passed: 0 };
+    MANAGER_MEMOS.forEach((m) => { counts[m.status] = (counts[m.status] || 0) + 1; });
+    const filters = [
+      ['all', `All (${MANAGER_MEMOS.length})`], ['held', `Held (${counts.held})`],
+      ['watch', `On watch (${counts.watch})`], ['passed', `Passed (${counts.passed})`],
+    ].map(([f, label]) => `<button class="qr-period-btn${mmFilter === f ? ' active' : ''}" data-action="mm-filter" data-filter="${f}">${label}</button>`).join('');
+
+    const groups = [
+      ['Held', MANAGER_MEMOS.filter((m) => m.status === 'held')],
+      ['On watch', MANAGER_MEMOS.filter((m) => m.status === 'watch')],
+      ['Evaluated &amp; passed', MANAGER_MEMOS.filter((m) => m.status === 'passed')],
+    ];
+    const list = groups.map(([label, items]) => {
+      const shown = items.filter((m) => mmFilter === 'all' || m.status === mmFilter);
+      if (!shown.length) return '';
+      return `<div class="mm-group"><div class="mm-group-label">${label} · ${shown.length}</div>${shown.map(memoCardHtml).join('')}</div>`;
+    }).join('');
+
+    artifactBody.innerHTML = `
+      ${itemHeadHtml('Manager memos')}
+      <div class="ips-title">${escapeHtml(state.org.name)} · Manager memos</div>
+      <div class="ips-sub">Investment Committee memos from the Manager Selection Agent — held mandates and the evaluated-and-passed pipeline.</div>
+      <div class="qr-period-bar">${filters}</div>
+      ${list || '<div class="pf-empty">No memos match this filter.</div>'}
+    `;
+    artifactFooter.classList.remove('visible');
+    updateUrl();
+  }
+
+  function openManagerMemoView(id) {
+    const m = MANAGER_MEMOS.find((x) => x.id === id);
+    if (!m) { openManagerMemosView(); return; }
+    if (!state.org.name) return;
+    state.module = 'memos';
+    mmOpenId = m.id;
+    artifactTitle.textContent = `Memo · ${m.name}`;
+    enterItemView();
+    artifactBody.innerHTML = `
+      ${itemHeadHtml('Manager memo')}
+      ${buildMemoDetailHtml(m)}
+    `;
+    artifactBody.scrollTop = 0;
     artifactFooter.classList.remove('visible');
     updateUrl();
   }
@@ -4057,6 +4691,7 @@
       else if (wf === 'board-notes') openBoardNotesView();
       else if (wf === 'decisions') openDecisionLogView();
       else if (wf === 'reports') openQuarterlyReportView();
+      else if (wf === 'memos') openManagerMemosView();
     } else if (a === 'pm-run') {
       const desc = document.getElementById('pm-footer-desc');
       if (desc) desc.textContent = 'Running 4,000-sample Monte Carlo optimization…';
@@ -4120,6 +4755,7 @@
     if (state.clientId) params.set('client', state.clientId);
     if (state.module && state.module !== 'vault') params.set('view', state.module);
     if (state.module === 'reports' && qrSelected) params.set('report', qrSelected);
+    if (state.module === 'memos' && mmOpenId) params.set('memo', mmOpenId);
     const qs = params.toString();
     const url = qs ? `/demo?${qs}` : '/demo';
     try { window.history.replaceState(null, '', url); } catch {}
@@ -4140,6 +4776,7 @@
     else if (view === 'board') openBoardNotesView();
     else if (view === 'decisions') openDecisionLogView();
     else if (view === 'reports') openQuarterlyReportView(params.get('report'));
+    else if (view === 'memos') { const mid = params.get('memo'); if (mid) openManagerMemoView(mid); else openManagerMemosView(); }
     return true;
   }
 
