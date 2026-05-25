@@ -551,7 +551,6 @@
               <button class="icon-btn" id="link-btn"><svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>Link</button>
               <input type="file" id="file-input" multiple>
               <span class="composer-hint" style="margin-left: 6px;">
-                <span id="materials-count"></span>
                 <span id="example-hint" style="display: none;"><kbd style="font-family: 'JetBrains Mono', monospace; font-size: 10px; padding: 1px 5px; border: 1px solid var(--line); border-radius: 3px; background: var(--bg-2);">Tab</kbd> to accept example</span>
               </span>
             </div>
@@ -651,7 +650,6 @@
   const clientChip = document.getElementById('client-chip');
   const chipName = document.getElementById('chip-name');
   const chipType = document.getElementById('chip-type');
-  const materialsCount = document.getElementById('materials-count');
 
   // ============ Helpers ============
   function escapeHtml(s) {
@@ -757,9 +755,7 @@
       </span>`).join(''); }
     refreshSend();
   }
-  function refreshMaterialsCount() {
-    materialsCount.textContent = state.materials.length > 0 ? `${state.materials.length} materials shared` : '';
-  }
+  function refreshMaterialsCount() { /* no-op — chip removed from composer */ }
   function queueFiles(files) {
     state.pendingDrop = state.pendingDrop || [];
     Array.from(files).forEach((f) => state.pendingDrop.push({ kind: 'file', name: f.name, size: f.size }));
