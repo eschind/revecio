@@ -624,6 +624,46 @@
   .cm-actions ul { font-size: 13px; line-height: 1.5; color: var(--ink-2); padding-left: 20px; margin: 6px 0 0; }
   .cm-actions li { margin: 4px 0; }
 
+  /* ============ Investment operations ============ */
+  .qr-tag.t-buy { background: rgba(31,112,80,0.14); color: var(--accent); }
+  .qr-tag.t-sell { background: rgba(180,69,58,0.10); color: var(--qr-neg); }
+  .qr-tag.t-pending { background: rgba(184,134,43,0.16); color: #8a6418; }
+  .qr-tag.t-done { background: rgba(31,112,80,0.14); color: var(--accent); }
+  .tr-agent-label { display: inline-flex; align-items: center; gap: 8px; font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); margin: 4px 0 12px; }
+  .tr-agent-avatar { width: 22px; height: 22px; border-radius: 50%; background: var(--accent); color: var(--bg); display: inline-flex; align-items: center; justify-content: center; font-size: 8.5px; letter-spacing: 0.04em; }
+  .tr-submit-row { display: flex; align-items: center; gap: 14px; margin: 16px 0 4px; flex-wrap: wrap; }
+  .tr-submit-row .btn-primary { background: var(--accent); color: var(--dark-ink); border: 1px solid var(--accent); border-radius: 999px; padding: 9px 20px; font: inherit; font-size: 13px; cursor: pointer; }
+  .tr-submit-row .btn-primary:hover { filter: brightness(1.06); }
+  .tr-submit-hint { font-size: 12px; color: var(--muted); }
+  .tr-confirm { display: flex; align-items: center; gap: 12px; margin: 16px 0 4px; padding: 14px 16px; border: 1px solid var(--accent); border-radius: 10px; background: rgba(31,112,80,0.06); }
+  .tr-confirm-check { width: 28px; height: 28px; border-radius: 50%; background: var(--accent); color: var(--bg); display: inline-flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0; }
+  .tr-confirm-title { font-size: 13.5px; color: var(--ink); font-weight: 600; }
+  .tr-confirm-meta { font-size: 11.5px; color: var(--muted); margin-top: 2px; font-family: 'JetBrains Mono', monospace; }
+
+  .cc-table tr.cc-row { cursor: pointer; }
+  .cc-table tr.cc-row:hover td { background: var(--bg-2); }
+  .cc-fund { font-size: 13px; color: var(--ink); font-weight: 500; }
+  .cc-kind { font-size: 10.5px; color: var(--muted); font-family: 'JetBrains Mono', monospace; margin-top: 2px; }
+  .cc-complete-btn { font-size: 10.5px; padding: 3px 9px; }
+  .cc-notice { border: 1px solid var(--line); border-radius: 12px; padding: 22px 24px; background: var(--panel); max-width: 640px; }
+  .cc-notice-head { border-bottom: 2px solid var(--ink); padding-bottom: 8px; margin-bottom: 14px; }
+  .cc-notice-from { font-family: 'Newsreader', serif; font-size: 18px; color: var(--ink); }
+  .cc-notice-kind { font-family: 'JetBrains Mono', monospace; font-size: 9.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-top: 3px; }
+  .cc-notice-title { font-size: 15px; font-weight: 600; color: var(--ink); margin-bottom: 6px; }
+  .cc-notice-status { margin-bottom: 14px; }
+  .cc-notice-table, .cc-wire { width: 100%; border-collapse: collapse; margin: 6px 0 4px; }
+  .cc-notice-table td, .cc-wire td { padding: 6px 8px; border-bottom: 1px solid var(--line-soft); font-size: 12.5px; vertical-align: top; }
+  .cc-notice-table td:first-child, .cc-wire td:first-child { color: var(--muted); width: 38%; font-family: 'JetBrains Mono', monospace; font-size: 10.5px; letter-spacing: 0.04em; text-transform: uppercase; }
+  .cc-notice-table td:last-child, .cc-wire td:last-child { color: var(--ink-2); }
+  .cc-notice h4 { font-family: 'JetBrains Mono', monospace; font-size: 9.5px; letter-spacing: 0.09em; text-transform: uppercase; color: var(--muted); margin: 16px 0 4px; }
+  .cc-notice p { font-size: 13px; line-height: 1.6; color: var(--ink-2); margin: 4px 0; }
+  .cc-wire { background: var(--bg-2); border-radius: 8px; }
+  .cc-wire td { border-bottom: 1px solid var(--line); }
+  .cc-notice-footer { font-size: 11.5px; color: var(--muted); margin-top: 14px; line-height: 1.5; }
+  .cc-notice-action { margin-top: 16px; }
+  .cc-notice-action .btn-primary { background: var(--accent); color: var(--dark-ink); border: 1px solid var(--accent); border-radius: 999px; padding: 8px 18px; font: inherit; font-size: 13px; cursor: pointer; }
+  .cc-done-badge { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--accent); font-weight: 600; }
+
   .draft-streaming { opacity: 0.35; }
   .draft-cursor { display: inline-block; width: 6px; height: 14px; background: var(--accent); margin-left: 2px; animation: blink 1s infinite; vertical-align: -2px; }
   @keyframes blink { 50% { opacity: 0.2; } }
@@ -2255,6 +2295,20 @@
     } else if (a === 'comm-filter') {
       commFilter = btn.dataset.filter || 'all';
       openCommunicationsView();
+    } else if (a === 'submit-trades') {
+      if (btn.disabled) return;
+      btn.disabled = true;
+      state.rebalanceSubmitted = true;
+      state.rebalanceSubmittedAt = new Date().toISOString();
+      state.rebalanceRef = `TRD-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-001`;
+      openTradingView();
+    } else if (a === 'open-capital-call') {
+      openCapitalCallView(btn.dataset.id);
+    } else if (a === 'capital-calls-back') {
+      openCapitalCallsView();
+    } else if (a === 'cc-complete') {
+      e.stopPropagation();
+      markCapitalCallCompleted(btn.dataset.id);
     } else if (a === 'view-ips-section') {
       const num = Number(btn.dataset.num);
       const idx = IPS_SECTIONS.findIndex((s) => s.num === num);
@@ -2864,6 +2918,16 @@
             const status = newCount > 0 ? `${newCount} NEW` : 'Updated';
             const statusKind = newCount > 0 ? 'ok' : 'muted';
             return item({ id: 'monitoring', action: 'open-workflow', label: 'Portfolio monitoring', icon: svg('<path d="M2 12h4l3 8 4-16 3 8h6"/>'), status, statusKind });
+          })(),
+        ],
+      },
+      {
+        label: 'Investment operations',
+        items: [
+          item({ id: 'trading', action: 'open-workflow', label: 'Trading & rebalancing', icon: svg('<polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>'), status: state.rebalanceSubmitted ? 'Submitted' : (state.saa ? 'Review' : '—'), statusKind: state.rebalanceSubmitted ? 'ok' : 'muted' }),
+          (function () {
+            const pend = clientCapitalCalls().filter((c) => c.status === 'pending').length;
+            return item({ id: 'capital-calls', action: 'open-workflow', label: 'Capital calls', icon: svg('<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="16" y1="2" x2="16" y2="6"/>'), status: pend > 0 ? `${pend} due` : (clientCapitalCalls().length ? 'Clear' : '—'), statusKind: pend > 0 ? 'ok' : 'muted' });
           })(),
         ],
       },
@@ -4618,6 +4682,212 @@
     updateUrl();
   }
 
+  // ============ Investment operations ============
+  // Trading & rebalancing: drift vs the adopted SAA + a trade blotter from the
+  // trading agent, with a submit-to-custodian step. Capital calls: private-fund
+  // capital-call notices with wire instructions and completion tracking.
+
+  // Illustrative current drift vs the adopted SAA target (percentage points).
+  const REBAL_DRIFT = { us_eq: 0.6, intl_eq: 0.4, em_eq: -0.4, core_fi: -0.8, tips: 0, hy: 0, hf: 0.2, pe: -0.6, pc: 0.1, ra: 0.2, cash: 0.3 };
+  // Trades the agent proposes (liquid sleeves only; net cash impact ~$0).
+  const REBAL_TRADES = [
+    { side: 'SELL', id: 'us_eq', pct: 0.6, note: 'Trim overweight to target' },
+    { side: 'SELL', id: 'intl_eq', pct: 0.4, note: 'Trim overweight to target' },
+    { side: 'SELL', id: 'cash', pct: 0.2, note: 'Draw cash to fund purchases' },
+    { side: 'BUY', id: 'em_eq', pct: 0.4, note: 'Add to underweight; fund EM interim sleeve' },
+    { side: 'BUY', id: 'core_fi', pct: 0.8, note: 'Add to underweight core bonds' },
+  ];
+
+  function openTradingView() {
+    if (!state.org.name) return;
+    state.module = 'trading';
+    artifactTitle.textContent = 'Trading & rebalancing';
+    enterItemView();
+    const head = `${itemHeadHtml('Trading & rebalancing')}
+      <div class="ips-title">${escapeHtml(state.org.name)} · Trading &amp; rebalancing</div>
+      <div class="ips-sub">Drift against the adopted Strategic Asset Allocation, with a rebalancing blotter proposed by the trading agent.</div>`;
+
+    if (!state.saa) {
+      artifactBody.innerHTML = `${head}<div class="placeholder-block"><div class="ph-label">No allocation adopted</div><div class="ph-body">Model and adopt a Strategic Asset Allocation in <strong>Asset allocation</strong> first — then the trading agent can measure drift and propose a rebalance.</div></div>`;
+      artifactFooter.classList.remove('visible');
+      updateUrl();
+      return;
+    }
+
+    const sign = (v, d = 1) => `${v >= 0 ? '+' : ''}${v.toFixed(d)}%`;
+    const cls = (v) => (v > 0.0001 ? 'qr-pos' : v < -0.0001 ? 'qr-neg' : 'qr-muted');
+    const aum = state.aum || 0;
+    const usd = (mm) => `$${mm.toFixed(1)}M`;
+    const target = state.saa.weights || {};
+    const order = ['us_eq', 'intl_eq', 'em_eq', 'core_fi', 'tips', 'hy', 'hf', 'pe', 'pc', 'ra', 'cash'];
+
+    const driftRows = order.filter((id) => target[id] != null).map((id) => {
+      const tgt = (target[id] || 0) * 100;
+      const drift = REBAL_DRIFT[id] || 0;
+      const act = tgt + drift;
+      let status = '<span class="qr-muted">In band</span>';
+      if (id === 'pe' && drift < -0.25) status = '<span class="qr-tag t-pending">Pacing</span>';
+      else if (drift > 0.25) status = '<span class="qr-tag t-sell">Trim</span>';
+      else if (drift < -0.25) status = '<span class="qr-tag t-buy">Add</span>';
+      return `<tr><td>${CMA_BY[id] ? CMA_BY[id].name : id}</td><td>${act.toFixed(1)}%</td><td>${tgt.toFixed(0)}%</td><td>${`<span class="${cls(drift)}">${sign(drift)}</span>`}</td><td style="text-align:left;">${status}</td></tr>`;
+    }).join('');
+
+    let buyTot = 0, sellTot = 0;
+    const blotterRows = REBAL_TRADES.map((t) => {
+      const amt = (t.pct / 100) * aum / 1e6;
+      if (t.side === 'BUY') buyTot += amt; else sellTot += amt;
+      const tag = t.side === 'BUY' ? '<span class="qr-tag t-buy">Buy</span>' : '<span class="qr-tag t-sell">Sell</span>';
+      return `<tr><td style="text-align:left;">${tag}</td><td>${CMA_BY[t.id] ? CMA_BY[t.id].name : t.id}</td><td>${usd(amt)}</td><td style="text-align:left;font-family:inherit;white-space:normal;color:var(--ink-2);">${t.note}</td></tr>`;
+    }).join('');
+    const net = sellTot - buyTot;
+
+    const exhibit = (label, title, head2, rows, note) => `
+      <div class="qr-exhibit">
+        <div class="qr-exhibit-head"><div class="qx-label">${label}</div><div class="qx-title">${title}</div></div>
+        <table class="qr-table"><thead><tr>${head2.map((h) => `<th>${h}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table>
+        ${note ? `<div class="qr-exhibit-note">${note}</div>` : ''}
+      </div>`;
+
+    const submitBlock = state.rebalanceSubmitted
+      ? `<div class="tr-confirm">
+           <div class="tr-confirm-check">✓</div>
+           <div><div class="tr-confirm-title">Submitted to Northern Trust (custodian)</div>
+           <div class="tr-confirm-meta">${fmtDate(state.rebalanceSubmittedAt)} · Ref ${escapeHtml(state.rebalanceRef || '')} · ${REBAL_TRADES.length} orders · ${usd(buyTot)} each side · settlement T+2</div></div>
+         </div>`
+      : `<div class="tr-submit-row">
+           <button class="btn-primary" data-action="submit-trades">Submit to custodian</button>
+           <span class="tr-submit-hint">${REBAL_TRADES.length} orders · ${usd(buyTot)} buys / ${usd(sellTot)} sells · net ${usd(Math.abs(net))} ${net >= 0 ? 'to cash' : 'from cash'}</span>
+         </div>`;
+
+    artifactBody.innerHTML = `${head}
+      <div class="tr-agent-label"><span class="tr-agent-avatar">AI</span> Trading Agent · proposed rebalance</div>
+      ${exhibit('Drift', 'Current allocation vs SAA target', ['Asset class', 'Actual', 'Target', 'Drift', 'Status'], driftRows, 'Targets are the adopted Strategic Asset Allocation. Drift reflects market movement since the last rebalance.')}
+      ${exhibit('Trade blotter', 'Orders to bring liquid sleeves back to target', ['', 'Sleeve', 'Amount', 'Rationale'], blotterRows, 'Private equity is below target on Q1 mark timing — addressed through commitment pacing, not traded. Net cash impact is approximately zero.')}
+      ${submitBlock}`;
+    artifactFooter.classList.remove('visible');
+    updateUrl();
+  }
+
+  // ---- Capital calls (Dream University demo data) ----
+  const CAPITAL_CALLS = [
+    { id: 'cc-vista8-4', fund: 'Vista Equity Partners VIII', manager: 'Vista Equity Partners', kind: 'Private equity — software buyout', callNum: 4, amount: 7.4, called: '2026-05-18', due: '2026-06-01', status: 'pending', pctCommit: 'brings called capital to ~80% of the $30M commitment', remaining: '$2.6M', purpose: 'Funding the acquisition of a vertical-market software platform and associated transaction expenses.' },
+    { id: 'cc-ares3-2', fund: 'Ares Senior Direct Lending Fund III', manager: 'Ares Management', kind: 'Private credit — senior direct lending', callNum: 2, amount: 5.0, called: '2026-05-20', due: '2026-06-03', status: 'pending', pctCommit: 'brings called capital to ~60% of the $20M commitment', remaining: '$8.0M', purpose: 'Funding new first-lien senior secured loans to sponsor-backed middle-market borrowers.' },
+    { id: 'cc-vista8-3', fund: 'Vista Equity Partners VIII', manager: 'Vista Equity Partners', kind: 'Private equity — software buyout', callNum: 3, amount: 6.2, called: '2026-02-12', due: '2026-02-26', status: 'completed', pctCommit: 'brought called capital to ~73% of the $30M commitment', remaining: '$8.0M', purpose: 'Add-on acquisition and management fees for the current investment period.' },
+    { id: 'cc-ares3-1', fund: 'Ares Senior Direct Lending Fund III', manager: 'Ares Management', kind: 'Private credit — senior direct lending', callNum: 1, amount: 7.0, called: '2026-02-05', due: '2026-02-19', status: 'completed', pctCommit: 'initial drawdown, ~35% of the $20M commitment', remaining: '$13.0M', purpose: 'Initial funding of the loan portfolio following the January 2026 commitment.' },
+    { id: 'cc-vista8-2', fund: 'Vista Equity Partners VIII', manager: 'Vista Equity Partners', kind: 'Private equity — software buyout', callNum: 2, amount: 8.8, called: '2025-12-18', due: '2026-01-05', status: 'completed', pctCommit: 'brought called capital to ~52% of the $30M commitment', remaining: '$14.0M', purpose: 'Platform acquisition and follow-on capital.' },
+    { id: 'cc-vista8-1', fund: 'Vista Equity Partners VIII', manager: 'Vista Equity Partners', kind: 'Private equity — software buyout', callNum: 1, amount: 9.0, called: '2025-11-10', due: '2025-11-24', status: 'completed', pctCommit: 'initial drawdown, ~30% of the $30M commitment', remaining: '$21.0M', purpose: 'Initial capital following the October 2025 commitment.' },
+    { id: 'cc-legacy-1', fund: 'Legacy PE Co-Investment Program', manager: 'Hudson Lane Capital', kind: 'Private equity — co-investment', callNum: 7, amount: 3.0, called: '2025-10-08', due: '2025-10-22', status: 'completed', pctCommit: 'co-investment capital call', remaining: '$4.0M', purpose: 'Co-investment alongside the lead sponsor in a healthcare-services buyout.' },
+  ];
+
+  function ccWire(c) {
+    return { bank: 'Northern Trust Company', aba: '071000152', acct: '****4021 — Dream University Endowment', ref: `${c.fund} / Call ${c.callNum}` };
+  }
+  function clientCapitalCalls() {
+    if (state.org.name !== 'Dream University') return [];
+    const done = state.completedCalls || [];
+    return CAPITAL_CALLS.map((c) => ({ ...c, status: done.includes(c.id) ? 'completed' : c.status }));
+  }
+  function ccStatusTag(s) {
+    return s === 'completed' ? '<span class="qr-tag t-done">Completed</span>' : '<span class="qr-tag t-pending">Action needed</span>';
+  }
+
+  function openCapitalCallsView() {
+    if (!state.org.name) return;
+    state.module = 'capital-calls';
+    state.capitalCallOpen = null;
+    artifactTitle.textContent = 'Capital calls';
+    enterItemView();
+    const calls = clientCapitalCalls();
+    const head = `${itemHeadHtml('Capital calls')}
+      <div class="ips-title">${escapeHtml(state.org.name)} · Capital calls</div>
+      <div class="ips-sub">Capital-call notices from private-fund managers. Click a call to see the notice and wire instructions.</div>`;
+
+    if (!calls.length) {
+      artifactBody.innerHTML = `${head}<div class="placeholder-block"><div class="ph-label">No capital calls</div><div class="ph-body">No private-fund capital calls are on record for this client.</div></div>`;
+      artifactFooter.classList.remove('visible'); updateUrl(); return;
+    }
+
+    const pending = calls.filter((c) => c.status === 'pending');
+    const completed = calls.filter((c) => c.status === 'completed');
+    const pendingTotal = pending.reduce((s, c) => s + c.amount, 0);
+
+    const row = (c) => `<tr class="cc-row" data-action="open-capital-call" data-id="${c.id}">
+      <td style="text-align:left;"><div class="cc-fund">${escapeHtml(c.fund)}</div><div class="cc-kind">Call #${c.callNum} · ${escapeHtml(c.kind)}</div></td>
+      <td>$${c.amount.toFixed(1)}M</td>
+      <td>${fmtDate(c.called)}</td>
+      <td>${fmtDate(c.due)}</td>
+      <td style="text-align:left;">${ccStatusTag(c.status)}</td>
+      <td style="text-align:right;">${c.status === 'pending' ? `<button class="pill-btn accent cc-complete-btn" data-action="cc-complete" data-id="${c.id}">Mark completed</button>` : '<span class="qr-muted">—</span>'}</td>
+    </tr>`;
+
+    const table = (title, label, rows) => `<div class="qr-exhibit">
+      <div class="qr-exhibit-head"><div class="qx-label">${label}</div><div class="qx-title">${title}</div></div>
+      <table class="qr-table cc-table"><thead><tr><th>Fund / call</th><th>Amount</th><th>Called</th><th>Due</th><th>Status</th><th></th></tr></thead><tbody>${rows}</tbody></table>
+    </div>`;
+
+    const pendingBlock = pending.length
+      ? table(`Action needed · ${pending.length} call${pending.length === 1 ? '' : 's'} · $${pendingTotal.toFixed(1)}M`, 'Outstanding', pending.map(row).join(''))
+      : `<div class="qr-callout"><div class="qc-label">All clear</div><p>No outstanding capital calls — all funded.</p></div>`;
+    const completedBlock = completed.length ? table('Completed', 'History', completed.map(row).join('')) : '';
+
+    artifactBody.innerHTML = `${head}${pendingBlock}${completedBlock}`;
+    artifactFooter.classList.remove('visible');
+    updateUrl();
+  }
+
+  function openCapitalCallView(id) {
+    const calls = clientCapitalCalls();
+    const c = calls.find((x) => x.id === id);
+    if (!c) { openCapitalCallsView(); return; }
+    state.module = 'capital-calls';
+    state.capitalCallOpen = id;
+    artifactTitle.textContent = `Capital call · ${c.fund}`;
+    enterItemView();
+    const w = ccWire(c);
+    const action = c.status === 'pending'
+      ? `<button class="btn-primary" data-action="cc-complete" data-id="${c.id}">Mark as completed</button>`
+      : `<div class="cc-done-badge">✓ Completed</div>`;
+    artifactBody.innerHTML = `${itemHeadHtml('Capital call notice')}
+      <a class="mm-back" data-action="capital-calls-back"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>All capital calls</a>
+      <div class="cc-notice">
+        <div class="cc-notice-head">
+          <div class="cc-notice-from">${escapeHtml(c.manager)}</div>
+          <div class="cc-notice-kind">${escapeHtml(c.kind)}</div>
+        </div>
+        <div class="cc-notice-title">Capital Call Notice — No. ${c.callNum}</div>
+        <div class="cc-notice-status">${ccStatusTag(c.status)}</div>
+        <table class="cc-notice-table">
+          <tr><td>Fund</td><td>${escapeHtml(c.fund)}</td></tr>
+          <tr><td>Limited Partner</td><td>Dream University Endowment</td></tr>
+          <tr><td>Call amount</td><td><strong>$${c.amount.toFixed(1)}M</strong></td></tr>
+          <tr><td>Notice date</td><td>${fmtDate(c.called)}</td></tr>
+          <tr><td>Funds due</td><td><strong>${fmtDate(c.due)}</strong></td></tr>
+          <tr><td>Commitment status</td><td>This call ${escapeHtml(c.pctCommit)}; ${escapeHtml(c.remaining)} remains unfunded.</td></tr>
+        </table>
+        <h4>Purpose</h4>
+        <p>${escapeHtml(c.purpose)}</p>
+        <h4>Wire instructions</h4>
+        <table class="cc-wire">
+          <tr><td>Beneficiary bank</td><td>${escapeHtml(w.bank)}</td></tr>
+          <tr><td>ABA / routing</td><td>${escapeHtml(w.aba)}</td></tr>
+          <tr><td>Account</td><td>${escapeHtml(w.acct)}</td></tr>
+          <tr><td>Reference</td><td>${escapeHtml(w.ref)}</td></tr>
+        </table>
+        <div class="cc-notice-footer">Please remit the full amount by the date above. Contact the fund's investor-relations team with any questions.</div>
+        <div class="cc-notice-action">${action}</div>
+      </div>`;
+    artifactBody.scrollTop = 0;
+    artifactFooter.classList.remove('visible');
+    updateUrl();
+  }
+
+  function markCapitalCallCompleted(id) {
+    state.completedCalls = state.completedCalls || [];
+    if (!state.completedCalls.includes(id)) state.completedCalls.push(id);
+    if (state.capitalCallOpen === id) openCapitalCallView(id);
+    else openCapitalCallsView();
+  }
+
   function openMaterialsView() {
     if (!state.org.name) return;
     state.module = 'materials';
@@ -5558,6 +5828,8 @@
       else if (wf === 'reports') openQuarterlyReportView();
       else if (wf === 'memos') openManagerMemosView();
       else if (wf === 'comms') openCommunicationsView();
+      else if (wf === 'trading') openTradingView();
+      else if (wf === 'capital-calls') openCapitalCallsView();
     } else if (a === 'pm-run') {
       const desc = document.getElementById('pm-footer-desc');
       if (desc) desc.textContent = 'Running 4,000-sample Monte Carlo optimization…';
@@ -5623,6 +5895,7 @@
     if (state.module === 'reports' && qrSelected) params.set('report', qrSelected);
     if (state.module === 'memos' && mmOpenId) params.set('memo', mmOpenId);
     if (state.module === 'comms' && commOpenId) params.set('comm', commOpenId);
+    if (state.module === 'capital-calls' && state.capitalCallOpen) params.set('call', state.capitalCallOpen);
     const qs = params.toString();
     const url = qs ? `/demo?${qs}` : '/demo';
     try { window.history.replaceState(null, '', url); } catch {}
@@ -5646,6 +5919,8 @@
     else if (view === 'reports') openQuarterlyReportView(params.get('report'));
     else if (view === 'memos') { const mid = params.get('memo'); if (mid) openManagerMemoView(mid); else openManagerMemosView(); }
     else if (view === 'comms') { const cid = params.get('comm'); if (cid) openCommunicationView(cid); else openCommunicationsView(); }
+    else if (view === 'trading') openTradingView();
+    else if (view === 'capital-calls') { const cid = params.get('call'); if (cid) openCapitalCallView(cid); else openCapitalCallsView(); }
     return true;
   }
 
