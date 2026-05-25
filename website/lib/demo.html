@@ -444,21 +444,38 @@
   .vault-hint strong { color: var(--ink-2); font-weight: 500; }
   .cs-section { margin-bottom: 12px; }
   .cs-section-label { font-family: 'JetBrains Mono', monospace; font-size: 9.5px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin: 6px 4px 4px; }
-  .client-info-card { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; margin: 4px 4px 6px; background: #fff; display: flex; flex-direction: column; gap: 8px; }
-  .ci-card-row { display: flex; align-items: baseline; gap: 10px; }
-  .ci-card-row-people { align-items: flex-start; }
-  .ci-card-label { font-family: 'JetBrains Mono', monospace; font-size: 9.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); width: 64px; flex-shrink: 0; }
-  .ci-card-aum { font-family: 'Newsreader', serif; font-size: 18px; color: var(--ink); line-height: 1.1; letter-spacing: -0.005em; }
-  .ci-card-people { display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 1; }
-  .ci-person { display: flex; flex-direction: column; line-height: 1.25; }
-  .ci-person-name { font-size: 12.5px; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .ci-person-role { font-size: 10.5px; color: var(--muted); font-family: 'JetBrains Mono', monospace; letter-spacing: 0.02em; }
+  .client-info-card { border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; margin: 4px 4px 6px; background: #fff; }
+  .ci-aum-label { font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+  .ci-aum-value { font-family: 'Newsreader', serif; font-size: 22px; color: var(--ink); line-height: 1.1; letter-spacing: -0.01em; }
+  .ci-divider { height: 1px; background: var(--line-soft); margin: 12px 0; }
+  .ci-card-people { display: flex; flex-direction: column; gap: 4px; }
+  .ci-person { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; line-height: 1.3; }
+  .ci-person-name { font-size: 12.5px; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; flex: 1; }
+  .ci-person-role { font-family: 'JetBrains Mono', monospace; font-size: 9.5px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); flex-shrink: 0; }
   .ci-person-empty { color: var(--muted); font-style: italic; font-size: 11.5px; }
 
   /* Profile editor */
   .pf-section { margin: 18px 0; padding-bottom: 14px; border-bottom: 1px solid var(--line-soft); }
   .pf-section:last-of-type { border-bottom: none; }
-  .pf-section-label { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+  .pf-section-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+  .pf-section-label { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+  .pf-section-actions { display: flex; gap: 6px; }
+  .pf-section-btn { appearance: none; cursor: pointer; background: transparent; border: 1px solid var(--line); color: var(--ink-2); border-radius: 999px; padding: 3px 12px; font: inherit; font-size: 11.5px; }
+  .pf-section-btn:hover { border-color: var(--ink); color: var(--ink); }
+  .pf-section-btn.primary { background: var(--accent); border-color: var(--accent); color: var(--dark-ink); }
+  .pf-section-btn.primary:hover { background: var(--accent-2); border-color: var(--accent-2); }
+  .pf-dl { display: grid; grid-template-columns: 170px 1fr; gap: 8px 14px; margin: 0; }
+  .pf-dl.pf-dl-stacked { grid-template-columns: 1fr; gap: 4px 0; }
+  .pf-dl.pf-dl-stacked dt { margin-top: 8px; }
+  .pf-dl.pf-dl-stacked dt:first-child { margin-top: 0; }
+  .pf-dl dt { font-family: 'JetBrains Mono', monospace; font-size: 10.5px; letter-spacing: 0.04em; color: var(--muted); padding-top: 2px; text-transform: uppercase; letter-spacing: 0.06em; }
+  .pf-dl dd { margin: 0; color: var(--ink-2); font-size: 13.5px; line-height: 1.55; }
+  .pf-muted { color: var(--muted); font-style: italic; }
+  .pf-empty { color: var(--muted); font-style: italic; font-size: 12.5px; padding: 6px 0; }
+  .pf-mat-row.pf-mat-row-read { display: grid; grid-template-columns: 50px 1fr 70px; gap: 8px; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--line-soft); }
+  .pf-mat-row.pf-mat-row-read:last-child { border-bottom: none; }
+  .pf-mat-size { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted); text-align: right; }
+  .pf-mat-list { display: flex; flex-direction: column; }
   .pf-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 14px; }
   .pf-field { display: flex; flex-direction: column; gap: 4px; }
   .pf-label { font-size: 11px; color: var(--muted); font-family: 'JetBrains Mono', monospace; letter-spacing: 0.04em; }
@@ -1838,20 +1855,30 @@
       ? { text: 'Adopted', kind: 'ok' }
       : { text: 'Not modeled', kind: 'muted' };
 
+    const shortRole = (r) => {
+      const map = { 'Chief Investment Officer': 'CIO', 'Investment Committee Chair': 'IC Chair' };
+      return map[r] || (r || '');
+    };
     const peopleHtml = (state.people || []).slice(0, 3).map((p) =>
-      `<div class="ci-person"><span class="ci-person-name">${escapeHtml(p.name)}</span><span class="ci-person-role">${escapeHtml(p.role || '')}</span></div>`
-    ).join('') || '<div class="ci-person ci-person-empty">— add contacts in Profile</div>';
+      `<div class="ci-person"><span class="ci-person-name">${escapeHtml(p.name)}</span><span class="ci-person-role">${escapeHtml(shortRole(p.role))}</span></div>`
+    ).join('') || '<div class="ci-person-empty">No contacts yet</div>';
     const clientInfoCard = `<div class="client-info-card">
-      <div class="ci-card-row"><div class="ci-card-label">AUM</div><div class="ci-card-aum">${fmtAum(state.aum)}</div></div>
-      <div class="ci-card-row ci-card-row-people"><div class="ci-card-label">Contacts</div><div class="ci-card-people">${peopleHtml}</div></div>
+      <div class="ci-aum-block">
+        <div class="ci-aum-label">AUM</div>
+        <div class="ci-aum-value">${fmtAum(state.aum)}</div>
+      </div>
+      <div class="ci-divider"></div>
+      <div class="ci-contacts-block">
+        <div class="ci-aum-label">Contacts</div>
+        <div class="ci-card-people">${peopleHtml}</div>
+      </div>
     </div>`;
     const sections = [
       {
         label: 'Client info',
         custom: clientInfoCard,
         items: [
-          item({ id: 'profile', action: 'open-workflow', label: 'Profile · edit & upload', icon: svg('<path d="M20 21v-2a4 4 0 0 0-3-3.87"/><path d="M4 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/><circle cx="10" cy="7" r="4"/><circle cx="17" cy="6" r="3"/>') }),
-          item({ id: 'materials', action: 'open-workflow', label: 'Input materials', icon: svg('<path d="M4 4h12l4 4v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/><polyline points="16 4 16 8 20 8"/>'), status: materialsCount ? `${materialsCount}` : '—', statusKind: 'muted', disabled: materialsCount === 0 }),
+          item({ id: 'profile', action: 'open-workflow', label: 'Profile', icon: svg('<path d="M20 21v-2a4 4 0 0 0-3-3.87"/><path d="M4 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/><circle cx="10" cy="7" r="4"/><circle cx="17" cy="6" r="3"/>') }),
         ],
       },
       {
@@ -1918,148 +1945,191 @@
     return Math.round(num * mult);
   }
 
+  // Per-section edit state for the Profile view
+  const profileEdit = { org: false, contacts: false, facts: false, materials: false };
+
   function openClientProfileView() {
     if (!state.org.name) return;
     state.module = 'profile';
     artifactTitle.textContent = 'Profile';
     enterItemView();
-    const typeLabel = TYPE_LABEL[state.org.type] || 'Client';
-    const f = state.facts || {};
-    const matsCount = (state.materials || []).length;
-    const aumInputValue = state.aum && state.aum >= 1e9 ? `${(state.aum/1e9).toFixed(2)}B`
-      : state.aum && state.aum >= 1e6 ? `${(state.aum/1e6).toFixed(1)}M`
-      : (state.aum ? String(state.aum) : '');
-
-    const peopleRows = (state.people || []).map((p, i) => `
-      <div class="pf-person-row" data-person-idx="${i}">
-        <input class="pf-input pf-person-name" data-field="name" placeholder="Name" value="${escapeHtml(p.name || '')}" />
-        <input class="pf-input pf-person-role" data-field="role" placeholder="Role" value="${escapeHtml(p.role || '')}" />
-        <input class="pf-input pf-person-email" data-field="email" placeholder="Email" value="${escapeHtml(p.email || '')}" />
-        <button class="pf-person-remove" data-action="pf-remove-person" data-idx="${i}" title="Remove" aria-label="Remove">×</button>
-      </div>
-    `).join('');
-
-    const matRows = (state.materials || []).map((m, i) => `
-      <div class="pf-mat-row" data-mat-idx="${i}">
-        <span class="mat-kind">${m.kind === 'link' ? 'LINK' : 'FILE'}</span>
-        <span class="pf-mat-name">${escapeHtml(m.name)}</span>
-        <button class="pf-mat-remove" data-action="pf-remove-mat" data-idx="${i}" title="Remove" aria-label="Remove">×</button>
-      </div>
-    `).join('');
-
-    const factField = (label, key) => `
-      <div class="pf-field">
-        <label class="pf-label">${label}</label>
-        <textarea class="pf-textarea" data-fact="${key}" rows="3">${escapeHtml(f[key] || '')}</textarea>
-      </div>
-    `;
-
     artifactBody.innerHTML = `
-      ${itemHeadHtml('Profile', '<button class="save-changes-btn" id="profile-save-btn" data-action="save-profile" disabled>Save profile</button>')}
+      ${itemHeadHtml('Profile')}
       <div class="ips-title">${escapeHtml(state.org.name)} · Profile</div>
-      <div class="ips-sub">Edit core facts, contacts, and AUM. New materials are uploaded below — the agent will use them on the next review.</div>
-
-      <div class="pf-section">
-        <div class="pf-section-label">Organization</div>
-        <div class="pf-grid">
-          <div class="pf-field"><label class="pf-label">Name</label><input class="pf-input" id="pf-org-name" value="${escapeHtml(state.org.name)}" /></div>
-          <div class="pf-field"><label class="pf-label">Type</label>
-            <select class="pf-input" id="pf-org-type">
-              <option value="foundation"${state.org.type==='foundation'?' selected':''}>Foundation</option>
-              <option value="endowment"${state.org.type==='endowment'?' selected':''}>Endowment</option>
-              <option value="arts"${state.org.type==='arts'?' selected':''}>Arts &amp; culture</option>
-            </select>
-          </div>
-          <div class="pf-field"><label class="pf-label">AUM</label><input class="pf-input" id="pf-aum" placeholder="e.g. 1.22B or 50M" value="${aumInputValue}" /></div>
-        </div>
-      </div>
-
-      <div class="pf-section">
-        <div class="pf-section-label">Contacts</div>
-        <div id="pf-people-list">${peopleRows}</div>
-        <button class="pf-add-btn" data-action="pf-add-person">+ Add contact</button>
-      </div>
-
-      <div class="pf-section">
-        <div class="pf-section-label">Facts</div>
-        ${factField('Mission', 'mission')}
-        ${factField('Spending policy', 'spending')}
-        ${factField('Cash needs', 'cashNeeds')}
-        ${factField('Drawdown tolerance', 'drawdown')}
-        ${factField('Constraints', 'constraints')}
-        ${factField('Governance', 'governance')}
-      </div>
-
-      <div class="pf-section">
-        <div class="pf-section-label">Input materials · ${matsCount}</div>
-        <div id="pf-mat-list">${matRows}</div>
-        <div class="pf-upload-row">
-          <input type="file" id="pf-file-input" multiple style="display: none;" />
-          <button class="pf-add-btn" data-action="pf-upload-file">+ Add file</button>
-          <button class="pf-add-btn" data-action="pf-add-link">+ Add link</button>
-          <span class="pf-upload-hint">Uploads are added to the client record. The agent will scan them for IPS-relevant context on the next conversation turn.</span>
-        </div>
-      </div>
+      <div class="ips-sub">Core facts, contacts, materials. Click <strong>Edit</strong> on any section to make changes.</div>
+      ${renderProfileSection('org', 'Organization')}
+      ${renderProfileSection('contacts', 'Contacts')}
+      ${renderProfileSection('facts', 'Facts')}
+      ${renderProfileSection('materials', 'Input materials')}
     `;
     artifactFooter.classList.remove('visible');
     updateUrl();
     bindProfileEvents();
   }
 
+  function renderProfileSection(id, label) {
+    const editing = !!profileEdit[id];
+    const header = `<div class="pf-section-head">
+      <div class="pf-section-label">${label}</div>
+      ${editing
+        ? `<div class="pf-section-actions"><button class="pf-section-btn" data-action="pf-cancel" data-section="${id}">Cancel</button><button class="pf-section-btn primary" data-action="pf-save-section" data-section="${id}">Save</button></div>`
+        : `<button class="pf-section-btn" data-action="pf-edit" data-section="${id}">Edit</button>`}
+    </div>`;
+    const body = editing
+      ? renderProfileSectionEdit(id)
+      : renderProfileSectionRead(id);
+    return `<div class="pf-section" data-section="${id}">${header}${body}</div>`;
+  }
+
+  function renderProfileSectionRead(id) {
+    if (id === 'org') {
+      const typeLabel = TYPE_LABEL[state.org.type] || 'Client';
+      return `<dl class="pf-dl">
+        <dt>Name</dt><dd>${escapeHtml(state.org.name)}</dd>
+        <dt>Type</dt><dd>${escapeHtml(typeLabel)}</dd>
+        <dt>AUM</dt><dd>${state.aum ? fmtAum(state.aum) : '<span class="pf-muted">—</span>'}</dd>
+      </dl>`;
+    }
+    if (id === 'contacts') {
+      if (!(state.people && state.people.length)) return `<div class="pf-empty">No contacts yet. Click Edit to add.</div>`;
+      return `<dl class="pf-dl">${state.people.map((p) => `
+        <dt>${escapeHtml(p.name)}</dt>
+        <dd>${escapeHtml(p.role || '')}${p.email ? ` · <span class="pf-muted">${escapeHtml(p.email)}</span>` : ''}</dd>
+      `).join('')}</dl>`;
+    }
+    if (id === 'facts') {
+      const f = state.facts || {};
+      const labels = { mission: 'Mission', spending: 'Spending policy', cashNeeds: 'Cash needs', drawdown: 'Drawdown tolerance', constraints: 'Constraints', governance: 'Governance' };
+      const rows = Object.keys(labels).map((k) => f[k]
+        ? `<dt>${labels[k]}</dt><dd>${escapeHtml(f[k])}</dd>`
+        : '').join('');
+      if (!rows) return `<div class="pf-empty">No facts captured yet.</div>`;
+      return `<dl class="pf-dl pf-dl-stacked">${rows}</dl>`;
+    }
+    if (id === 'materials') {
+      const mats = state.materials || [];
+      if (!mats.length) return `<div class="pf-empty">No materials yet. Click Edit to add files or links.</div>`;
+      const fmtBytes = (b) => b > 1_000_000 ? (b/1_000_000).toFixed(1) + ' MB' : Math.round(b/1000) + ' KB';
+      return `<div class="pf-mat-list">${mats.map((m) => `
+        <div class="pf-mat-row pf-mat-row-read">
+          <span class="mat-kind">${m.kind === 'link' ? 'LINK' : 'FILE'}</span>
+          <span class="pf-mat-name">${m.kind === 'link' ? `<a href="${escapeHtml(m.name)}" target="_blank" rel="noopener" style="color:var(--ink-2);border-bottom:1px dotted var(--muted);text-decoration:none;">${escapeHtml(m.name)}</a>` : escapeHtml(m.name)}</span>
+          <span class="pf-mat-size">${m.size ? fmtBytes(m.size) : '—'}</span>
+        </div>`).join('')}</div>`;
+    }
+    return '';
+  }
+
+  function renderProfileSectionEdit(id) {
+    if (id === 'org') {
+      const aumInputValue = state.aum && state.aum >= 1e9 ? `${(state.aum/1e9).toFixed(2)}B`
+        : state.aum && state.aum >= 1e6 ? `${(state.aum/1e6).toFixed(1)}M`
+        : (state.aum ? String(state.aum) : '');
+      return `<div class="pf-grid">
+        <div class="pf-field"><label class="pf-label">Name</label><input class="pf-input" id="pf-org-name" value="${escapeHtml(state.org.name)}" /></div>
+        <div class="pf-field"><label class="pf-label">Type</label>
+          <select class="pf-input" id="pf-org-type">
+            <option value="foundation"${state.org.type==='foundation'?' selected':''}>Foundation</option>
+            <option value="endowment"${state.org.type==='endowment'?' selected':''}>Endowment</option>
+            <option value="arts"${state.org.type==='arts'?' selected':''}>Arts &amp; culture</option>
+          </select>
+        </div>
+        <div class="pf-field"><label class="pf-label">AUM</label><input class="pf-input" id="pf-aum" placeholder="e.g. 1.22B or 50M" value="${aumInputValue}" /></div>
+      </div>`;
+    }
+    if (id === 'contacts') {
+      const rows = (state.people || []).map((p, i) => `
+        <div class="pf-person-row" data-person-idx="${i}">
+          <input class="pf-input" data-field="name" placeholder="Name" value="${escapeHtml(p.name || '')}" />
+          <input class="pf-input" data-field="role" placeholder="Role" value="${escapeHtml(p.role || '')}" />
+          <input class="pf-input" data-field="email" placeholder="Email" value="${escapeHtml(p.email || '')}" />
+          <button class="pf-person-remove" data-action="pf-remove-person" data-idx="${i}" title="Remove" aria-label="Remove">×</button>
+        </div>`).join('');
+      return `${rows}<button class="pf-add-btn" data-action="pf-add-person">+ Add contact</button>`;
+    }
+    if (id === 'facts') {
+      const f = state.facts || {};
+      const factField = (label, key) => `
+        <div class="pf-field">
+          <label class="pf-label">${label}</label>
+          <textarea class="pf-textarea" data-fact="${key}" rows="3">${escapeHtml(f[key] || '')}</textarea>
+        </div>`;
+      return `${factField('Mission', 'mission')}${factField('Spending policy', 'spending')}${factField('Cash needs', 'cashNeeds')}${factField('Drawdown tolerance', 'drawdown')}${factField('Constraints', 'constraints')}${factField('Governance', 'governance')}`;
+    }
+    if (id === 'materials') {
+      const mats = state.materials || [];
+      const rows = mats.map((m, i) => `
+        <div class="pf-mat-row" data-mat-idx="${i}">
+          <span class="mat-kind">${m.kind === 'link' ? 'LINK' : 'FILE'}</span>
+          <span class="pf-mat-name">${escapeHtml(m.name)}</span>
+          <button class="pf-mat-remove" data-action="pf-remove-mat" data-idx="${i}" title="Remove" aria-label="Remove">×</button>
+        </div>`).join('');
+      return `${rows}
+        <div class="pf-upload-row">
+          <input type="file" id="pf-file-input" multiple style="display: none;" />
+          <button class="pf-add-btn" data-action="pf-upload-file">+ Add file</button>
+          <button class="pf-add-btn" data-action="pf-add-link">+ Add link</button>
+          <span class="pf-upload-hint">The agent will scan new materials for IPS-relevant context on the next conversation turn.</span>
+        </div>`;
+    }
+    return '';
+  }
+
   function bindProfileEvents() {
-    const onChange = () => {
-      const btn = document.getElementById('profile-save-btn');
-      if (btn) btn.removeAttribute('disabled');
-    };
-    artifactBody.querySelectorAll('.pf-input, .pf-textarea').forEach((el) => {
-      el.addEventListener('input', onChange);
-      el.addEventListener('change', onChange);
-    });
     const fileInputEl = document.getElementById('pf-file-input');
     if (fileInputEl) {
       fileInputEl.addEventListener('change', (e) => {
         const files = Array.from(e.target.files || []);
         if (!files.length) return;
         files.forEach((f) => state.materials.push({ kind: 'file', name: f.name, size: f.size }));
+        if (state.clientId) saveClient();
         onProfileMaterialsAdded(files.map((f) => f.name));
       });
     }
   }
 
+  function rerenderProfileSection(id) {
+    const el = artifactBody.querySelector(`.pf-section[data-section="${id}"]`);
+    if (!el) return;
+    el.outerHTML = renderProfileSection(id, ({ org: 'Organization', contacts: 'Contacts', facts: 'Facts', materials: 'Input materials' })[id]);
+    bindProfileEvents();
+  }
+
   function onProfileMaterialsAdded(names) {
-    openClientProfileView();  // re-render to show new entries
-    const btn = document.getElementById('profile-save-btn');
-    if (btn) btn.removeAttribute('disabled');
+    rerenderProfileSection('materials');
     addAgent(`<p>Added <strong>${names.length} new ${names.length === 1 ? 'material' : 'materials'}</strong>: ${names.map((n) => escapeHtml(n)).join(', ')}. I'll fold these into context on the next review — ask me to scan them for IPS updates whenever you're ready.</p>`);
   }
 
-  function saveProfileChanges() {
-    const nameInput = document.getElementById('pf-org-name');
-    const typeInput = document.getElementById('pf-org-type');
-    const aumInput = document.getElementById('pf-aum');
-    if (nameInput && nameInput.value.trim()) state.org.name = nameInput.value.trim();
-    if (typeInput) state.org.type = typeInput.value;
-    if (aumInput) state.aum = parseAumInput(aumInput.value);
-    // Contacts
-    const people = [];
-    artifactBody.querySelectorAll('.pf-person-row').forEach((row) => {
-      const get = (f) => row.querySelector(`[data-field="${f}"]`)?.value.trim() || '';
-      const name = get('name');
-      if (!name) return;
-      people.push({ name, role: get('role'), email: get('email') });
-    });
-    state.people = people;
-    // Facts
-    artifactBody.querySelectorAll('[data-fact]').forEach((ta) => {
-      const k = ta.dataset.fact;
-      const v = ta.value.trim();
-      if (v) state.facts[k] = v; else delete state.facts[k];
-    });
-    // Persist (or fork sample to new client)
+  function saveProfileSection(id) {
+    const root = artifactBody.querySelector(`.pf-section[data-section="${id}"]`);
+    if (!root) return;
+    if (id === 'org') {
+      const name = root.querySelector('#pf-org-name')?.value.trim();
+      const type = root.querySelector('#pf-org-type')?.value;
+      const aum = parseAumInput(root.querySelector('#pf-aum')?.value || '');
+      if (name) state.org.name = name;
+      if (type) state.org.type = type;
+      state.aum = aum;
+    } else if (id === 'contacts') {
+      const people = [];
+      root.querySelectorAll('.pf-person-row').forEach((row) => {
+        const get = (f) => row.querySelector(`[data-field="${f}"]`)?.value.trim() || '';
+        const nm = get('name');
+        if (!nm) return;
+        people.push({ name: nm, role: get('role'), email: get('email') });
+      });
+      state.people = people;
+    } else if (id === 'facts') {
+      root.querySelectorAll('[data-fact]').forEach((ta) => {
+        const k = ta.dataset.fact;
+        const v = ta.value.trim();
+        if (v) state.facts[k] = v; else delete state.facts[k];
+      });
+    }
+    // materials are mutated immediately via add/remove; no save step needed
+    profileEdit[id] = false;
+    rerenderProfileSection(id);
     if (state.clientId) saveClient();
-    // Refresh
-    openClientProfileView();
-    addAgent(`<p>Saved profile updates.</p>`);
   }
 
   function openMaterialsView() {
@@ -2817,24 +2887,28 @@
     } else if (a === 'back-to-vault') {
       e.preventDefault();
       backToVault();
-    } else if (a === 'save-profile') {
+    } else if (a === 'pf-edit') {
       e.preventDefault();
-      saveProfileChanges();
+      profileEdit[btn.dataset.section] = true;
+      rerenderProfileSection(btn.dataset.section);
+    } else if (a === 'pf-cancel') {
+      e.preventDefault();
+      profileEdit[btn.dataset.section] = false;
+      rerenderProfileSection(btn.dataset.section);
+    } else if (a === 'pf-save-section') {
+      e.preventDefault();
+      saveProfileSection(btn.dataset.section);
     } else if (a === 'pf-add-person') {
       e.preventDefault();
       state.people = state.people || [];
       state.people.push({ name: '', role: '', email: '' });
-      openClientProfileView();
-      const btn = document.getElementById('profile-save-btn');
-      if (btn) btn.removeAttribute('disabled');
+      rerenderProfileSection('contacts');
     } else if (a === 'pf-remove-person') {
       e.preventDefault();
       const idx = Number(btn.dataset.idx);
       if (!isNaN(idx)) {
         state.people.splice(idx, 1);
-        openClientProfileView();
-        const sb = document.getElementById('profile-save-btn');
-        if (sb) sb.removeAttribute('disabled');
+        rerenderProfileSection('contacts');
       }
     } else if (a === 'pf-upload-file') {
       e.preventDefault();
@@ -2845,6 +2919,7 @@
       const url = prompt('Paste a URL (homepage, IPS, board minutes, etc.)');
       if (url && url.trim()) {
         state.materials.push({ kind: 'link', name: url.trim() });
+        if (state.clientId) saveClient();
         onProfileMaterialsAdded([url.trim()]);
       }
     } else if (a === 'pf-remove-mat') {
@@ -2852,9 +2927,8 @@
       const idx = Number(btn.dataset.idx);
       if (!isNaN(idx)) {
         state.materials.splice(idx, 1);
-        openClientProfileView();
-        const sb = document.getElementById('profile-save-btn');
-        if (sb) sb.removeAttribute('disabled');
+        if (state.clientId) saveClient();
+        rerenderProfileSection('materials');
       }
     } else if (a === 'toggle-sidebar') {
       const collapsed = layout.classList.toggle('sidebar-collapsed');
