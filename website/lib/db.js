@@ -47,6 +47,9 @@ async function ensureSchema() {
       added_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )
   `;
+  // Per-email document access. NULL doc_access means "all documents" (backward compatible).
+  // An array of slugs (e.g. ["memo","deck"]) restricts access to those slugs only.
+  await db`ALTER TABLE allowed_emails ADD COLUMN IF NOT EXISTS doc_access JSONB`;
   await db`
     CREATE TABLE IF NOT EXISTS settings (
       key TEXT PRIMARY KEY,
@@ -193,7 +196,7 @@ async function isEmailAllowed(email) {
 }
 async function listAllowedEmails() {
   const db = getSql();
-  return db`SELECT email, note, added_at FROM allowed_emails ORDER BY added_at DESC`;
+  return db`SELECT email, note, added_at, doc_access FROM allowed_emails ORDER BY added_at DESC`;
 }
 async function addAllowedEmail(email, note) {
   const db = getSql();
@@ -205,6 +208,31 @@ async function addAllowedEmail(email, note) {
 async function removeAllowedEmail(email) {
   const db = getSql();
   await db`DELETE FROM allowed_emails WHERE email = ${normalizeEmail(email)}`;
+}
+
+// Get the doc_access list for an email. Returns:
+//   - null if the row has no restriction (= all docs)
+//   - array of slugs if restricted
+//   - null if email is not in the whitelist (callers should check whitelist first)
+async function getEmailDocAccess(email) {
+  const db = getSql();
+  const rows = await db`SELECT doc_access FROM allowed_emails WHERE email = ${normalizeEmail(email)}`;
+  if (rows.length === 0) return null;
+  return rows[0].doc_access || null;
+}
+
+// Set per-email doc access. Pass `null` (or omit) for full access; pass an array of slugs to restrict.
+async function setEmailDocAccess(email, slugs) {
+  const db = getSql();
+  const value = (slugs == null) ? null : Array.from(new Set(slugs.map((s) => String(s).trim()).filter(Boolean)));
+  await db`UPDATE allowed_emails SET doc_access = ${value == null ? null : db.json(value)} WHERE email = ${normalizeEmail(email)}`;
+}
+
+// Convenience predicate. Admin always has access; if no row, no access.
+async function canEmailAccessDoc(email, slug) {
+  const access = await getEmailDocAccess(email);
+  if (access == null) return true;          // null = unrestricted
+  return access.includes(String(slug));
 }
 
 // ----- settings -----
@@ -258,6 +286,9 @@ export {
   listAllowedEmails,
   addAllowedEmail,
   removeAllowedEmail,
+  getEmailDocAccess,
+  setEmailDocAccess,
+  canEmailAccessDoc,
   // settings
   getSetting,
   setSetting,

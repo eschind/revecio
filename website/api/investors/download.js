@@ -4,7 +4,7 @@ import { dirname, join } from 'node:path';
 import chromium from '@sparticuz/chromium';
 import puppeteer from 'puppeteer-core';
 
-import { ensureSchema, recordVisit, getDocumentBySlug, isDeckVisible } from '../../lib/db.js';
+import { ensureSchema, recordVisit, getDocumentBySlug, isDeckVisible, canEmailAccessDoc } from '../../lib/db.js';
 import { readSession, clientIp } from '../../lib/session.js';
 import { sendVisitNotification } from '../../lib/notify.js';
 import { renderMemo } from '../../lib/templates.js';
@@ -48,6 +48,18 @@ export default async function handler(req, res) {
   const email = session.email;
   const ip = clientIp(req);
   const userAgent = req.headers['user-agent'] || '';
+
+  // Per-email access gate (admin bypasses)
+  const adminEmail = (process.env.ADMIN_EMAIL || '').toLowerCase();
+  if (email !== adminEmail) {
+    try { await ensureSchema(); } catch {}
+    const allowed = await canEmailAccessDoc(email, slug).catch(() => true);
+    if (!allowed) {
+      res.statusCode = 302;
+      res.setHeader('Location', '/investors');
+      return res.end();
+    }
+  }
 
   if (slug === 'deck') {
     try { await ensureSchema(); } catch {}
