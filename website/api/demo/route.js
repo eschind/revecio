@@ -12,7 +12,7 @@ You receive:
 Classify the message and return ONLY a single JSON object (no markdown, no commentary):
 
 {
-  "intent": "analyze" | "optimize" | "open" | "next" | "previous" | "switch" | "edit" | "switch_and_edit" | "question" | "unclear",
+  "intent": "analyze" | "answer_content" | "optimize" | "open" | "next" | "previous" | "switch" | "edit" | "switch_and_edit" | "question" | "unclear",
   "targetModule": "ips" | "portfolio" | "materials" | null,
   "targetSectionNum": <number or null>,
   "query": "sharpe" | "return" | "vol" | "real_return" | "allocation" | "liquidity" | "metrics" | null,
@@ -30,6 +30,14 @@ Rules:
   - "liquidity coverage?" / "spending cushion?" / "can we cover capital calls?" / "how much liquidity?" → query="liquidity"
   - "summarize the portfolio" / "give me the key metrics" / "headline numbers" → query="metrics"
   If a question mentions a metric word (Sharpe, vol, allocation, weights, return, real return, liquidity, coverage, cushion), it is almost always analyze.
+- "answer_content" — a factual question about what the IPS DOCUMENT TEXT says: its provisions, rules, requirements, definitions, or whether the IPS addresses a given topic. This is about the written policy, NOT a portfolio number. Set "targetSectionNum" to the single most relevant IPS section (use the section list to pick it), and set "reply" to a one-sentence direct lead-in answer. Examples:
+  - "are there any ESG requirements in the IPS?" / "does the IPS cover mission-aligned investing?" / "what's our SRI policy?" → answer_content, targetSectionNum = the "Mission-Aligned Investing and ESG" section
+  - "what does the IPS say about rebalancing?" / "when do we rebalance?" / "what are the rebalancing triggers?" → answer_content, targetSectionNum = the "Rebalancing Policy" section
+  - "what's prohibited?" / "can we hold crypto?" / "are there any investment restrictions?" → answer_content, targetSectionNum = the "Permitted and Prohibited Investments" section
+  - "how is risk defined?" / "what's our risk tolerance?" / "what does the IPS say about stress testing?" → answer_content, targetSectionNum = the "Risk Tolerance and Risk Management" section
+  - "who approves the SAA?" / "what's the OCIO's role?" → answer_content, targetSectionNum = the "Roles and Responsibilities" section
+  - "what's our spending policy?" / "what's the payout rule?" → answer_content, targetSectionNum = the "Spending Policy" section
+  Use answer_content (NOT analyze) whenever the user asks what the policy says or whether the IPS contains a provision, rather than asking for a computed portfolio figure. Use answer_content (NOT open) when the user wants the answer, not to start editing.
 - "optimize" — user asks for the MEAN-VARIANCE OPTIMIZED / MAX-SHARPE / OPTIMAL allocation. Run optimization inline. Set "query" if a specific metric is asked, otherwise leave null and we'll show the full metrics. Examples:
   - "run MVO" / "what does MVO give us?" / "what's the optimal allocation?" → optimize, query=null
   - "what's the MVO Sharpe?" / "what would the Sharpe be optimized?" / "what would the sharpe be based on mean variance optimization" → optimize, query="sharpe"
@@ -40,11 +48,12 @@ Rules:
 - "switch" — focus on a different IPS section without editing.
 - "edit" — change the CURRENT IPS section. editPrompt = neutral instruction.
 - "switch_and_edit" — change a DIFFERENT IPS section. Set targetSectionNum and editPrompt.
-- "question" — a question that ISN'T one of the analyze queries above and doesn't change focus. Set reply.
+- "question" — a question that is neither an analyze metric nor an answer_content policy question, and doesn't change focus. Set reply.
 - "unclear" — you can't tell. Set reply to a follow-up question.
 
 Important:
 - Prefer "analyze" over "open" when the user is asking a specific numeric question. "What's the Sharpe?" is analyze. "Open the SAA" is open.
+- "analyze" is for COMPUTED PORTFOLIO NUMBERS; "answer_content" is for WHAT THE IPS TEXT SAYS. "What's the liquidity coverage?" is analyze (a number); "What does the IPS say about liquidity?" is answer_content (the policy text).
 - editPrompt should NOT echo verbatim; restate clearly.
 - "ok"/"yes" alone is ambiguous — return "unclear".
 - Never include markdown code fences. Return raw JSON only.`;

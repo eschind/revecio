@@ -191,6 +191,19 @@
   .msg-body .text strong { font-weight: 500; }
   .msg-body .text em { font-family: 'Newsreader', serif; font-style: italic; }
 
+  /* IPS content answer (quoted policy excerpt in chat) */
+  .ips-answer-card { margin-top: 12px; border: 1px solid var(--line); border-left: 3px solid var(--accent); border-radius: 8px; background: var(--bg-2); padding: 12px 16px; }
+  .ips-answer-card .ips-answer-head { font-family: 'JetBrains Mono', monospace; font-size: 9.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+  .ips-answer-card p { font-size: 13.5px; line-height: 1.6; color: var(--ink-2); margin: 6px 0; }
+  .ips-answer-card p:first-of-type { margin-top: 0; }
+  .ips-answer-card h4 { font-family: 'Newsreader', serif; font-weight: 500; font-size: 14px; color: var(--ink); margin: 12px 0 4px; }
+  .ips-answer-card ul, .ips-answer-card dl { font-size: 13.5px; line-height: 1.6; color: var(--ink-2); margin: 6px 0; padding-left: 20px; }
+  .ips-answer-card li { margin: 3px 0; }
+  .ips-answer-card dt { font-weight: 500; color: var(--ink); margin-top: 6px; }
+  .ips-answer-card dd { margin: 2px 0 0 16px; }
+  .ips-answer-card strong { color: var(--ink); font-weight: 500; }
+  .ips-answer-card .placeholder-block { background: transparent; padding: 0; }
+
   .typing-indicator { display: inline-flex; gap: 4px; align-items: center; padding: 4px 0; }
   .typing-indicator span { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); animation: bounce 1.4s infinite ease-in-out; }
   .typing-indicator span:nth-child(2) { animation-delay: 0.15s; }
@@ -1031,6 +1044,26 @@
       return;
     }
 
+    if (intent === 'answer_content') {
+      const num = Number(route?.targetSectionNum);
+      const idx = IPS_SECTIONS.findIndex((s) => s.num === num);
+      if (idx < 0) {
+        await agentReply(`<p>${escapeHtml(route?.reply || "I couldn't find the part of the IPS that covers that.")}</p>`);
+        return;
+      }
+      const s = IPS_SECTIONS[idx];
+      // Surface the relevant section in the artifact alongside the written answer
+      if (state.module !== 'ips') {
+        switchToIpsView();
+        await new Promise((r) => setTimeout(r, 60));
+      }
+      state.reviewIdx = idx;
+      highlightSection(s.id);
+      const lead = route?.reply ? `<p>${escapeHtml(route.reply)}</p>` : '';
+      await agentReply(`${lead}<div class="ips-answer-card"><div class="ips-answer-head">IPS · ${s.num}. ${escapeHtml(s.title)}</div>${currentSectionHtml(s)}</div>`);
+      return;
+    }
+
     if (intent === 'optimize') {
       await runInlineOptimization(route?.query || 'metrics');
       return;
@@ -1533,6 +1566,12 @@
       body: () => `<p>This IPS shall be reviewed by the IC at least annually. Material amendments — including changes to investment objectives, the asset-allocation framework, the spending policy, or governance structure — require Board approval. Non-material technical updates may be adopted by the IC and reported to the Board at its next regular meeting.</p>`,
     },
   ];
+
+  // Current rendered HTML for a section — honors any user/AI edits, else the drafted body.
+  function currentSectionHtml(s) {
+    if (state.sectionOverrides && state.sectionOverrides[s.id]) return state.sectionOverrides[s.id];
+    try { return s.body(buildIpsContext()); } catch { return ''; }
+  }
 
   function renderSection(s, ctx) {
     const content = (state.sectionOverrides && state.sectionOverrides[s.id]) || s.body(ctx);
