@@ -297,6 +297,58 @@
 
   /* Empty state hint */
   .empty-hint { text-align: center; padding: 16px 0; color: var(--muted); font-size: 12.5px; }
+
+  /* Portfolio Model module */
+  .pm-title { font-family: 'Newsreader', serif; font-size: 24px; font-weight: 400; margin-bottom: 4px; letter-spacing: -0.01em; }
+  .pm-sub { font-size: 12.5px; color: var(--muted); margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid var(--line-soft); line-height: 1.55; }
+  .pm-sub strong { color: var(--ink-2); font-weight: 500; }
+  .pm-sub a { color: var(--accent); text-decoration: none; border-bottom: 1px dotted currentColor; }
+  .pm-card { border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; margin-bottom: 14px; background: #fff; }
+  .pm-card-label { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+  .pm-metrics { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px 18px; }
+  .layout.expanded .pm-metrics { grid-template-columns: repeat(4, 1fr); }
+  .pm-metric-label { font-family: 'JetBrains Mono', monospace; font-size: 9.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+  .pm-metric-value { font-family: 'Newsreader', serif; font-size: 22px; font-weight: 400; color: var(--ink); }
+  .pm-metric-sub { font-size: 11px; color: var(--muted); margin-top: 2px; font-family: 'JetBrains Mono', monospace; letter-spacing: 0.04em; }
+
+  .pm-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  .pm-table th { text-align: left; padding: 6px 8px 8px; font-family: 'JetBrains Mono', monospace; font-size: 9.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); font-weight: 500; border-bottom: 1px solid var(--line-soft); }
+  .pm-table th.num, .pm-table td.num { text-align: right; }
+  .pm-table td { padding: 8px; border-bottom: 1px solid var(--line-soft); color: var(--ink-2); }
+  .pm-table tbody tr:hover { background: rgba(20,23,28,0.025); }
+  .pm-w-input { width: 60px; padding: 4px 6px; border: 1px solid var(--line); border-radius: 5px; font: inherit; font-size: 12.5px; text-align: right; background: #fff; color: var(--ink); }
+  .pm-w-input:focus { outline: none; border-color: var(--accent); }
+  .pm-w-input.out-of-range { border-color: #b13a3a; background: rgba(177,58,58,0.05); }
+  .pm-range { font-size: 11px; color: var(--muted); font-family: 'JetBrains Mono', monospace; }
+  .pm-table tfoot td { font-weight: 500; color: var(--ink); border-bottom: none; padding-top: 10px; font-size: 13px; }
+  .pm-table tfoot td.num { font-family: 'JetBrains Mono', monospace; }
+  .pm-tier-badge { display: inline-block; min-width: 24px; text-align: center; font-family: 'JetBrains Mono', monospace; font-size: 10px; padding: 2px 5px; border-radius: 4px; letter-spacing: 0.04em; }
+  .pm-tier-badge.t1 { background: rgba(31,112,80,0.12); color: var(--accent); }
+  .pm-tier-badge.t2 { background: rgba(196,131,13,0.15); color: #8a5d0a; }
+  .pm-tier-badge.t3 { background: rgba(107,92,138,0.18); color: #4d3f6b; }
+
+  .pm-tier-bar { display: flex; height: 8px; border-radius: 4px; overflow: hidden; margin: 4px 0 12px; background: var(--line-soft); }
+  .pm-tier-fill { display: block; height: 100%; }
+  .pm-tier-fill.t1 { background: var(--accent); }
+  .pm-tier-fill.t2 { background: #c4830d; }
+  .pm-tier-fill.t3 { background: #6b5c8a; }
+  .pm-tier-row { display: flex; justify-content: space-between; align-items: center; font-size: 12.5px; padding: 4px 0; color: var(--ink-2); }
+  .pm-tier-row .swatch { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 8px; vertical-align: 0; }
+  .pm-tier-row.warn .pm-tier-status { color: #b13a3a; }
+  .pm-tier-row .pm-tier-status { font-family: 'JetBrains Mono', monospace; font-size: 10.5px; color: var(--muted); margin-left: 10px; }
+
+  .pm-chart-wrap { position: relative; }
+  .pm-chart { width: 100%; height: 280px; }
+  .pm-legend { display: flex; gap: 16px; font-size: 11.5px; color: var(--muted); margin-top: 8px; flex-wrap: wrap; }
+  .pm-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
+  .pm-empty-chart { display: flex; align-items: center; justify-content: center; height: 280px; color: var(--muted); font-size: 13px; font-style: italic; text-align: center; padding: 0 20px; }
+
+  .pm-warn { background: rgba(177,58,58,0.07); border: 1px solid rgba(177,58,58,0.25); border-radius: 8px; padding: 8px 12px; font-size: 12.5px; color: #8a2828; margin-bottom: 12px; }
+  .pm-total.warn { color: #b13a3a; }
+  .pm-total.ok { color: var(--accent); }
+
+  .pm-method-row { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 10px; font-size: 11.5px; }
+  .pm-method-row .pm-method-tag { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.06em; padding: 3px 8px; background: var(--bg-2); color: var(--ink-2); border-radius: 999px; border: 1px solid var(--line); }
 </style>
 </head>
 <body>
@@ -327,10 +379,9 @@
 
       <div class="nav-group">
         <div class="nav-label">Workflows</div>
-        <div class="nav-item disabled">
+        <div class="nav-item" id="nav-portfolio" data-action="open-portfolio" title="Open Portfolio Modeling">
           <span class="icon"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 14l3-3 3 3 5-6"/></svg></span>
           Portfolio modeling
-          <span class="badge">soon</span>
         </div>
         <div class="nav-item disabled">
           <span class="icon"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></span>
@@ -454,6 +505,8 @@
     qIdx: 0,
     questions: [],
     ipsRendered: false,
+    module: 'ips',  // 'ips' | 'portfolio'
+    saa: null,      // adopted Strategic Asset Allocation
   };
 
   // ============ DOM ============
@@ -469,6 +522,8 @@
   const artifact = document.getElementById('artifact');
   const artifactBody = document.getElementById('artifact-body');
   const artifactClose = document.getElementById('artifact-close');
+  const artifactTitle = document.getElementById('artifact-title');
+  const IPS_ARTIFACT_TITLE = 'Investment Policy Statement · Draft';
   const clientChip = document.getElementById('client-chip');
   const chipName = document.getElementById('chip-name');
   const chipType = document.getElementById('chip-type');
@@ -1104,6 +1159,17 @@
     if (artifactExpand) artifactExpand.title = 'Expand';
   }
   function showArtifactFooter() { artifactFooter.classList.add('visible'); }
+  function restoreIpsFooter() {
+    artifactFooter.innerHTML = `
+      <div class="footer-text">
+        <div class="footer-label">Next step</div>
+        <div class="footer-desc">Save the IPS and continue to Portfolio Modeling</div>
+      </div>
+      <div class="footer-actions">
+        <button class="btn-primary" data-action="save-client">Save &amp; continue →</button>
+      </div>
+    `;
+  }
   artifactClose.addEventListener('click', closeArtifact);
 
   async function streamIps() {
@@ -1467,7 +1533,8 @@
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(arr)); } catch {}
   }
   function captureSectionOverrides() {
-    const overrides = {};
+    // Start from any existing overrides so we don't clobber when the IPS isn't on screen
+    const overrides = { ...(state.sectionOverrides || {}) };
     IPS_SECTIONS.forEach((s) => {
       const el = artifactBody.querySelector(`#${s.id} .ips-section-content`);
       if (el) overrides[s.id] = el.innerHTML;
@@ -1487,6 +1554,7 @@
       materials: state.materials,
       facts: state.facts,
       sectionOverrides: captureSectionOverrides(),
+      saa: state.saa,
       savedAt: new Date().toISOString(),
     };
     if (existingIdx >= 0) all[existingIdx] = record;
@@ -1506,16 +1574,24 @@
     state.facts = client.facts || {};
     state.clientId = client.id;
     state.sectionOverrides = client.sectionOverrides || {};
+    state.saa = client.saa || null;
+    state.module = 'ips';
+    state_pm.weights = null;
+    state_pm.mvo = null;
     state.phase = 'reviewing-done';
     state.currentExample = null;
     updateExampleHint();
     refreshMaterialsCount();
     showClientChip();
+    document.querySelectorAll('.nav-item').forEach((el) => el.classList.remove('active'));
+    document.getElementById('nav-new-client').classList.add('active');
     // Reset chat
     feedInner.innerHTML = '';
     // Render IPS in artifact with overrides applied
+    artifactTitle.textContent = IPS_ARTIFACT_TITLE;
     openArtifact();
     artifactBody.innerHTML = buildIpsHtml();
+    restoreIpsFooter();
     showArtifactFooter();
     // After render, apply overrides (renderSection should have already used them via state)
     // Mark all sections as reviewed (they've been seen before)
@@ -1580,8 +1656,16 @@
     state.ipsRendered = false;
     state.clientId = null;
     state.sectionOverrides = {};
+    state.saa = null;
+    state.module = 'ips';
     state.currentExample = null;
     state.reviewIdx = 0;
+    state_pm.weights = null;
+    state_pm.mvo = null;
+    document.querySelectorAll('.nav-item').forEach((el) => el.classList.remove('active'));
+    document.getElementById('nav-new-client').classList.add('active');
+    artifactTitle.textContent = IPS_ARTIFACT_TITLE;
+    restoreIpsFooter();
     closeArtifact();
     artifactFooter.classList.remove('visible');
     artifactBody.innerHTML = '';
@@ -1597,7 +1681,456 @@
     startConversation();
   }
 
-  // Save / keep-editing button handlers
+  // ============ Portfolio Modeling module ============
+  // Capital market assumptions: J.P. Morgan 2025 Long-Term Capital Market Assumptions,
+  // USD, 10–15 year horizon. Returns are arithmetic; volatilities are annualized.
+  const CMA = [
+    { id: 'us_eq',   name: 'U.S. Equity',                 ret: 0.067, vol: 0.170, tier: 1 },
+    { id: 'intl_eq', name: 'Intl Developed Equity',       ret: 0.081, vol: 0.175, tier: 1 },
+    { id: 'em_eq',   name: 'Emerging Markets Equity',     ret: 0.072, vol: 0.220, tier: 1 },
+    { id: 'core_fi', name: 'Core Fixed Income (U.S. Agg)',ret: 0.046, vol: 0.045, tier: 1 },
+    { id: 'tips',    name: 'TIPS',                        ret: 0.044, vol: 0.055, tier: 1 },
+    { id: 'hy',      name: 'High-Yield Credit',           ret: 0.064, vol: 0.090, tier: 1 },
+    { id: 'hf',      name: 'Diversified Hedge Funds',     ret: 0.058, vol: 0.065, tier: 2 },
+    { id: 'pe',      name: 'Private Equity',              ret: 0.099, vol: 0.225, tier: 3 },
+    { id: 'pc',      name: 'Private Credit',              ret: 0.085, vol: 0.100, tier: 3 },
+    { id: 'ra',      name: 'Real Assets',                 ret: 0.067, vol: 0.115, tier: 2 },
+    { id: 'cash',    name: 'Cash',                        ret: 0.035, vol: 0.005, tier: 1 },
+  ];
+  const CMA_BY = Object.fromEntries(CMA.map((c) => [c.id, c]));
+
+  // IPS policy ranges (typical diversified endowment with growth tilt)
+  const IPS_RANGE = {
+    us_eq:   [0.20, 0.35],
+    intl_eq: [0.10, 0.20],
+    em_eq:   [0.05, 0.12],
+    core_fi: [0.10, 0.25],
+    tips:    [0.00, 0.07],
+    hy:      [0.00, 0.07],
+    hf:      [0.00, 0.10],
+    pe:      [0.05, 0.15],
+    pc:      [0.00, 0.10],
+    ra:      [0.03, 0.10],
+    cash:    [0.00, 0.05],
+  };
+
+  // Midpoints, scaled to sum to 1
+  function defaultMidpointWeights() {
+    const raw = {};
+    let s = 0;
+    for (const id of Object.keys(IPS_RANGE)) {
+      const [lo, hi] = IPS_RANGE[id];
+      raw[id] = (lo + hi) / 2;
+      s += raw[id];
+    }
+    // Tiny normalization toward 1 by scaling, then project onto bounds
+    for (const id of Object.keys(raw)) raw[id] = raw[id] / s;
+    return projectToBoundsAndSimplex(raw);
+  }
+
+  // Factor model for correlations: [equity, rates, credit, illiq]
+  const FACTORS = {
+    us_eq:   [1.00,  0.00, 0.10, 0.00],
+    intl_eq: [0.90,  0.00, 0.10, 0.00],
+    em_eq:   [0.80, -0.10, 0.20, 0.00],
+    core_fi: [0.00,  1.00, 0.15, 0.00],
+    tips:    [0.00,  0.85, 0.00, 0.00],
+    hy:      [0.55,  0.20, 0.85, 0.00],
+    hf:      [0.45,  0.05, 0.20, 0.10],
+    pe:      [0.85,  0.00, 0.15, 0.45],
+    pc:      [0.30,  0.10, 0.70, 0.45],
+    ra:      [0.55,  0.20, 0.20, 0.20],
+    cash:    [0.00,  0.10, 0.00, 0.00],
+  };
+  function _dot(a, b) { let s = 0; for (let i = 0; i < a.length; i++) s += a[i] * b[i]; return s; }
+  function _corr(a, b) { return _dot(a, b) / (Math.sqrt(_dot(a, a) * _dot(b, b)) + 1e-12); }
+  const CORR = {};
+  Object.keys(FACTORS).forEach((a) => {
+    CORR[a] = {};
+    Object.keys(FACTORS).forEach((b) => { CORR[a][b] = a === b ? 1 : _corr(FACTORS[a], FACTORS[b]); });
+  });
+
+  const RF = 0.035;            // risk-free for Sharpe
+  const LIQ_FLOOR = 0.50;      // Tier-1 minimum
+
+  function portfolioMetrics(weights) {
+    const ids = CMA.map((c) => c.id);
+    let ret = 0, varSum = 0;
+    for (const id of ids) ret += (weights[id] || 0) * CMA_BY[id].ret;
+    for (const a of ids) {
+      const wa = weights[a] || 0;
+      if (wa === 0) continue;
+      for (const b of ids) {
+        const wb = weights[b] || 0;
+        if (wb === 0) continue;
+        varSum += wa * wb * CMA_BY[a].vol * CMA_BY[b].vol * CORR[a][b];
+      }
+    }
+    const vol = Math.sqrt(Math.max(0, varSum));
+    const sharpe = vol > 0 ? (ret - RF) / vol : 0;
+    // 1-year 5th-percentile (parametric normal, illustrative)
+    const cvar = ret - 1.645 * vol;
+    const tiers = { 1: 0, 2: 0, 3: 0 };
+    for (const id of ids) tiers[CMA_BY[id].tier] += (weights[id] || 0);
+    return { ret, vol, sharpe, cvar, tiers };
+  }
+
+  function projectToBoundsAndSimplex(w) {
+    const ids = Object.keys(IPS_RANGE);
+    const out = {};
+    for (const id of ids) {
+      const [lo, hi] = IPS_RANGE[id];
+      out[id] = Math.max(lo, Math.min(hi, w[id] ?? lo));
+    }
+    let s = 0;
+    for (const id of ids) s += out[id];
+    for (let iter = 0; iter < 25; iter++) {
+      const diff = 1 - s;
+      if (Math.abs(diff) < 1e-7) break;
+      let cap = 0;
+      for (const id of ids) {
+        const [lo, hi] = IPS_RANGE[id];
+        cap += diff > 0 ? (hi - out[id]) : (out[id] - lo);
+      }
+      if (cap < 1e-9) break;
+      for (const id of ids) {
+        const [lo, hi] = IPS_RANGE[id];
+        const room = diff > 0 ? (hi - out[id]) : (out[id] - lo);
+        out[id] += diff * (room / cap);
+        out[id] = Math.max(lo, Math.min(hi, out[id]));
+      }
+      s = 0;
+      for (const id of ids) s += out[id];
+    }
+    return out;
+  }
+
+  function sampleRandomFeasible() {
+    const ids = Object.keys(IPS_RANGE);
+    const w = {};
+    for (const id of ids) {
+      const [lo, hi] = IPS_RANGE[id];
+      w[id] = lo + Math.random() * (hi - lo);
+    }
+    return projectToBoundsAndSimplex(w);
+  }
+
+  // Sample N portfolios, filter by liquidity floor; return cloud + max-Sharpe.
+  function runMVO({ samples = 4000, liquidityFloor = LIQ_FLOOR } = {}) {
+    const cloud = [];
+    let best = null;
+    for (let i = 0; i < samples; i++) {
+      const w = sampleRandomFeasible();
+      const m = portfolioMetrics(w);
+      if (m.tiers[1] < liquidityFloor - 1e-6) continue;
+      cloud.push({ w, m });
+      if (!best || m.sharpe > best.m.sharpe) best = { w, m };
+    }
+    return { cloud, optimal: best };
+  }
+
+  const state_pm = {
+    weights: null,    // current edited weights
+    mvo: null,        // last MVO result { cloud, optimal }
+  };
+
+  function pmFmtPct(x, digits = 1) { return (x * 100).toFixed(digits) + '%'; }
+
+  function renderPortfolioModule() {
+    state.module = 'portfolio';
+    if (!state_pm.weights) {
+      state_pm.weights = state.saa?.weights ? { ...state.saa.weights } : defaultMidpointWeights();
+    }
+    artifactTitle.textContent = 'Portfolio Model · Strategic Asset Allocation';
+    openArtifact();
+
+    const rowsHtml = CMA.map((c) => {
+      const [lo, hi] = IPS_RANGE[c.id];
+      const tierLabel = { 1: 'T1', 2: 'T2', 3: 'T3' }[c.tier];
+      const w = state_pm.weights[c.id] || 0;
+      return `
+        <tr data-asset="${c.id}">
+          <td>${c.name}</td>
+          <td class="pm-range">${pmFmtPct(lo, 0)} – ${pmFmtPct(hi, 0)}</td>
+          <td class="num"><input class="pm-w-input" type="number" step="0.5" min="${(lo*100).toFixed(1)}" max="${(hi*100).toFixed(1)}" value="${(w*100).toFixed(1)}" data-asset="${c.id}" /></td>
+          <td class="num">${pmFmtPct(c.ret, 1)}</td>
+          <td class="num">${pmFmtPct(c.vol, 1)}</td>
+          <td class="num"><span class="pm-tier-badge t${c.tier}">${tierLabel}</span></td>
+        </tr>`;
+    }).join('');
+
+    artifactBody.innerHTML = `
+      <div class="pm-title">${escapeHtml(state.org.name || 'Portfolio')} · Strategic Asset Allocation</div>
+      <div class="pm-sub">
+        <strong>Method.</strong> Mean-variance optimization (Markowitz, 1952) over a 10-year horizon. The feasible set is the intersection of the IPS policy ranges and a Tier-1 (daily-liquid) floor of ${pmFmtPct(LIQ_FLOOR, 0)}. Capital market assumptions are sourced from <a href="https://am.jpmorgan.com/us/en/asset-management/institutional/insights/portfolio-insights/ltcma/" target="_blank" rel="noopener">J.P. Morgan's 2025 Long-Term Capital Market Assumptions</a> (USD, 10–15 year, arithmetic returns; covariance from a four-factor decomposition of those CMAs).
+        <div class="pm-method-row">
+          <span class="pm-method-tag">Objective: max Sharpe</span>
+          <span class="pm-method-tag">Constraints: IPS ranges</span>
+          <span class="pm-method-tag">Tier-1 floor ≥ ${pmFmtPct(LIQ_FLOOR, 0)}</span>
+          <span class="pm-method-tag">Σwᵢ = 1, wᵢ ∈ [lo, hi]</span>
+        </div>
+      </div>
+
+      <div class="pm-card pm-metrics" id="pm-metrics">
+        <div class="pm-metric"><div class="pm-metric-label">10y expected return</div><div class="pm-metric-value" data-m="ret">—</div><div class="pm-metric-sub">arithmetic, annualized</div></div>
+        <div class="pm-metric"><div class="pm-metric-label">Annualized volatility</div><div class="pm-metric-value" data-m="vol">—</div><div class="pm-metric-sub">portfolio σ</div></div>
+        <div class="pm-metric"><div class="pm-metric-label">Sharpe ratio</div><div class="pm-metric-value" data-m="sharpe">—</div><div class="pm-metric-sub">rf = ${pmFmtPct(RF, 1)}</div></div>
+        <div class="pm-metric"><div class="pm-metric-label">1y 5th-pctile return</div><div class="pm-metric-value" data-m="cvar">—</div><div class="pm-metric-sub">μ − 1.645σ</div></div>
+      </div>
+
+      <div class="pm-card">
+        <div class="pm-card-label">Liquidity profile</div>
+        <div class="pm-tier-bar"><span class="pm-tier-fill t1" data-fill="1"></span><span class="pm-tier-fill t2" data-fill="2"></span><span class="pm-tier-fill t3" data-fill="3"></span></div>
+        <div class="pm-tier-row" data-row="1"><span><span class="swatch" style="background: var(--accent);"></span>Tier 1 · Daily liquid</span><span><span class="pm-tier-val" data-pct="1">—</span><span class="pm-tier-status">floor ${pmFmtPct(LIQ_FLOOR, 0)}</span></span></div>
+        <div class="pm-tier-row" data-row="2"><span><span class="swatch" style="background: #c4830d;"></span>Tier 2 · Monthly–Quarterly</span><span class="pm-tier-val" data-pct="2">—</span></div>
+        <div class="pm-tier-row" data-row="3"><span><span class="swatch" style="background: #6b5c8a;"></span>Tier 3 · Multi-year illiquid</span><span class="pm-tier-val" data-pct="3">—</span></div>
+      </div>
+
+      <div class="pm-card">
+        <div class="pm-card-label">Allocation · edit within IPS bounds</div>
+        <table class="pm-table">
+          <thead><tr>
+            <th>Asset class</th><th>IPS range</th><th class="num">Weight</th>
+            <th class="num">10y ret</th><th class="num">Vol</th><th class="num">Liq</th>
+          </tr></thead>
+          <tbody>${rowsHtml}</tbody>
+          <tfoot><tr>
+            <td colspan="2">Total</td>
+            <td class="num"><span class="pm-total" id="pm-total">100.0%</span></td>
+            <td colspan="3"></td>
+          </tr></tfoot>
+        </table>
+      </div>
+
+      <div class="pm-card">
+        <div class="pm-card-label">Risk / return frontier <span style="color: var(--muted); text-transform: none; letter-spacing: 0; font-family: 'Newsreader', serif; font-size: 12px; margin-left: 8px;">— run optimization to populate</span></div>
+        <div class="pm-chart-wrap"><div class="pm-empty-chart" id="pm-chart-empty">Click <strong style="margin: 0 4px; color: var(--ink);">Run mean-variance optimization</strong> to sample the IPS-feasible space.</div><svg class="pm-chart" id="pm-chart" style="display: none;" viewBox="0 0 480 280" preserveAspectRatio="none"></svg></div>
+        <div class="pm-legend">
+          <span><i style="background:#bcc4cd"></i>Feasible (liquidity-constrained)</span>
+          <span><i style="background:var(--accent)"></i>Current allocation</span>
+          <span><i style="background:#c4830d"></i>Max-Sharpe optimal</span>
+        </div>
+      </div>
+    `;
+    setPortfolioFooter();
+    recomputePortfolio();
+    if (state_pm.mvo) drawFrontierChart();
+  }
+
+  function recomputePortfolio() {
+    const total = Object.values(state_pm.weights).reduce((s, x) => s + x, 0);
+    const metrics = portfolioMetrics(state_pm.weights);
+    artifactBody.querySelector('[data-m="ret"]').textContent = pmFmtPct(metrics.ret, 2);
+    artifactBody.querySelector('[data-m="vol"]').textContent = pmFmtPct(metrics.vol, 2);
+    artifactBody.querySelector('[data-m="sharpe"]').textContent = metrics.sharpe.toFixed(2);
+    artifactBody.querySelector('[data-m="cvar"]').textContent = pmFmtPct(metrics.cvar, 1);
+
+    const tot = artifactBody.querySelector('#pm-total');
+    tot.textContent = (total * 100).toFixed(1) + '%';
+    const totOk = Math.abs(total - 1) < 0.005;
+    tot.classList.toggle('warn', !totOk);
+    tot.classList.toggle('ok', totOk);
+
+    const t1pct = metrics.tiers[1], t2pct = metrics.tiers[2], t3pct = metrics.tiers[3];
+    artifactBody.querySelector('[data-pct="1"]').textContent = pmFmtPct(t1pct, 1);
+    artifactBody.querySelector('[data-pct="2"]').textContent = pmFmtPct(t2pct, 1);
+    artifactBody.querySelector('[data-pct="3"]').textContent = pmFmtPct(t3pct, 1);
+    artifactBody.querySelector('[data-fill="1"]').style.width = (t1pct * 100).toFixed(1) + '%';
+    artifactBody.querySelector('[data-fill="2"]').style.width = (t2pct * 100).toFixed(1) + '%';
+    artifactBody.querySelector('[data-fill="3"]').style.width = (t3pct * 100).toFixed(1) + '%';
+    const tier1Row = artifactBody.querySelector('.pm-tier-row[data-row="1"]');
+    tier1Row.classList.toggle('warn', t1pct < LIQ_FLOOR - 1e-6);
+
+    // Validate inputs against bounds
+    artifactBody.querySelectorAll('.pm-w-input').forEach((inp) => {
+      const id = inp.dataset.asset;
+      const [lo, hi] = IPS_RANGE[id];
+      const v = (state_pm.weights[id] || 0);
+      inp.classList.toggle('out-of-range', v < lo - 1e-6 || v > hi + 1e-6);
+    });
+    refreshPortfolioFooterState({ totalOk: totOk, liquidityOk: t1pct >= LIQ_FLOOR - 1e-6 });
+  }
+
+  function drawFrontierChart() {
+    const svg = artifactBody.querySelector('#pm-chart');
+    const emp = artifactBody.querySelector('#pm-chart-empty');
+    if (!svg || !state_pm.mvo) return;
+    const cloud = state_pm.mvo.cloud;
+    const cur = portfolioMetrics(state_pm.weights);
+    const opt = state_pm.mvo.optimal;
+    if (cloud.length === 0) return;
+
+    const xs = cloud.map((s) => s.m.vol).concat(cur.vol, opt.m.vol);
+    const ys = cloud.map((s) => s.m.ret).concat(cur.ret, opt.m.ret);
+    let xMin = Math.min(...xs), xMax = Math.max(...xs);
+    let yMin = Math.min(...ys), yMax = Math.max(...ys);
+    const xPad = (xMax - xMin) * 0.08 || 0.01;
+    const yPad = (yMax - yMin) * 0.12 || 0.005;
+    xMin -= xPad; xMax += xPad; yMin -= yPad; yMax += yPad;
+
+    const W = 480, H = 280, ML = 50, MR = 14, MT = 12, MB = 38;
+    const sx = (x) => ML + (x - xMin) / (xMax - xMin) * (W - ML - MR);
+    const sy = (y) => H - MB - (y - yMin) / (yMax - yMin) * (H - MT - MB);
+
+    // Axes ticks
+    const xTicks = 5, yTicks = 4;
+    let axes = '';
+    axes += `<line x1="${ML}" y1="${H-MB}" x2="${W-MR}" y2="${H-MB}" stroke="#d6d2c8" stroke-width="1"/>`;
+    axes += `<line x1="${ML}" y1="${MT}" x2="${ML}" y2="${H-MB}" stroke="#d6d2c8" stroke-width="1"/>`;
+    for (let i = 0; i <= xTicks; i++) {
+      const v = xMin + (xMax - xMin) * (i / xTicks);
+      const x = sx(v);
+      axes += `<line x1="${x}" y1="${H-MB}" x2="${x}" y2="${H-MB+4}" stroke="#d6d2c8"/>`;
+      axes += `<text x="${x}" y="${H-MB+18}" font-family="JetBrains Mono, monospace" font-size="9.5" fill="#7c7468" text-anchor="middle">${(v*100).toFixed(1)}%</text>`;
+    }
+    for (let i = 0; i <= yTicks; i++) {
+      const v = yMin + (yMax - yMin) * (i / yTicks);
+      const y = sy(v);
+      axes += `<line x1="${ML-4}" y1="${y}" x2="${ML}" y2="${y}" stroke="#d6d2c8"/>`;
+      axes += `<text x="${ML-8}" y="${y+3}" font-family="JetBrains Mono, monospace" font-size="9.5" fill="#7c7468" text-anchor="end">${(v*100).toFixed(1)}%</text>`;
+    }
+    axes += `<text x="${(W+ML-MR)/2}" y="${H-6}" font-family="JetBrains Mono, monospace" font-size="10" fill="#7c7468" text-anchor="middle" letter-spacing="0.06em">VOLATILITY (σ)</text>`;
+    axes += `<text x="${10}" y="${(H+MT-MB)/2}" font-family="JetBrains Mono, monospace" font-size="10" fill="#7c7468" text-anchor="middle" letter-spacing="0.06em" transform="rotate(-90 10 ${(H+MT-MB)/2})">EXPECTED RETURN (μ)</text>`;
+
+    // Compute efficient frontier as upper envelope (vol-buckets, max return)
+    const buckets = 40;
+    const bucketMax = new Array(buckets).fill(null);
+    cloud.forEach((s) => {
+      const idx = Math.min(buckets - 1, Math.max(0, Math.floor((s.m.vol - xMin) / (xMax - xMin) * buckets)));
+      if (!bucketMax[idx] || s.m.ret > bucketMax[idx].m.ret) bucketMax[idx] = s;
+    });
+    const frontier = bucketMax.filter(Boolean);
+    // Keep only the rising envelope
+    let bestY = -Infinity;
+    const envelope = [];
+    for (const s of frontier) {
+      if (s.m.ret >= bestY) { envelope.push(s); bestY = s.m.ret; }
+    }
+    const frontierPath = envelope.map((s, i) => `${i === 0 ? 'M' : 'L'} ${sx(s.m.vol).toFixed(1)} ${sy(s.m.ret).toFixed(1)}`).join(' ');
+
+    const cloudPts = cloud.map((s) => `<circle cx="${sx(s.m.vol).toFixed(1)}" cy="${sy(s.m.ret).toFixed(1)}" r="1.6" fill="#bcc4cd" opacity="0.55"/>`).join('');
+
+    const curPt = `<circle cx="${sx(cur.vol).toFixed(1)}" cy="${sy(cur.ret).toFixed(1)}" r="6" fill="#1f7050" stroke="#fff" stroke-width="2"/>`;
+    const optPt = `<circle cx="${sx(opt.m.vol).toFixed(1)}" cy="${sy(opt.m.ret).toFixed(1)}" r="6" fill="#c4830d" stroke="#fff" stroke-width="2"/>`;
+
+    svg.innerHTML = `
+      ${axes}
+      ${cloudPts}
+      <path d="${frontierPath}" fill="none" stroke="#7c7468" stroke-width="1.2" stroke-dasharray="3,3" opacity="0.7"/>
+      ${curPt}
+      ${optPt}
+    `;
+    svg.style.display = 'block';
+    if (emp) emp.style.display = 'none';
+  }
+
+  function setPortfolioFooter() {
+    const footer = artifactFooter;
+    footer.innerHTML = `
+      <div class="footer-text">
+        <div class="footer-label">Portfolio modeling</div>
+        <div class="footer-desc" id="pm-footer-desc">Adjust weights or run the optimizer.</div>
+      </div>
+      <div class="footer-actions">
+        <button class="btn-secondary" data-action="pm-reset">Reset to midpoints</button>
+        <button class="btn-secondary" data-action="pm-run">Run mean-variance optimization</button>
+        <button class="btn-primary" data-action="pm-adopt">Adopt as SAA →</button>
+      </div>
+    `;
+    footer.classList.add('visible');
+  }
+
+  function refreshPortfolioFooterState({ totalOk, liquidityOk }) {
+    const desc = document.getElementById('pm-footer-desc');
+    const adoptBtn = artifactFooter.querySelector('[data-action="pm-adopt"]');
+    if (!desc || !adoptBtn) return;
+    if (!totalOk) {
+      desc.textContent = 'Weights must sum to 100.0% before adopting.';
+      adoptBtn.disabled = true; adoptBtn.style.opacity = '0.4'; adoptBtn.style.cursor = 'not-allowed';
+    } else if (!liquidityOk) {
+      desc.textContent = `Tier-1 liquidity below the ${pmFmtPct(LIQ_FLOOR, 0)} policy floor.`;
+      adoptBtn.disabled = true; adoptBtn.style.opacity = '0.4'; adoptBtn.style.cursor = 'not-allowed';
+    } else {
+      desc.textContent = 'Adopt the current allocation as the Strategic Asset Allocation (Section 7).';
+      adoptBtn.disabled = false; adoptBtn.style.opacity = ''; adoptBtn.style.cursor = '';
+    }
+  }
+
+  function openPortfolioModule() {
+    if (!state.org.name) {
+      addAgent(`<p>Onboard a client first — or load Marquette from the sidebar — and we'll build the SAA from their IPS.</p>`);
+      return;
+    }
+    // Mark sidebar item active
+    document.querySelectorAll('.nav-item').forEach((el) => el.classList.remove('active'));
+    document.getElementById('nav-portfolio').classList.add('active');
+    renderPortfolioModule();
+    addAgent(`<p>Opened <strong>Portfolio Modeling</strong> for ${escapeHtml(state.org.name)}. Starting from the IPS-range midpoints. You can edit individual weights, run the optimizer, or adopt straight away.</p>`);
+  }
+
+  function adoptSaaToIps() {
+    const total = Object.values(state_pm.weights).reduce((s, x) => s + x, 0);
+    if (Math.abs(total - 1) > 0.005) return;
+    state.saa = {
+      weights: { ...state_pm.weights },
+      metrics: portfolioMetrics(state_pm.weights),
+      adoptedAt: new Date().toISOString(),
+      source: 'JPM 2025 LTCMA',
+      liquidityFloor: LIQ_FLOOR,
+    };
+    state.sectionOverrides['sec-7'] = buildSaaSectionHtml(state.saa);
+    // Persist if this is a saved client (not the read-only sample)
+    if (state.clientId && !isSampleId(state.clientId)) saveClient();
+    // Switch back to the IPS view, scrolled to Section 7
+    state.module = 'ips';
+    document.querySelectorAll('.nav-item').forEach((el) => el.classList.remove('active'));
+    document.getElementById('nav-new-client').classList.add('active');
+    artifactTitle.textContent = IPS_ARTIFACT_TITLE;
+    artifactBody.innerHTML = buildIpsHtml();
+    artifactBody.querySelectorAll('.ips-section').forEach((el) => el.classList.add('reviewed'));
+    restoreIpsFooter();
+    showArtifactFooter();
+    setTimeout(() => {
+      const sec = document.getElementById('sec-7');
+      if (sec) {
+        sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        sec.classList.add('section-flash');
+        setTimeout(() => sec.classList.remove('section-flash'), 700);
+      }
+    }, 50);
+    addAgent(`<p>Adopted. <strong>Section 7</strong> of the IPS now reflects the policy targets, ranges, and modeled portfolio metrics.</p>`);
+  }
+
+  function buildSaaSectionHtml(saa) {
+    const ids = CMA.map((c) => c.id);
+    const rows = ids.map((id) => {
+      const c = CMA_BY[id];
+      const [lo, hi] = IPS_RANGE[id];
+      return `<tr><td>${c.name}</td><td style="text-align:right;font-family:'JetBrains Mono',monospace;">${(lo*100).toFixed(0)}–${(hi*100).toFixed(0)}%</td><td style="text-align:right;font-family:'JetBrains Mono',monospace;"><strong>${(saa.weights[id]*100).toFixed(1)}%</strong></td><td style="text-align:right;font-family:'JetBrains Mono',monospace;color:#7c7468;">Tier ${c.tier}</td></tr>`;
+    }).join('');
+    const m = saa.metrics;
+    return `<p>The Strategic Asset Allocation is set by the IC, on the OCIO's recommendation, to balance the long-term return objective against liquidity needs, drawdown tolerance, and mission-aligned constraints described elsewhere in this IPS. Allocations are managed within the policy ranges below; the OCIO rebalances toward the policy targets per Section 11.</p>
+<table style="width:100%;border-collapse:collapse;font-size:12.5px;margin:12px 0;">
+<thead><tr style="border-bottom:1px solid #d6d2c8;"><th style="text-align:left;padding:6px 8px;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.06em;text-transform:uppercase;color:#7c7468;font-weight:500;">Asset class</th><th style="text-align:right;padding:6px 8px;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.06em;text-transform:uppercase;color:#7c7468;font-weight:500;">Policy range</th><th style="text-align:right;padding:6px 8px;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.06em;text-transform:uppercase;color:#7c7468;font-weight:500;">Target</th><th style="text-align:right;padding:6px 8px;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.06em;text-transform:uppercase;color:#7c7468;font-weight:500;">Liquidity</th></tr></thead>
+<tbody>${rows}</tbody>
+</table>
+<p>The policy targets above were established using mean-variance optimization over a 10-year horizon, constrained by the policy ranges and a minimum ${(saa.liquidityFloor*100).toFixed(0)}% allocation to Tier-1 (daily-liquid) assets. Capital market assumptions were sourced from J.P. Morgan's 2025 Long-Term Capital Market Assumptions (USD, 10–15 year). At the adopted targets, the Portfolio carries a modeled 10-year expected return of ${(m.ret*100).toFixed(1)}%, annualized volatility of ${(m.vol*100).toFixed(1)}%, and a Sharpe ratio of ${m.sharpe.toFixed(2)} relative to a ${(RF*100).toFixed(1)}% risk-free rate.</p>`;
+  }
+
+  // ===== Wire up portfolio events (delegated; bound once) =====
+  artifactBody.addEventListener('input', (e) => {
+    if (state.module !== 'portfolio') return;
+    const inp = e.target.closest('.pm-w-input');
+    if (!inp) return;
+    const id = inp.dataset.asset;
+    const v = Number(inp.value) / 100;
+    if (!isFinite(v)) return;
+    state_pm.weights[id] = v;
+    recomputePortfolio();
+    if (state_pm.mvo) drawFrontierChart();
+  });
+
+  // Save / module action handlers
   document.addEventListener('click', (e) => {
     const btn = e.target.closest('[data-action]');
     if (!btn) return;
@@ -1606,7 +2139,6 @@
       const rec = saveClient();
       if (rec) showSavedModal(rec);
     } else if (a === 'keep-editing') {
-      // No-op — just acknowledge by scrolling to top of artifact
       artifactBody.scrollTop = 0;
     } else if (a === 'load-client') {
       const id = btn.dataset.id;
@@ -1617,6 +2149,32 @@
       deleteClient(btn.dataset.id);
     } else if (a === 'new-client') {
       startFresh();
+    } else if (a === 'open-portfolio') {
+      openPortfolioModule();
+    } else if (a === 'pm-run') {
+      const desc = document.getElementById('pm-footer-desc');
+      if (desc) desc.textContent = 'Running 4,000-sample Monte Carlo optimization…';
+      setTimeout(() => {
+        state_pm.mvo = runMVO();
+        if (state_pm.mvo.optimal) {
+          state_pm.weights = { ...state_pm.mvo.optimal.w };
+          // Update inputs
+          artifactBody.querySelectorAll('.pm-w-input').forEach((inp) => {
+            const id = inp.dataset.asset;
+            inp.value = (state_pm.weights[id] * 100).toFixed(1);
+          });
+        }
+        recomputePortfolio();
+        drawFrontierChart();
+        if (desc) desc.textContent = 'Set to the max-Sharpe portfolio. Adjust further or adopt.';
+      }, 30);
+    } else if (a === 'pm-reset') {
+      state_pm.weights = defaultMidpointWeights();
+      state_pm.mvo = null;
+      renderPortfolioModule();
+    } else if (a === 'pm-adopt') {
+      if (btn.disabled) return;
+      adoptSaaToIps();
     }
   });
 
