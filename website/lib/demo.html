@@ -36,9 +36,25 @@
   .app { display: grid; grid-template-rows: 1fr; height: 100vh; }
 
   /* Brand mark in sidebar */
-  .tb-logo { width: 26px; height: 26px; border-radius: 6px; background: var(--ink); color: var(--dark-ink); display: inline-flex; align-items: center; justify-content: center; font-family: 'Newsreader', serif; font-size: 16px; line-height: 1; font-weight: 500; text-decoration: none; cursor: pointer; transition: transform 0.15s ease; }
+  .tb-logo { width: 26px; height: 26px; border-radius: 6px; background: var(--ink); color: var(--dark-ink); display: inline-flex; align-items: center; justify-content: center; font-family: 'Newsreader', serif; font-size: 16px; line-height: 1; font-weight: 500; text-decoration: none; cursor: pointer; transition: transform 0.15s ease; flex-shrink: 0; }
   .tb-logo:hover { transform: scale(1.08); }
-  .sidebar-logo { margin: 2px 4px 6px; }
+  .sidebar-top { display: flex; align-items: center; justify-content: space-between; margin: 2px 4px 6px; gap: 6px; }
+  .sidebar-toggle { appearance: none; background: transparent; border: 1px solid var(--line); color: var(--muted); border-radius: 6px; width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; }
+  .sidebar-toggle:hover { color: var(--ink); border-color: var(--ink); }
+  .sidebar-toggle .icon-expand { display: none; }
+  .layout.sidebar-collapsed .sidebar-toggle .icon-collapse { display: none; }
+  .layout.sidebar-collapsed .sidebar-toggle .icon-expand { display: inline; }
+
+  /* Collapsed sidebar */
+  .layout.sidebar-collapsed { grid-template-columns: 56px 1fr 0; }
+  .layout.sidebar-collapsed.with-artifact { grid-template-columns: 56px 1fr 520px; }
+  .layout.sidebar-collapsed.with-artifact.expanded { grid-template-columns: 0 380px 1fr; }
+  .layout.sidebar-collapsed .sidebar { padding: 16px 8px; align-items: stretch; }
+  .layout.sidebar-collapsed .sidebar-top { flex-direction: column; gap: 8px; margin: 2px 0 8px; }
+  .layout.sidebar-collapsed .nav-label { display: none; }
+  .layout.sidebar-collapsed .nav-item { justify-content: center; padding: 8px 0; }
+  .layout.sidebar-collapsed .nav-item > *:not(.icon) { display: none; }
+  .layout.sidebar-collapsed .nav-sub { display: none; }
 
   /* Layout */
   .layout { display: grid; grid-template-columns: 232px 1fr 0; min-height: 0; overflow: hidden; transition: grid-template-columns 0.3s ease; }
@@ -355,7 +371,13 @@
 <div class="app">
   <div class="layout" id="layout">
     <aside class="sidebar">
-      <a class="tb-logo sidebar-logo" href="/demo" data-action="demo-home" title="Demo — home" aria-label="Demo — home">R</a>
+      <div class="sidebar-top">
+        <a class="tb-logo sidebar-logo" href="/demo" data-action="demo-home" title="Demo — home" aria-label="Demo — home">R</a>
+        <button class="sidebar-toggle" data-action="toggle-sidebar" title="Collapse sidebar" aria-label="Collapse sidebar">
+          <svg class="icon-collapse" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+          <svg class="icon-expand" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+      </div>
       <div class="nav-group">
         <div class="nav-label">Workspace</div>
         <div class="nav-item active" id="nav-new-client" data-action="new-client" title="Start a new onboarding">
@@ -2144,6 +2166,11 @@
     } else if (a === 'demo-home') {
       e.preventDefault();
       startFresh();
+    } else if (a === 'toggle-sidebar') {
+      const collapsed = layout.classList.toggle('sidebar-collapsed');
+      try { localStorage.setItem('reve_demo_sidebar_collapsed', collapsed ? '1' : '0'); } catch {}
+      btn.title = collapsed ? 'Expand sidebar' : 'Collapse sidebar';
+      btn.setAttribute('aria-label', btn.title);
     } else if (a === 'open-portfolio') {
       openPortfolioModule();
     } else if (a === 'pm-run') {
@@ -2193,6 +2220,13 @@
   // ============ Init ============
   state.sectionOverrides = {};
   state.clientId = null;
+  try {
+    if (localStorage.getItem('reve_demo_sidebar_collapsed') === '1') {
+      layout.classList.add('sidebar-collapsed');
+      const tBtn = document.querySelector('[data-action="toggle-sidebar"]');
+      if (tBtn) { tBtn.title = 'Expand sidebar'; tBtn.setAttribute('aria-label', 'Expand sidebar'); }
+    }
+  } catch {}
   renderActiveClients();
   startConversation();
 </script>
