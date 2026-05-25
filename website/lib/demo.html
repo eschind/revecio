@@ -410,10 +410,10 @@
   .pm-tier-row .pm-tier-status { font-family: 'JetBrains Mono', monospace; font-size: 10.5px; color: var(--muted); margin-left: 10px; }
 
   .pm-chart-wrap { position: relative; }
-  .pm-chart { width: 100%; height: 280px; }
-  .pm-legend { display: flex; gap: 16px; font-size: 11.5px; color: var(--muted); margin-top: 8px; flex-wrap: wrap; }
+  .pm-chart { width: 100%; height: 460px; display: block; }
+  .pm-legend { display: flex; gap: 16px; font-size: 11.5px; color: var(--muted); margin-top: 10px; flex-wrap: wrap; }
   .pm-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
-  .pm-empty-chart { display: flex; align-items: center; justify-content: center; height: 280px; color: var(--muted); font-size: 13px; font-style: italic; text-align: center; padding: 0 20px; }
+  .pm-empty-chart { display: flex; align-items: center; justify-content: center; height: 460px; color: var(--muted); font-size: 13px; font-style: italic; text-align: center; padding: 0 20px; }
 
   .pm-warn { background: rgba(177,58,58,0.07); border: 1px solid rgba(177,58,58,0.25); border-radius: 8px; padding: 8px 12px; font-size: 12.5px; color: #8a2828; margin-bottom: 12px; }
   .pm-total.warn { color: #b13a3a; }
@@ -2545,12 +2545,13 @@
       </div>
 
       <div class="pm-card">
-        <div class="pm-card-label">Risk / return frontier <span style="color: var(--muted); text-transform: none; letter-spacing: 0; font-family: 'Newsreader', serif; font-size: 12px; margin-left: 8px;">— run optimization to populate</span></div>
-        <div class="pm-chart-wrap"><div class="pm-empty-chart" id="pm-chart-empty">Running 4,000-sample Monte Carlo optimization…</div><svg class="pm-chart" id="pm-chart" style="display: none;" viewBox="0 0 480 280" preserveAspectRatio="none"></svg></div>
+        <div class="pm-card-label">Risk / return frontier <span style="color: var(--muted); text-transform: none; letter-spacing: 0; font-family: 'Newsreader', serif; font-size: 12px; margin-left: 8px;">— individual assets vs. the IPS-bounded efficient frontier</span></div>
+        <div class="pm-chart-wrap"><div class="pm-empty-chart" id="pm-chart-empty">Running 4,000-sample Monte Carlo optimization…</div><svg class="pm-chart" id="pm-chart" style="display: none;" viewBox="0 0 680 460" preserveAspectRatio="xMidYMid meet"></svg></div>
         <div class="pm-legend">
-          <span><i style="background:#bcc4cd"></i>Feasible (liquidity-constrained)</span>
+          <span><i style="background:#7c7468"></i>Efficient frontier (IPS-bounded, liquidity-constrained)</span>
           <span><i style="background:var(--accent)"></i>Current allocation</span>
           <span><i style="background:#c4830d"></i>Max-Sharpe optimal</span>
+          <span><i style="background:#bcc4cd; border-radius:50%;"></i>Individual asset class</span>
         </div>
       </div>
     `;
@@ -2636,6 +2637,12 @@
     refreshPortfolioFooterState({ totalOk: totOk, liquidityOk: t1pct >= LIQ_FLOOR - 1e-6 });
   }
 
+  // Short codes for individual asset class markers in the chart
+  const CHART_CODES = {
+    us_eq: 'US Eq', intl_eq: 'Intl', em_eq: 'EM', core_fi: 'Core FI', tips: 'TIPS',
+    hy: 'HY', hf: 'HF', pe: 'PE', pc: 'PC', ra: 'RA', cash: 'Cash',
+  };
+
   function drawFrontierChart() {
     const svg = artifactBody.querySelector('#pm-chart');
     const emp = artifactBody.querySelector('#pm-chart-empty');
@@ -2645,47 +2652,51 @@
     const opt = state_pm.mvo.optimal;
     if (cloud.length === 0) return;
 
-    const xs = cloud.map((s) => s.m.vol).concat(cur.vol, opt.m.vol);
-    const ys = cloud.map((s) => s.m.ret).concat(cur.ret, opt.m.ret);
+    // Range from cloud bounds AND individual asset class points (so all fit)
+    const assetPoints = CMA.map((c) => ({ id: c.id, x: c.vol, y: c.ret }));
+    const xs = cloud.map((s) => s.m.vol).concat(cur.vol, opt.m.vol, ...assetPoints.map((p) => p.x));
+    const ys = cloud.map((s) => s.m.ret).concat(cur.ret, opt.m.ret, ...assetPoints.map((p) => p.y));
     let xMin = Math.min(...xs), xMax = Math.max(...xs);
     let yMin = Math.min(...ys), yMax = Math.max(...ys);
     const xPad = (xMax - xMin) * 0.08 || 0.01;
-    const yPad = (yMax - yMin) * 0.12 || 0.005;
-    xMin -= xPad; xMax += xPad; yMin -= yPad; yMax += yPad;
+    const yPad = (yMax - yMin) * 0.10 || 0.005;
+    xMin = Math.max(0, xMin - xPad); xMax += xPad; yMin -= yPad; yMax += yPad;
 
-    const W = 480, H = 280, ML = 50, MR = 14, MT = 12, MB = 38;
+    const W = 680, H = 460, ML = 70, MR = 24, MT = 20, MB = 56;
     const sx = (x) => ML + (x - xMin) / (xMax - xMin) * (W - ML - MR);
     const sy = (y) => H - MB - (y - yMin) / (yMax - yMin) * (H - MT - MB);
 
-    // Axes ticks
-    const xTicks = 5, yTicks = 4;
+    // Axes + gridlines
+    const xTicks = 8, yTicks = 6;
+    let grid = '';
     let axes = '';
-    axes += `<line x1="${ML}" y1="${H-MB}" x2="${W-MR}" y2="${H-MB}" stroke="#d6d2c8" stroke-width="1"/>`;
-    axes += `<line x1="${ML}" y1="${MT}" x2="${ML}" y2="${H-MB}" stroke="#d6d2c8" stroke-width="1"/>`;
     for (let i = 0; i <= xTicks; i++) {
       const v = xMin + (xMax - xMin) * (i / xTicks);
       const x = sx(v);
-      axes += `<line x1="${x}" y1="${H-MB}" x2="${x}" y2="${H-MB+4}" stroke="#d6d2c8"/>`;
-      axes += `<text x="${x}" y="${H-MB+18}" font-family="JetBrains Mono, monospace" font-size="9.5" fill="#7c7468" text-anchor="middle">${(v*100).toFixed(1)}%</text>`;
+      grid += `<line x1="${x}" y1="${MT}" x2="${x}" y2="${H-MB}" stroke="#ece8dc" stroke-width="1"/>`;
+      axes += `<line x1="${x}" y1="${H-MB}" x2="${x}" y2="${H-MB+5}" stroke="#c5bfae"/>`;
+      axes += `<text x="${x}" y="${H-MB+20}" font-family="JetBrains Mono, monospace" font-size="11" fill="#7c7468" text-anchor="middle">${(v*100).toFixed(1)}%</text>`;
     }
     for (let i = 0; i <= yTicks; i++) {
       const v = yMin + (yMax - yMin) * (i / yTicks);
       const y = sy(v);
-      axes += `<line x1="${ML-4}" y1="${y}" x2="${ML}" y2="${y}" stroke="#d6d2c8"/>`;
-      axes += `<text x="${ML-8}" y="${y+3}" font-family="JetBrains Mono, monospace" font-size="9.5" fill="#7c7468" text-anchor="end">${(v*100).toFixed(1)}%</text>`;
+      grid += `<line x1="${ML}" y1="${y}" x2="${W-MR}" y2="${y}" stroke="#ece8dc" stroke-width="1"/>`;
+      axes += `<line x1="${ML-5}" y1="${y}" x2="${ML}" y2="${y}" stroke="#c5bfae"/>`;
+      axes += `<text x="${ML-10}" y="${y+4}" font-family="JetBrains Mono, monospace" font-size="11" fill="#7c7468" text-anchor="end">${(v*100).toFixed(1)}%</text>`;
     }
-    axes += `<text x="${(W+ML-MR)/2}" y="${H-6}" font-family="JetBrains Mono, monospace" font-size="10" fill="#7c7468" text-anchor="middle" letter-spacing="0.06em">VOLATILITY (σ)</text>`;
-    axes += `<text x="${10}" y="${(H+MT-MB)/2}" font-family="JetBrains Mono, monospace" font-size="10" fill="#7c7468" text-anchor="middle" letter-spacing="0.06em" transform="rotate(-90 10 ${(H+MT-MB)/2})">EXPECTED RETURN (μ)</text>`;
+    axes += `<line x1="${ML}" y1="${H-MB}" x2="${W-MR}" y2="${H-MB}" stroke="#c5bfae" stroke-width="1"/>`;
+    axes += `<line x1="${ML}" y1="${MT}" x2="${ML}" y2="${H-MB}" stroke="#c5bfae" stroke-width="1"/>`;
+    axes += `<text x="${(W+ML-MR)/2}" y="${H-10}" font-family="JetBrains Mono, monospace" font-size="11" fill="#7c7468" text-anchor="middle" letter-spacing="0.08em">VOLATILITY (σ)</text>`;
+    axes += `<text x="${18}" y="${(H+MT-MB)/2}" font-family="JetBrains Mono, monospace" font-size="11" fill="#7c7468" text-anchor="middle" letter-spacing="0.08em" transform="rotate(-90 18 ${(H+MT-MB)/2})">EXPECTED RETURN (μ)</text>`;
 
-    // Compute efficient frontier as upper envelope (vol-buckets, max return)
-    const buckets = 40;
+    // Efficient frontier upper-envelope
+    const buckets = 60;
     const bucketMax = new Array(buckets).fill(null);
     cloud.forEach((s) => {
       const idx = Math.min(buckets - 1, Math.max(0, Math.floor((s.m.vol - xMin) / (xMax - xMin) * buckets)));
       if (!bucketMax[idx] || s.m.ret > bucketMax[idx].m.ret) bucketMax[idx] = s;
     });
     const frontier = bucketMax.filter(Boolean);
-    // Keep only the rising envelope
     let bestY = -Infinity;
     const envelope = [];
     for (const s of frontier) {
@@ -2693,15 +2704,33 @@
     }
     const frontierPath = envelope.map((s, i) => `${i === 0 ? 'M' : 'L'} ${sx(s.m.vol).toFixed(1)} ${sy(s.m.ret).toFixed(1)}`).join(' ');
 
-    const cloudPts = cloud.map((s) => `<circle cx="${sx(s.m.vol).toFixed(1)}" cy="${sy(s.m.ret).toFixed(1)}" r="1.6" fill="#bcc4cd" opacity="0.55"/>`).join('');
+    // Individual asset class markers (illustrative — shows where each asset sits in risk/return space)
+    const assetMarkers = assetPoints.map((p) => {
+      const cx = sx(p.x), cy = sy(p.y);
+      // Offset label to the right by default; keep inside chart
+      const labelX = cx + 8 > W - MR - 30 ? cx - 8 : cx + 8;
+      const anchor = cx + 8 > W - MR - 30 ? 'end' : 'start';
+      return `<g><circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="3" fill="#bcc4cd" stroke="#7c7468" stroke-width="0.5"/><text x="${labelX.toFixed(1)}" y="${cy.toFixed(1)}" font-family="Inter, sans-serif" font-size="10" fill="#7c7468" text-anchor="${anchor}" dominant-baseline="middle">${CHART_CODES[p.id] || p.id}</text></g>`;
+    }).join('');
 
-    const curPt = `<circle cx="${sx(cur.vol).toFixed(1)}" cy="${sy(cur.ret).toFixed(1)}" r="6" fill="#1f7050" stroke="#fff" stroke-width="2"/>`;
-    const optPt = `<circle cx="${sx(opt.m.vol).toFixed(1)}" cy="${sy(opt.m.ret).toFixed(1)}" r="6" fill="#c4830d" stroke="#fff" stroke-width="2"/>`;
+    const curX = sx(cur.vol).toFixed(1), curY = sy(cur.ret).toFixed(1);
+    const optX = sx(opt.m.vol).toFixed(1), optY = sy(opt.m.ret).toFixed(1);
+    const curLabelDir = cur.ret > opt.m.ret ? -1 : 1;
+    const optLabelDir = -curLabelDir;
+    const curPt = `<g>
+      <circle cx="${curX}" cy="${curY}" r="7" fill="#1f7050" stroke="#fff" stroke-width="2.5"/>
+      <text x="${curX}" y="${(parseFloat(curY) + curLabelDir * 18).toFixed(1)}" font-family="JetBrains Mono, monospace" font-size="10.5" fill="#1f7050" text-anchor="middle" font-weight="500">CURRENT</text>
+    </g>`;
+    const optPt = `<g>
+      <circle cx="${optX}" cy="${optY}" r="7" fill="#c4830d" stroke="#fff" stroke-width="2.5"/>
+      <text x="${optX}" y="${(parseFloat(optY) + optLabelDir * 18).toFixed(1)}" font-family="JetBrains Mono, monospace" font-size="10.5" fill="#c4830d" text-anchor="middle" font-weight="500">MAX-SHARPE</text>
+    </g>`;
 
     svg.innerHTML = `
+      ${grid}
       ${axes}
-      ${cloudPts}
-      <path d="${frontierPath}" fill="none" stroke="#7c7468" stroke-width="1.2" stroke-dasharray="3,3" opacity="0.7"/>
+      <path d="${frontierPath}" fill="none" stroke="#7c7468" stroke-width="2" stroke-linejoin="round"/>
+      ${assetMarkers}
       ${curPt}
       ${optPt}
     `;
