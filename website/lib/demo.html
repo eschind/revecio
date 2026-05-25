@@ -64,20 +64,26 @@
   .layout.sidebar-collapsed .ci-avatar { margin: 0; }
   .layout.sidebar-collapsed .client-workflows { display: none; }
 
-  /* Client workflows (sub-nav inside client workspace) */
-  #client-workflows-list { padding-left: 0; gap: 1px; }
-  .wf-link { display: flex; align-items: center; gap: 10px; padding: 7px 10px; font-size: 13px; color: var(--ink-2); text-decoration: none; border-radius: 6px; cursor: pointer; user-select: none; }
-  .wf-link:hover { background: rgba(20,23,28,0.05); }
-  .wf-link.active { background: var(--ink); color: var(--dark-ink); }
-  .wf-link.disabled { color: var(--muted); cursor: not-allowed; }
-  .wf-link.disabled:hover { background: transparent; }
-  .wf-link .wf-icon { width: 16px; height: 16px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
-  .wf-link .wf-icon svg { width: 16px; height: 16px; }
-  .wf-link .wf-label { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .wf-link .badge { font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 0.06em; padding: 2px 6px; background: var(--line); color: var(--muted); border-radius: 4px; flex-shrink: 0; }
-  /* Collapsed sidebar — workflow icons only */
-  .layout.sidebar-collapsed .wf-link { justify-content: center; padding: 7px 0; }
-  .layout.sidebar-collapsed .wf-link .wf-label, .layout.sidebar-collapsed .wf-link .badge { display: none; }
+  .mat-kind { font-family: 'JetBrains Mono', monospace; font-size: 9.5px; letter-spacing: 0.06em; padding: 2px 6px; background: var(--bg-2); color: var(--muted); border-radius: 4px; }
+
+  /* Vault items (inside client workspace) */
+  #client-vault-list { padding-left: 0; gap: 1px; }
+  .vault-item { display: flex; align-items: center; gap: 10px; padding: 7px 10px; font-size: 13px; color: var(--ink-2); text-decoration: none; border-radius: 6px; cursor: pointer; user-select: none; }
+  .vault-item:hover { background: rgba(20,23,28,0.05); }
+  .vault-item.active { background: var(--ink); color: var(--dark-ink); }
+  .vault-item.disabled { color: var(--muted); cursor: not-allowed; }
+  .vault-item.disabled:hover { background: transparent; }
+  .vault-item .vault-icon { width: 16px; height: 16px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .vault-item .vault-icon svg { width: 16px; height: 16px; }
+  .vault-item .vault-label { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .vault-item .vault-status { font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 0.06em; padding: 2px 6px; border-radius: 4px; flex-shrink: 0; text-transform: uppercase; }
+  .vault-item .vault-status.vk-muted { background: var(--line); color: var(--muted); }
+  .vault-item .vault-status.vk-ok { background: rgba(31,112,80,0.14); color: var(--accent); }
+  .vault-item.active .vault-status { background: rgba(244,241,234,0.14); color: rgba(244,241,234,0.75); }
+  /* Collapsed sidebar — vault icons only */
+  .layout.sidebar-collapsed .vault-item { justify-content: center; padding: 7px 0; }
+  .layout.sidebar-collapsed .vault-item .vault-label,
+  .layout.sidebar-collapsed .vault-item .vault-status { display: none; }
 
   /* Client avatar (visible only in collapsed mode) */
   .ci-avatar { display: none; width: 26px; height: 26px; border-radius: 6px; background: var(--bg-2); border: 1px solid var(--line); color: var(--ink-2); align-items: center; justify-content: center; font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 500; letter-spacing: 0.02em; flex-shrink: 0; }
@@ -449,8 +455,8 @@
         </a>
         <div class="client-header" id="client-header"></div>
         <div class="nav-group">
-          <div class="nav-label">Workflows</div>
-          <div class="nav-sub" id="client-workflows-list"></div>
+          <div class="nav-label">Vault</div>
+          <div class="nav-sub" id="client-vault-list"></div>
         </div>
       </div>
 
@@ -883,6 +889,7 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           userMessage: text,
+          currentModule: state.module || 'ips',
           currentSectionNum: current.num,
           currentSectionTitle: current.title,
           sections: IPS_SECTIONS.map((s) => ({ num: s.num, title: s.title })),
@@ -903,6 +910,42 @@
     }
 
     const intent = route?.intent;
+
+    if (intent === 'open') {
+      const target = route?.targetModule;
+      if (target === 'portfolio') {
+        openPortfolioModule();
+        return;
+      }
+      if (target === 'ips') {
+        switchToIpsView();
+        if (route?.targetSectionNum) {
+          const idx = IPS_SECTIONS.findIndex((s) => s.num === Number(route.targetSectionNum));
+          if (idx >= 0) {
+            state.reviewIdx = idx;
+            const s = IPS_SECTIONS[idx];
+            setTimeout(() => highlightSection(s.id), 60);
+            await agentReply(`<p>Pulled up the IPS — looking at <strong>${s.num}. ${escapeHtml(s.title)}</strong>.</p>`);
+            return;
+          }
+        }
+        await agentReply(`<p>Pulled up the IPS draft.</p>`);
+        return;
+      }
+      if (target === 'materials') {
+        openMaterialsView();
+        await agentReply(`<p>Materials are in the panel — ${(state.materials || []).length} items.</p>`);
+        return;
+      }
+      await agentReply(`<p>${escapeHtml(route?.reply || 'Which item would you like to open?')}</p>`);
+      return;
+    }
+
+    // IPS-only intents — make sure we're looking at the IPS first
+    if (['next', 'previous', 'switch', 'edit', 'switch_and_edit'].includes(intent) && state.module !== 'ips') {
+      switchToIpsView();
+      await new Promise((r) => setTimeout(r, 60));
+    }
 
     if (intent === 'next') return advanceReview(+1);
     if (intent === 'previous') return advanceReview(-1);
@@ -1646,8 +1689,9 @@
     artifactBody.querySelectorAll('.ips-section').forEach((el) => el.classList.add('reviewed'));
     renderActiveClients();
     enterClientWorkspace();
-    addAgent(`<p>Loaded <strong>${escapeHtml(client.name)}</strong>. The IPS draft is in the artifact panel — keep editing or describe changes here.</p>`);
-    composerInput.placeholder = 'Ask for changes, or click Edit on any section…';
+    const saaLine = state.saa ? ' Strategic Asset Allocation is adopted.' : '';
+    addAgent(`<p>Loaded <strong>${escapeHtml(client.name)}</strong>. I have their IPS draft, ${(state.materials || []).length} materials, and any portfolio work on hand.${saaLine}</p><p>Ask me anything — pull up the IPS, model their portfolio, run analytics, or describe a change. You can also click any item in the Vault to bring it into view.</p>`);
+    composerInput.placeholder = 'Ask me to pull something up, make a change, or analyze…';
   }
 
   function renderActiveClients() {
@@ -1685,29 +1729,59 @@
         <div class="ch-type">${escapeHtml(typeLabel)}</div>
       </div>
     `;
-    document.getElementById('client-workflows-list').innerHTML = renderClientWorkflows();
+    document.getElementById('client-vault-list').innerHTML = renderClientVault();
   }
 
-  function renderClientWorkflows() {
+  function renderClientVault() {
     const m = state.module || 'ips';
-    const item = (workflow, label, iconSvg, opts = {}) => {
-      const cls = ['wf-link'];
-      if (opts.disabled) cls.push('disabled');
-      if (!opts.disabled && m === workflow) cls.push('active');
-      const dataAction = opts.disabled ? '' : ` data-action="open-workflow" data-workflow="${workflow}"`;
-      const badge = opts.badge ? `<span class="badge">${opts.badge}</span>` : '';
-      const title = opts.disabled ? ` title="${label} (coming soon)"` : ` title="${label}"`;
-      return `<a class="${cls.join(' ')}"${dataAction}${title}><span class="wf-icon">${iconSvg}</span><span class="wf-label">${label}</span>${badge}</a>`;
-    };
     const svg = (d) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
-    return [
-      item('ips', 'IPS draft', svg('<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><polyline points="14 3 14 8 19 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/>')),
-      item('portfolio', 'Portfolio modeling', svg('<path d="M3 3v18h18"/><path d="M7 14l3-3 3 3 5-6"/>')),
-      item('research', 'Manager research', svg('<circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/>'), { disabled: true, badge: 'soon' }),
-      item('monitoring', 'Monitoring', svg('<path d="M2 12h4l3 8 4-16 3 8h6"/>'), { disabled: true, badge: 'soon' }),
-      item('reporting', 'Reporting', svg('<path d="M4 4h16v14H4zM4 8h16M8 12h8M8 15h5"/>'), { disabled: true, badge: 'soon' }),
-      item('service', 'Client service', svg('<path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>'), { disabled: true, badge: 'soon' }),
-    ].join('');
+    const item = ({ id, action, label, icon, status, disabled, statusKind }) => {
+      const cls = ['vault-item'];
+      if (disabled) cls.push('disabled');
+      if (!disabled && m === id) cls.push('active');
+      const dataAction = disabled ? '' : ` data-action="${action}" data-workflow="${id}"`;
+      const title = disabled ? ` title="${label} (coming soon)"` : ` title="Open ${label}"`;
+      const statusHtml = status ? `<span class="vault-status${statusKind ? ' vk-' + statusKind : ''}">${status}</span>` : '';
+      return `<a class="${cls.join(' ')}"${dataAction}${title}><span class="vault-icon">${icon}</span><span class="vault-label">${label}</span>${statusHtml}</a>`;
+    };
+    const materialsCount = (state.materials || []).length;
+    const saaStatus = state.saa
+      ? { text: 'Adopted', kind: 'ok' }
+      : { text: 'Not modeled', kind: 'muted' };
+    const items = [
+      item({ id: 'ips', action: 'open-workflow', label: 'Investment Policy Statement', icon: svg('<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><polyline points="14 3 14 8 19 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/>'), status: 'Draft', statusKind: 'muted' }),
+      item({ id: 'portfolio', action: 'open-workflow', label: 'Strategic Asset Allocation', icon: svg('<path d="M3 3v18h18"/><path d="M7 14l3-3 3 3 5-6"/>'), status: saaStatus.text, statusKind: saaStatus.kind }),
+      item({ id: 'materials', action: 'open-workflow', label: 'Materials', icon: svg('<path d="M4 4h12l4 4v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/><polyline points="16 4 16 8 20 8"/>'), status: materialsCount ? `${materialsCount}` : '—', statusKind: 'muted', disabled: materialsCount === 0 }),
+      item({ id: 'reports', action: '', label: 'Quarterly reports', icon: svg('<path d="M3 3v18h18"/><polyline points="7 14 11 10 15 14 21 8"/>'), disabled: true, status: 'soon' }),
+      item({ id: 'memos', action: '', label: 'Manager memos', icon: svg('<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>'), disabled: true, status: 'soon' }),
+      item({ id: 'decisions', action: '', label: 'Decision log', icon: svg('<circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/>'), disabled: true, status: 'soon' }),
+    ];
+    return items.join('');
+  }
+
+  function openMaterialsView() {
+    if (!state.org.name) return;
+    state.module = 'materials';
+    artifactTitle.textContent = 'Materials';
+    openArtifact();
+    const mats = state.materials || [];
+    const fmtBytes = (b) => b > 1_000_000 ? (b/1_000_000).toFixed(1) + ' MB' : Math.round(b/1000) + ' KB';
+    const rows = mats.map((m) => {
+      if (m.kind === 'link') {
+        return `<tr><td><span class="mat-kind">LINK</span></td><td><a href="${escapeHtml(m.name)}" target="_blank" rel="noopener" style="color: var(--ink); border-bottom: 1px dotted var(--muted); text-decoration: none;">${escapeHtml(m.name)}</a></td><td style="text-align:right;color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:11px;">—</td></tr>`;
+      }
+      return `<tr><td><span class="mat-kind">FILE</span></td><td>${escapeHtml(m.name)}</td><td style="text-align:right;color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:11px;">${m.size ? fmtBytes(m.size) : '—'}</td></tr>`;
+    }).join('');
+    artifactBody.innerHTML = `
+      <div class="ips-title">${escapeHtml(state.org.name)} · Materials</div>
+      <div class="ips-sub">Documents and links shared during onboarding (${mats.length}).</div>
+      <table class="pm-table" style="margin-top: 8px;">
+        <thead><tr><th>Kind</th><th>Name</th><th style="text-align:right;">Size</th></tr></thead>
+        <tbody>${rows || '<tr><td colspan="3" style="color:var(--muted);font-style:italic;padding:14px;text-align:center;">No materials shared.</td></tr>'}</tbody>
+      </table>
+    `;
+    artifactFooter.classList.remove('visible');
+    renderClientWorkspace();
   }
 
   function switchToIpsView() {
@@ -2273,6 +2347,7 @@
       const wf = btn.dataset.workflow;
       if (wf === 'portfolio') openPortfolioModule();
       else if (wf === 'ips') switchToIpsView();
+      else if (wf === 'materials') openMaterialsView();
     } else if (a === 'pm-run') {
       const desc = document.getElementById('pm-footer-desc');
       if (desc) desc.textContent = 'Running 4,000-sample Monte Carlo optimization…';
