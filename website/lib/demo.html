@@ -72,7 +72,22 @@
   .bn-card-title { font-family: 'Newsreader', serif; font-size: 16px; color: var(--ink); line-height: 1.25; }
   .bn-card-meta { font-family: 'JetBrains Mono', monospace; font-size: 10.5px; letter-spacing: 0.04em; color: var(--muted); margin-top: 3px; }
   .bn-card-summary { font-size: 13px; color: var(--ink-2); margin: 6px 0 10px; line-height: 1.5; font-style: italic; }
+  .bn-card-body { display: none; padding-top: 12px; margin-top: 10px; border-top: 1px solid var(--line-soft); }
+  .bn-card.bn-expanded .bn-card-body { display: block; }
+  .bn-card-body h4 { font-family: 'Newsreader', serif; font-weight: 500; font-size: 14px; color: var(--ink); margin: 14px 0 6px; }
+  .bn-card-body h4:first-child { margin-top: 0; }
   .bn-card-body p { font-size: 13px; line-height: 1.6; color: var(--ink-2); margin: 4px 0; }
+  .bn-card-body ul { font-size: 13px; line-height: 1.6; color: var(--ink-2); padding-left: 20px; margin: 4px 0; }
+  .bn-card-body li { margin: 2px 0; }
+  .bn-card-body em { color: var(--ink-2); font-style: italic; }
+  .bn-card-body strong { color: var(--ink); font-weight: 500; }
+  .bn-expand-btn { appearance: none; cursor: pointer; background: transparent; border: 1px solid var(--line); color: var(--muted); border-radius: 999px; padding: 4px 12px; font: inherit; font-size: 11.5px; display: inline-flex; align-items: center; gap: 6px; margin-top: 4px; }
+  .bn-expand-btn:hover { color: var(--ink); border-color: var(--ink); }
+  .bn-expand-btn svg { transition: transform 0.2s; }
+  .bn-card.bn-expanded .bn-expand-btn svg { transform: rotate(180deg); }
+  .bn-expand-hide { display: none; }
+  .bn-card.bn-expanded .bn-expand-show { display: none; }
+  .bn-card.bn-expanded .bn-expand-hide { display: inline; }
 
   /* Decision log */
   .dl-row { display: grid; grid-template-columns: 110px 1fr; gap: 14px; padding: 12px 0; border-bottom: 1px solid var(--line-soft); }
@@ -1762,40 +1777,183 @@
         title: 'Q1 2026 Investment Committee',
         attendees: '7 IC members · OCIO (Reve) · CFO · external auditor (observer)',
         summary: 'Reviewed Q1 performance vs benchmark, approved manager replacement in EM equity, and previewed FY27 spending review.',
-        body: `<p><strong>Performance.</strong> Total portfolio returned +3.1% in Q1 vs policy benchmark +2.8%. Public equity in line; private credit ahead on income yield. Private equity NAV flat (Q1 marks typically lag).</p>
-<p><strong>Manager actions.</strong> Acadian Emerging Markets Equity terminated effective May 15 — three-year underperformance vs MSCI EM (−110bps annualized) and key-personnel departure (PM moved to competitor in February). Replacement search shortlist: Pzena, GMO, William Blair. OCIO to bring recommendation in May.</p>
-<p><strong>Spending policy.</strong> FY27 budget discussion previewed. Operating support need projected at $58M (vs $55M FY26). 4.5% policy still within band given trailing average growth. Re-affirmed for FY27.</p>
-<p><strong>Action items.</strong> (1) OCIO to circulate EM manager recommendation by May 10. (2) Mark Foster to draft FY27 budget memo for the Board. (3) Annual operational DD reports due May 30.</p>`,
+        body: `<h4>Roll call and minutes</h4>
+<p>All seven Investment Committee members present (Reilly, chair; Adebayo; Cho; Donovan; Hartwell; Patel; Singh). OCIO represented by Reve. CFO Mark Foster present. The external auditor (Plante Moran lead, J. Verma) attended as observer for the operational DD discussion. Minutes from the January 24 meeting were approved without amendment.</p>
+
+<h4>Year-to-date performance review</h4>
+<p>Total portfolio returned <strong>+3.1% in Q1 2026</strong> vs policy benchmark +2.8%, a +30bp excess. Trailing twelve-month return +11.4% vs benchmark +10.6%; trailing five-year annualized 7.6% vs benchmark 7.1%. Risk metrics within tolerance: standard deviation 9.2%, Sharpe 0.39, peak-to-trough drawdown 4.1% (mid-March).</p>
+<p>Attribution: <em>asset allocation</em> contributed +12bp (modest overweight to international developed equity into a strong quarter); <em>manager selection</em> contributed +21bp (Walter Scott global equity +280bp vs MSCI ACWI; Ares Senior Direct Lending in line with model returns); <em>private equity</em> marks were flat-to-down, which the IC noted is typical of Q1 lag-reporting and consistent with prior years.</p>
+<p>Mark Foster walked through the FY-to-date spending draw of $42M against a $55M annual budget; rate is on track. Liquidity tier-1 coverage stands at 14.3× annual spend (well above the 3× internal soft floor).</p>
+
+<h4>Manager actions — Acadian EM Equity termination</h4>
+<p>The IC voted unanimously to terminate the Acadian Asset Management Emerging Markets Equity mandate, effective May 15. The decision reflects (a) three-year benchmark-relative underperformance of −110bp annualized vs MSCI Emerging Markets, (b) the February departure of lead portfolio manager Dr. Eleanor Wu to a competitor, and (c) the firm's stated plan to reorganize the EM team under a new lead with a different process emphasis.</p>
+<p>Reve presented a replacement shortlist: <strong>Pzena Emerging Markets Value</strong>, <strong>GMO Emerging Markets</strong>, and <strong>William Blair Emerging Markets Growth</strong>. Pzena offers deep-value exposure complementary to the existing growth-tilted lineup; GMO offers a quality-value blend with a strong long-term record; William Blair would maintain the current growth orientation but with a higher-conviction concentrated approach. Reve will conduct full operational due diligence on all three and bring a single recommendation to the May 10 special meeting. Interim allocation will sit in the iShares MSCI EM ETF (IEMG) for the transition period.</p>
+
+<h4>Asset allocation and rebalancing review</h4>
+<p>Current weights remain within all policy ranges. Public equity at 41.2% vs target 40%; fixed income 25.8% vs target 27%; alternatives 28.0% on target; cash 5.0% on target. No rebalancing trades recommended at this time. The OCIO noted private equity NAV is slightly under target (5.4% vs 6.0%) due to delayed marks on Vista VIII; expected to normalize by Q3.</p>
+
+<h4>Spending policy and FY27 preview</h4>
+<p>Mark Foster previewed the FY27 spending outlook. Operating support need projected at <strong>$58M</strong> (vs $55M FY26), driven by faculty hiring in the College of Engineering and a one-time $2M facilities allocation. Under the 4.5% smoothed policy applied to the trailing twelve-quarter average market value, calculated spend would land at $55.8M — leaving a $2.2M gap to operating need.</p>
+<p>Three options were tabulated: (1) recommend a one-time spending policy band adjustment to 4.75% for FY27, (2) draw $2.2M from the Operating Reserve outside the endowment, (3) accept the gap and ask the University to identify offsetting savings. The IC requested Mark to prepare a fuller analysis with five-year projections for the May meeting, including the impact on long-term corpus preservation under each option.</p>
+
+<h4>Liquidity and capital calls</h4>
+<p>Outstanding unfunded private commitments total $52M (Vista VIII $24M remaining; Ares SDL III $18M remaining; legacy PE programs $10M). Expected pacing through year-end: ~$22M called. Tier-1 liquidity at 77% of portfolio is more than sufficient to meet calls + spending + buffer. No liquidity stress identified.</p>
+
+<h4>Operational and governance</h4>
+<p>Annual operational due diligence cycle opens May 1. All managers will receive standardized ODD questionnaires; Reve will lead. Custody reconciliations through March 31 reviewed; no material discrepancies. Northern Trust transition (per Q2 2025 RFP) fully bedded in.</p>
+<p>Plante Moran observed they expect to issue the FY25 audit opinion in May; no material findings anticipated.</p>
+
+<h4>Action items</h4>
+<ul>
+<li>Reve: circulate EM manager recommendation memo by <strong>May 10</strong> for vote at the May 17 special meeting.</li>
+<li>Mark Foster: prepare FY27 spending policy analysis with five-year corpus impact projections by May 10.</li>
+<li>Reve: deliver consolidated operational DD report by May 30.</li>
+<li>Susan Liu: schedule Q2 manager site visits (Walter Scott, GMO, Vista).</li>
+</ul>
+
+<h4>Next meeting</h4>
+<p>Special meeting May 17, 2026 (EM manager selection). Regular Q2 meeting July 24, 2026.</p>`,
       },
       {
         date: '2026-01-24',
         title: 'Q4 2025 Investment Committee · Annual strategic review',
         attendees: '7 IC members · OCIO (Reve) · CFO · CIO (Susan Liu)',
         summary: 'Annual review of return objective, asset allocation, and spending policy. Reaffirmed SAA targets and Tier-1 liquidity floor. Approved $20M Ares private credit commitment.',
-        body: `<p><strong>FY25 in review.</strong> Total return +9.7% net of fees; policy benchmark +9.1%. Five-year annualized return 7.4%, ahead of CPI+4.5% spending target. Drawdown peak-to-trough max 6.1% (March 2025).</p>
-<p><strong>SAA reaffirmation.</strong> Reviewed the policy ranges and current targets adopted July 2025. No structural shifts proposed. The IC reaffirmed (a) the 50% Tier-1 liquidity floor and (b) the 5-15% Private Equity range. Real return assumption 4.7% above 2.4% CPI; comfortably above 4.5% spending policy.</p>
-<p><strong>Capital deployment.</strong> Approved a $20M commitment to Ares Senior Direct Lending Fund III; vintage diversification within the 0-10% private credit sleeve. Pacing plan keeps PE program on schedule for the 10% target.</p>
-<p><strong>Spending policy.</strong> 4.5% of 12-quarter trailing average reaffirmed for FY26.</p>`,
+        body: `<h4>Roll call and minutes</h4>
+<p>All seven IC members present. CIO Susan Liu present for the strategic review. Mark Foster (CFO) present. Minutes from the October 16 meeting were approved with one amendment (corrected vote tally on the Vista commitment from 6-0 to 7-0).</p>
+
+<h4>FY25 retrospective</h4>
+<p>Reve presented a detailed FY25 performance review (July 2024 – June 2025). Headline numbers: total return <strong>+9.7%</strong> net of all fees, vs policy benchmark +9.1% (+60bp excess). Three-year annualized return 6.9%; five-year annualized 7.4%, comfortably ahead of the long-term return objective of CPI+4.5% (~6.9% over the period).</p>
+<p>By asset class: U.S. equity +11.2% vs S&amp;P +10.8%; international developed +13.1% vs MSCI EAFE +12.4%; emerging markets +6.8% vs MSCI EM +7.9% (Acadian drag); core fixed income +4.2% vs Agg +4.0%; high-yield credit +8.9%; hedge funds +6.1%; private equity +12.4% (with mark lag); private credit +9.8%; real assets +7.9%.</p>
+<p>Risk: realized vol 9.6% vs modeled 9.1%; Sharpe 0.41 (rf 3.4% average over period); peak-to-trough drawdown 6.1% in March 2025 (regional bank stress).</p>
+<p>The Chair noted FY25 was the third consecutive year of beating the policy benchmark, attributing it primarily to manager selection in international and private credit. He thanked Reve and Susan Liu for the work.</p>
+
+<h4>SAA reaffirmation</h4>
+<p>The IC conducted its required annual review of the Strategic Asset Allocation adopted in July 2025. Reve walked through (a) updated J.P. Morgan 2025 Long-Term Capital Market Assumptions, (b) the current SAA's modeled metrics at those CMAs (6.7% return / 9.1% vol / 0.36 Sharpe / 4.3% real return), and (c) sensitivity tests to small deviations.</p>
+<p>The committee debated whether to push the PE target band higher (to 5-18% from 5-15%) given the strong recent private equity contribution. Discussion centered on three concerns: liquidity stress under a 2008-style scenario, J-curve drag during the build phase, and IC oversight bandwidth. The committee chose not to widen the range at this time and to revisit at the July 2026 meeting after another two quarters of program data.</p>
+<p>The 50% Tier-1 liquidity floor was reaffirmed. The 4.5% spending policy band (4.0%-5.5%) was reaffirmed.</p>
+
+<h4>Capital deployment — Ares Senior Direct Lending Fund III</h4>
+<p>Reve presented a $20M commitment opportunity to Ares Senior Direct Lending Fund III. Fund profile: $4.5B target; senior secured loans to middle-market sponsor-backed companies; current asset yield ~10.5%; leverage 0.5×; expected gross IRR 9.5%-11%, net 7.5%-9%. Manager track record: prior two funds delivered net IRR of 8.4% and 9.1% respectively, both top-quartile per Cambridge data.</p>
+<p>Operational due diligence: Reve reviewed compliance, valuation policy, audit firm (Deloitte), custody arrangement, side-letter terms. No material concerns. Fee terms: 1.0% management on committed capital during investment period (4 years), 0.75% on invested thereafter; 10% incentive over 5% preferred return; European-style waterfall.</p>
+<p>The commitment fits within the 0-10% private credit range (current 7% allocation). Pacing-model impact: would bring committed capital on the private credit sleeve to ~$95M; expected NAV stays within range through FY28 under normal pacing.</p>
+<p><strong>Vote.</strong> Motion to commit $20M to Ares Senior Direct Lending Fund III: 7-0 unanimous.</p>
+
+<h4>Manager performance attribution</h4>
+<p>Detailed manager-level review covered all 19 active mandates. Two on watchlist: Wellington Global Equity (established Q3 2025 — under formal review at this meeting, decision deferred to Q1 2026); Acadian EM Equity (added to watchlist this meeting after Dr. Wu's announced February departure — see Q1 2026 minutes).</p>
+<p>Walter Scott Global Equity was highlighted for outstanding performance: +13.9% calendar-year 2025 vs MSCI ACWI +11.8%, with lower vol. The IC requested Reve schedule a 2026 site visit to validate the team's continuity plan.</p>
+
+<h4>Capital markets outlook</h4>
+<p>Reve presented JPM's 2026 LTCMA updates (released December 2025). Key changes from 2025 vintage: U.S. large-cap return assumption trimmed 20bp on valuation grounds; international developed unchanged; emerging markets nudged +30bp on terms-of-trade improvement; core fixed income unchanged at 4.6%; private equity unchanged at ~10%. The IC noted that no SAA action is required as updates fall within ±25bp on most lines and the current SAA was set to be robust to such revisions.</p>
+
+<h4>Spending policy</h4>
+<p>4.5% smoothed policy reaffirmed for FY26. The committee acknowledged FY27 may need closer attention given the projected $58M operating need vs ~$55.8M calculated spend; CFO will prepare analysis for Q1 2026 meeting.</p>
+
+<h4>Action items</h4>
+<ul>
+<li>Reve: execute Ares SDL III subscription documents within 30 days.</li>
+<li>Reve: prepare formal Wellington Global Equity recommendation for Q1 2026 vote.</li>
+<li>Susan Liu: schedule Walter Scott site visit for Q2.</li>
+<li>Mark Foster: begin FY27 spending policy analysis.</li>
+</ul>
+
+<h4>Next meeting</h4>
+<p>Q1 2026 IC: April 18, 2026.</p>`,
       },
       {
         date: '2025-10-16',
         title: 'Q3 2025 Investment Committee',
         attendees: '6 IC members · OCIO (Reve) · CFO',
         summary: 'Reviewed Q3 market volatility, updated ESG/SRI screening policy, and approved $30M Vista Equity commitment.',
-        body: `<p><strong>Market context.</strong> Q3 turbulence (August VIX spike, regional bank stress) absorbed within policy ranges; no forced rebalancing. Drawdown 4.2% peak-to-trough; recovered by quarter end.</p>
-<p><strong>ESG/SRI policy.</strong> Updated mission-alignment screen to formally reflect Catholic Social Teaching. Excluded categories: weapons manufacturers, tobacco, predatory lending, adult entertainment. Documented as an addendum to the IPS Section 13. Implementation through customized index where direct, manager-level engagement where in commingled vehicles.</p>
-<p><strong>Capital deployment.</strong> Approved a $30M commitment to Vista Equity Partners VIII (mid-large software buyout); fits the 5-15% PE range; deployed alongside existing GP relationships.</p>
-<p><strong>Manager review.</strong> Wellington Global Equity: 18-month underperformance and style drift toward growth bias inconsistent with mandate. Watchlist established with formal review in Q1.</p>`,
+        body: `<h4>Roll call and minutes</h4>
+<p>Six of seven IC members present (Singh absent — excused, international travel). Quorum confirmed. Minutes from the July 22 meeting approved without amendment.</p>
+
+<h4>Market context</h4>
+<p>Reve opened with a recap of the Q3 environment. Mid-August saw a VIX spike to 38 on regional bank stress (the second wave following the 2023 crisis), with the S&amp;P briefly drawing down 6.8% peak-to-trough before recovering by late September. International developed and emerging markets followed similar patterns with shallower drawdowns. Core fixed income provided positive offset (+1.4% Q3) as the long end rallied.</p>
+<p>Total portfolio drew down a maximum of 4.2% peak-to-trough (mid-August) and recovered to +1.9% for the quarter by September 30, in line with policy benchmark. All drawdown stayed comfortably within the 20% drawdown tolerance documented in IPS §3. No forced rebalancing was required; the Tier-1 floor was never threatened. The IC commended Reve for not chasing volatility-driven trades.</p>
+
+<h4>Year-to-date performance</h4>
+<p>Calendar-year-to-date return through September 30: +6.4% net of fees vs benchmark +5.9%. Trailing twelve-month +10.8%. Real return on track to meet CPI+4.5% objective for the year.</p>
+
+<h4>ESG / mission-alignment policy update</h4>
+<p>Pursuant to the IPS §13 commitment in July to formalize mission alignment, Reve presented a draft <strong>Mission-Alignment and ESG Implementation Policy</strong>. The policy formally reflects Catholic Social Teaching and incorporates four exclusion categories that the IC discussed extensively in July: <em>weapons manufacturers</em> (defined: companies generating &gt;5% of revenue from the manufacture of firearms, military weaponry, or controversial weapons including cluster munitions, landmines, and biological/chemical agents), <em>tobacco</em> (companies generating &gt;5% of revenue from tobacco production or distribution), <em>predatory lending</em> (defined via the NCUA framework: payday and high-cost short-term consumer lenders with APR &gt;36%), and <em>adult entertainment</em> (companies generating &gt;5% of revenue from the production or distribution of adult content).</p>
+<p>Implementation will vary by vehicle. In separately managed accounts and customizable index strategies (~38% of portfolio), exclusions will be implemented directly. In commingled vehicles and pooled private funds where customization is infeasible, Reve will engage with each manager on their existing screens and document a best-fit overlap; where significant gaps exist, the IC will be informed via the quarterly report and a decision to retain or seek alternatives will be raised.</p>
+<p>The policy also documents a positive overlay: <em>mission-aligned preferences</em> for impact investments aligned with the University's mission, with no formal allocation target but encouraging consideration when opportunities arise.</p>
+<p><strong>Vote.</strong> Motion to adopt the Mission-Alignment and ESG Implementation Policy as an addendum to the IPS: 6-0 unanimous (Singh absent).</p>
+
+<h4>Capital deployment — Vista Equity Partners VIII</h4>
+<p>Reve presented a $30M commitment opportunity to Vista Equity Partners Fund VIII. Fund profile: $20B target; mid-large software buyouts in enterprise SaaS and infrastructure; check sizes $200M-$1B; current vintage diversification gap in the program (last commitment 2022 vintage).</p>
+<p>Manager track record: Funds V (2017), VI (2020), and VII (2022) delivered net IRRs of 21.4%, 18.8%, and 14.9% (mark-to-market) respectively, all top decile per Burgiss data. Vista has demonstrated discipline through the 2022-2023 software valuation reset, with mark-downs of 18% from peak followed by recovery as portfolio companies grew into their valuations.</p>
+<p>Operational due diligence: clean. Vista has been a Dream University manager since Fund V (2017 vintage). Side letter terms include the standard MFN, key-person provisions, and an excuse right for software companies with significant exposure to excluded categories (currently estimated &lt;1% of fund NAV; documented in side letter).</p>
+<p>Fit: deploys alongside existing GP relationships; complements Hellman &amp; Friedman X (consumer/healthcare PE focus); brings vintage diversification.</p>
+<p><strong>Vote.</strong> Motion to commit $30M to Vista Equity Partners VIII: 6-0 unanimous.</p>
+
+<h4>Manager review — Wellington Global Equity (watchlist)</h4>
+<p>Reve presented an 18-month performance review of Wellington Global Equity. The mandate has underperformed MSCI ACWI by 165bp annualized over the period, against a stated expectation of benchmark-plus 50-150bp. Style attribution analysis shows a meaningful drift toward growth bias (style beta 1.18 vs target 0.95-1.05), driven by sector allocation rather than security selection.</p>
+<p>Reve's preliminary view is that the drift is structural rather than tactical and inconsistent with the mandate. Recommendation: place on watchlist with formal review and decision at Q1 2026. The IC concurred.</p>
+
+<h4>Operational and governance</h4>
+<p>Northern Trust transition (per the July 2025 RFP outcome) is on track; final cutover December 1. Reve flagged no operational risk.</p>
+<p>Annual conflict-of-interest disclosures complete for all IC members, Reve personnel, and material vendors. No material conflicts identified.</p>
+
+<h4>Action items</h4>
+<ul>
+<li>Reve: execute Vista VIII subscription documents within 30 days; circulate first capital call notice.</li>
+<li>Reve: implement ESG policy exclusions in SMAs (US equity, intl developed, core FI) effective November 1.</li>
+<li>Reve: prepare formal Wellington review memo for Q4 2025 meeting.</li>
+<li>Mark Foster: coordinate Northern Trust cutover, weekly status updates.</li>
+</ul>
+
+<h4>Next meeting</h4>
+<p>Q4 2025 / Annual Strategic Review: January 24, 2026.</p>`,
       },
       {
         date: '2025-07-22',
         title: 'Q2 2025 Investment Committee · New IPS + SAA adoption',
         attendees: '7 IC members · OCIO (Reve) · CFO · Board chair (observer)',
         summary: 'Adopted updated IPS and refreshed Strategic Asset Allocation. Approved custodian RFP results — Northern Trust retained.',
-        body: `<p><strong>IPS adoption.</strong> The Board adopted the updated Investment Policy Statement, replacing the 2022 version. Material changes: (a) reduced policy-range width on public equity to tighten rebalancing discipline, (b) added private credit as a distinct asset class (was previously inside fixed income), (c) codified the 50% Tier-1 liquidity floor, (d) added mission-alignment language for review in Q3.</p>
-<p><strong>SAA refresh.</strong> Adopted new strategic asset allocation targets following mean-variance optimization conducted by Reve OCIO. Headline: increased PE target band to 5-15% (was 3-12%), introduced 0-10% private credit, modest reduction in Core FI to fund alternatives. Targets sit on the IPS-bounded max-Sharpe portfolio: modeled 10-year expected return ~6.7%, vol ~9.1%, Sharpe ~0.36 at rf 3.4%, real return ~4.3% above 2.4% CPI.</p>
-<p><strong>Custodian.</strong> Northern Trust retained following RFP; fee step-down of 4bps achieved on first $500M.</p>
-<p><strong>Spending policy.</strong> 4.5% of 12-quarter trailing average reaffirmed.</p>`,
+        body: `<h4>Roll call and minutes</h4>
+<p>All seven Investment Committee members present (Reilly, chair; Adebayo; Cho; Donovan; Hartwell; Patel; Singh). Board Chair Trustee Carolyn Reyes attended as observer for the IPS and SAA votes. OCIO represented by Reve. CFO Mark Foster present. Minutes from the April 2025 meeting were approved without amendment.</p>
+
+<h4>FY25 performance preview</h4>
+<p>Reve walked through preliminary FY25 numbers (final figures pending audit, expected for the October meeting). YTD return through June 30: +9.1% net of fees, slightly ahead of the policy benchmark at +8.6%. Risk metrics within tolerance. The Chair acknowledged it has been a constructive year and thanked Reve for steady execution through the March regional banking volatility.</p>
+
+<h4>IPS update — discussion and vote</h4>
+<p>The committee considered the draft 2025 Investment Policy Statement prepared by Reve over the prior six months, replacing the 2022 IPS. Material changes from the prior version were presented section by section. Key items debated:</p>
+<p><em>Asset allocation framework.</em> The 2022 IPS used wider policy ranges (typically ±10% around target) that proved unwieldy at the margin — the OCIO had to manage drift across a wide band without clear rebalancing triggers. The 2025 draft narrows most ranges to ±7%, with explicit rebalancing triggers in Section 11. The Chair asked whether this gave the OCIO sufficient flexibility in market dislocations. Reve clarified that Section 11 preserves the "market-driven" trigger for unusual opportunities under explicit IC framework. Adopted as drafted.</p>
+<p><em>Private credit as distinct asset class.</em> Previously, private credit sat within an undifferentiated "Fixed Income — alternative" sleeve. The 2025 draft elevates it to a standalone class with its own 0-10% range, recognizing its growth in the program and its distinct risk profile (credit + illiquidity premium, intermediate liquidity tier). No dissent; adopted.</p>
+<p><em>Tier-1 liquidity floor.</em> The 2025 IPS codifies a 50% minimum allocation to Tier-1 (daily-liquid) assets in Section 8. This formalizes what had been an internal OCIO guideline. Adebayo asked whether the floor was too restrictive given the Yale/Princeton-style allocations many peers are taking; Reve responded with the liquidity coverage analysis showing comfortable cushion at the 50% floor, and noted the Catholic Social Teaching constraints already favor a more public-market-tilted approach. Adopted unanimously.</p>
+<p><em>Mission alignment / ESG.</em> The 2025 draft introduces formal mission-alignment language in Section 13 with implementation deferred to a Q3 2025 framework. The Board Chair emphasized the importance of this for the University's identity and noted the Board's clear expectation that exclusions reflect Catholic Social Teaching. Adopted as drafted with the understanding that a detailed implementation policy will follow.</p>
+<p><strong>Vote.</strong> Motion to adopt the 2025 Investment Policy Statement, replacing the 2022 IPS: 7-0 unanimous, Board Chair concurring.</p>
+
+<h4>Strategic Asset Allocation refresh</h4>
+<p>Reve presented the new Strategic Asset Allocation derived through mean-variance optimization, IPS-bounded, with the 50% Tier-1 floor and using J.P. Morgan's 2025 Long-Term Capital Market Assumptions. The proposed weights:</p>
+<p>U.S. Equity 22%, International Developed 12%, Emerging Markets 6%, Core Fixed Income 20%, TIPS 5%, High-Yield Credit 2%, Diversified Hedge Funds 8%, Private Equity 6%, Private Credit 7%, Real Assets 7%, Cash 5%.</p>
+<p>Modeled metrics: 10-year expected return 6.7%, annualized volatility 9.1%, Sharpe ratio 0.36 at 3.4% risk-free, real return 4.3% above 2.4% CPI. Tier-1 liquidity 72%, comfortably above the 50% floor.</p>
+<p>Discussion centered on three questions:</p>
+<p><em>(1) Is 22% U.S. Equity too low?</em> Patel raised the question, noting peer endowments often run 25-30%. Reve explained the MVO output reflects the model's view that risk/return trade-offs at the margin favor the alternatives sleeve given current CMAs. The IC accepted the rationale, noting the IPS range permits up to 35% if conviction changes.</p>
+<p><em>(2) Is 6% PE sufficient given the new 5-15% range?</em> Reve clarified that 6% is the starting target; the pacing plan calls for ramping to 8-10% over three years as the Vista, H&amp;F, and legacy commitments mature. Wider range gives the IC the option to push further once the program is established.</p>
+<p><em>(3) Why 5% cash?</em> Donovan asked whether the cash allocation was too high. Reve responded that 5% supports operational liquidity, capital call buffer, and rebalancing reserve; under low rates this would be revisited.</p>
+<p><strong>Vote.</strong> Motion to adopt the new Strategic Asset Allocation: 7-0 unanimous, Board Chair concurring.</p>
+
+<h4>Custodian RFP — results and selection</h4>
+<p>Mark Foster summarized the custodian RFP process conducted over Q1-Q2. Four firms responded: Northern Trust (incumbent), BNY Mellon, State Street, and J.P. Morgan. Evaluation criteria: fee structure, service model, technology platform, reporting quality, and reference checks.</p>
+<p>The committee reviewed the detailed scorecard. Northern Trust scored highest on service model and reporting; BNY Mellon scored highest on technology; State Street offered the lowest fee. Reve and Mark recommended retaining Northern Trust based on continuity, performance reporting quality (consistently the cleanest in the OCIO's experience), and a fee step-down of 4bps on the first $500M of assets achieved through the RFP. Transition cost of $0 for the incumbent vs estimated $400K-$600K for a switch.</p>
+<p><strong>Vote.</strong> Motion to retain Northern Trust as custodian, three-year term with annual review: 7-0 unanimous.</p>
+
+<h4>Spending policy</h4>
+<p>The 4.5% of trailing twelve-quarter average market value policy was reaffirmed for FY26. Within the 4.0%-5.5% band.</p>
+
+<h4>Action items</h4>
+<ul>
+<li>Reve: file the 2025 IPS as a formal university policy document; circulate to all managers within 14 days.</li>
+<li>Reve: implement SAA target weights with rebalancing trades over 60 days; communicate to managers as needed.</li>
+<li>Reve: draft the Mission-Alignment / ESG Implementation Policy for Q3 vote.</li>
+<li>Mark Foster: execute Northern Trust extension; finalize fee schedule.</li>
+</ul>
+
+<h4>Next meeting</h4>
+<p>Q3 2025 IC: October 16, 2025.</p>`,
       },
     ],
     decisions: [
@@ -2287,7 +2445,7 @@
     enterItemView();
     const notes = state.boardNotes || [];
     const cards = notes.map((n, i) => `
-      <div class="bn-card">
+      <div class="bn-card" data-bn-idx="${i}">
         <div class="bn-card-head">
           <div>
             <div class="bn-card-title">${escapeHtml(n.title)}</div>
@@ -2295,6 +2453,11 @@
           </div>
         </div>
         <p class="bn-card-summary">${escapeHtml(n.summary || '')}</p>
+        <button class="bn-expand-btn" data-action="bn-toggle" data-idx="${i}">
+          <span class="bn-expand-show">Read full notes</span>
+          <span class="bn-expand-hide">Hide full notes</span>
+          <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
         <div class="bn-card-body">${n.body || ''}</div>
       </div>
     `).join('');
@@ -3200,6 +3363,10 @@
     } else if (a === 'back-to-vault') {
       e.preventDefault();
       backToVault();
+    } else if (a === 'bn-toggle') {
+      e.preventDefault();
+      const card = btn.closest('.bn-card');
+      if (card) card.classList.toggle('bn-expanded');
     } else if (a === 'pf-edit') {
       e.preventDefault();
       profileEdit[btn.dataset.section] = true;
