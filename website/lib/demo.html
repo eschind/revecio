@@ -447,6 +447,10 @@
   .qr-toc a { font-size: 11.5px; color: var(--ink-2); text-decoration: none; border: 1px solid var(--line); border-radius: 999px; padding: 4px 11px; transition: border-color 0.15s, color 0.15s; }
   .qr-toc a:hover { color: var(--ink); border-color: var(--ink); }
   .qr-disclosures { font-size: 11px; color: var(--muted); line-height: 1.6; margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--line-soft); }
+  .qr-period-bar { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 20px; }
+  .qr-period-btn { appearance: none; cursor: pointer; font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.04em; padding: 6px 13px; border: 1px solid var(--line); border-radius: 999px; background: transparent; color: var(--ink-2); transition: border-color 0.15s, color 0.15s, background 0.15s; }
+  .qr-period-btn:hover { border-color: var(--ink); color: var(--ink); }
+  .qr-period-btn.active { background: var(--ink); color: var(--dark-ink); border-color: var(--ink); }
   @media (max-width: 760px) { .qr-kpis { grid-template-columns: repeat(2, 1fr); } .qr-bar-row { grid-template-columns: 110px 1fr 48px; } }
 
   .draft-streaming { opacity: 0.35; }
@@ -1818,6 +1822,8 @@
     } else if (a === 'qr-jump') {
       const target = artifactBody.querySelector(`#${btn.dataset.target}`);
       if (target) smoothScrollToSection(target);
+    } else if (a === 'qr-period') {
+      openQuarterlyReportView(btn.dataset.id);
     } else if (a === 'view-ips-section') {
       const num = Number(btn.dataset.num);
       const idx = IPS_SECTIONS.findIndex((s) => s.num === num);
@@ -2641,16 +2647,288 @@
     updateUrl();
   }
 
-  // ============ Quarterly report ============
-  // Authored Q1 2026 report for Dream University. Figures reconcile with the
-  // board meeting notes (Walter Scott +280bp vs ACWI, Acadian termination, the
-  // +3.1% vs +2.8% policy-benchmark quarter, attribution, unfunded commitments).
-  function buildQuarterlyReportHtml() {
+  // ============ Quarterly reports ============
+  // Authored quarterly reports for Dream University, newest first. Figures
+  // reconcile across quarters (market-value chain, trailing returns, the SAA
+  // adopted 7/22/2025) and with the board meeting notes (Walter Scott's lead,
+  // the Acadian termination, the Wellington watchlist, Vista VIII, the Q3 2025
+  // turbulence). The render scaffold is shared; each quarter supplies its data.
+  const QR_TARGETS = { us_eq: 22, intl_eq: 12, em_eq: 6, core_fi: 20, tips: 5, hy: 2, hf: 8, pe: 6, pc: 7, ra: 7, cash: 5 };
+  const QR_ALLOC_META = [
+    ['us_eq', 'U.S. Equity'], ['intl_eq', 'Intl Developed Equity'], ['em_eq', 'Emerging Markets Equity'],
+    ['core_fi', 'Core Fixed Income'], ['tips', 'TIPS'], ['hy', 'High-Yield Credit'],
+    ['hf', 'Diversified Hedge Funds'], ['pe', 'Private Equity'], ['pc', 'Private Credit'],
+    ['ra', 'Real Assets'], ['cash', 'Cash'],
+  ];
+  const QR_SECTOR_NAMES = ['Information Technology', 'Financials', 'Industrials', 'Health Care', 'Consumer Discretionary', 'Communication Services', 'Consumer Staples', 'Energy', 'Materials', 'Utilities', 'Real Estate'];
+
+  const QUARTERLY_REPORTS = [
+    {
+      id: '2026q1', label: 'Q1 2026', qLabel: 'Q1', word: 'First Quarter 2026', end: 'March 31, 2026', prevEnd: 'Dec 31, 2025',
+      emvB: '$1.220B', bmv: '$1,195M', emv: '$1,220M',
+      cover: { qRet: 3.1, bench: 2.8, ttm: 11.4 },
+      perf: [['Quarter (Q1 2026)', 3.1, 2.8], ['Trailing 1 year', 11.4, 10.6], ['Trailing 3 years (ann.)', 6.9, 6.5], ['Trailing 5 years (ann.)', 7.6, 7.1], ['Trailing 10 years (ann.)', 7.1, 6.8], ['Since inception (ann.)', 7.3, 7.0]],
+      mv: [['Net investment gain', '+$37M'], ['Spending distribution', '−$13.8M'], ['Net external flows / fees', '+$1.8M']],
+      risk: { std: '9.2%', benchStd: '9.6%', sharpe: '0.39', dd: '−4.1%', ddNote: 'Intra-Q1, recovered', te: '1.4%', ir: '0.36' },
+      mkt: [['S&P 500', 4.1, 12.9], ['Nasdaq Composite', 3.2, 14.1], ['Russell 2000 (small cap)', 1.8, 6.4], ['MSCI ACWI (global)', 4.3, 12.4], ['MSCI EAFE (intl developed)', 6.2, 13.8], ['MSCI EM', 2.4, 8.1], ['Bloomberg U.S. Aggregate', 1.6, 4.9], ['Bloomberg U.S. TIPS', 1.9, 5.2], ['ICE BofA U.S. High Yield', 2.1, 8.6]],
+      macro: [['10-yr U.S. Treasury yield', '4.18%', '−24 bp', 'Rallied as growth cooled and the Fed eased'], ['Fed funds target', '4.25–4.50%', '−25 bp', 'One cut delivered at the March FOMC'], ['U.S. CPI (YoY)', '2.6%', '−0.3 pt', 'Disinflation continued; services sticky'], ['U.S. dollar (DXY)', '102.1', '−2.4%', 'Weaker dollar lifted unhedged intl returns'], ['WTI crude', '$68/bbl', '−5.1%', 'Ample supply; soft global demand'], ['Gold', '$2,940/oz', '+6.8%', 'Real-rate decline and central-bank buying'], ['VIX (quarter-end)', '15.2', '−1.6 pt', 'Low realized vol; brief Feb risk-off']],
+      mktLead: 'Global equities advanced, bonds rallied as the Fed cut once, and international markets outpaced the U.S. on a weaker dollar.',
+      mktParas: [
+        'Risk assets extended their advance in the first quarter as disinflation continued and the Federal Reserve delivered a widely anticipated 25 bp cut at its March meeting, taking the funds target to 4.25–4.50%. Headline CPI eased to 2.6% year-over-year. With growth cooling modestly and policy turning more accommodative, the 10-year Treasury yield fell roughly 24 bp to 4.18%, lifting high-quality fixed income.',
+        'Equity leadership broadened beyond the largest U.S. technology names. International developed markets (MSCI EAFE +6.2%) outperformed the S&amp;P 500 (+4.1%), aided by a 2.4% decline in the U.S. dollar and more attractive starting valuations. Emerging markets (+2.4%) lagged, held back by uneven Chinese activity data. In credit, spreads tightened further and high yield returned +2.1%. Gold (+6.8%) benefited from lower real rates, while crude softened on ample supply. Realized volatility stayed low — the VIX ended near 15 — despite a brief February risk-off episode.',
+      ],
+      positioning: 'The environment rewarded the portfolio\'s standing tilts — an overweight to international developed equity and a full-duration core bond sleeve. We did not chase the rally; positioning changes this quarter were limited to the planned EM manager transition.',
+      actual: { us_eq: 22.6, intl_eq: 12.4, em_eq: 5.6, core_fi: 19.2, tips: 5.0, hy: 2.0, hf: 8.1, pe: 5.4, pc: 7.2, ra: 7.0, cash: 5.5 },
+      allocLead: 'Every asset class finished the quarter inside its IPS policy range; no rebalancing trades were required.',
+      allocPara: 'Public equity drifted modestly above target on strong quarterly returns (actual 40.6% across U.S., international, and EM vs a 40.0% target), while private equity sits slightly below target at 5.4% on delayed Q1 marks for Vista VIII, expected to normalize by Q3. Cash ran a touch rich at 5.5% to pre-fund the spring spending draw and pending capital calls. None of these warranted a trade under the range-based and cash-flow rebalancing triggers in IPS §11.',
+      acPerf: [['U.S. Equity', 'Russell 3000', 4.3, 4.0, 12.6], ['Intl Developed Equity', 'MSCI EAFE', 6.8, 6.2, 14.1], ['Emerging Markets Equity', 'MSCI EM', 1.6, 2.4, 6.9], ['Core Fixed Income', 'Bloomberg U.S. Agg', 1.7, 1.6, 5.1], ['TIPS', 'Bloomberg U.S. TIPS', 1.9, 1.9, 5.2], ['High-Yield Credit', 'ICE BofA U.S. HY', 2.4, 2.1, 9.0], ['Diversified Hedge Funds', 'HFRI FoF Composite', 1.6, 1.5, 6.3], ['Private Equity', 'Cambridge PE (lagged)', 0.2, 1.0, 11.8], ['Private Credit', 'Cliffwater Direct Lending', 2.5, 2.3, 9.7], ['Real Assets', 'Real Assets Blend', 2.0, 1.9, 7.6], ['Cash', 'ICE BofA 3M T-Bill', 1.1, 1.1, 4.6]],
+      acLead: 'Public equity led; private equity trailed on mark lag; the EM sleeve was the lone real detractor.',
+      sectors: [[24.5, 25.8, 3.2], [17.2, 16.1, 5.8], [11.4, 10.6, 5.1], [11.0, 10.4, 2.1], [9.8, 10.2, 3.9], [7.1, 7.6, 4.4], [6.0, 6.2, 1.3], [4.2, 3.8, 6.7], [3.6, 3.5, 4.0], [2.9, 2.7, 2.5], [2.3, 2.1, -0.6]],
+      sectorLead: 'Public-equity sleeve positioning vs the MSCI ACWI, with quarterly sector returns.',
+      sectorPara: 'The equity sleeve carries a slight underweight to Information Technology and overweights to Financials and Industrials — a modest value-and-cyclical tilt that helped in a quarter when Financials (+5.8%) and Industrials (+5.1%) outpaced Tech (+3.2%). Real Estate was the only sector to decline. The look-through reflects the combined positioning of the active and index equity managers and is not separately managed at the sector level.',
+      mgrGroups: [
+        ['U.S. Equity', [['Granite Ridge U.S. Equity Index', 'Passive · Russell 3000', 110, 4.1, 4.0, ''], ['Cascade Park U.S. Large Growth', 'Active growth', 90, 3.6, 2.9, ''], ['Harbor & Main U.S. Value', 'Active value', 68, 5.2, 5.0, '']]],
+        ['International & Global Equity', [['Walter Scott Global Equity', 'Active global', 96, 7.1, 4.3, ''], ['Kestrel International Developed', 'Active · MSCI EAFE', 50, 6.5, 6.2, '']]],
+        ['Emerging Markets Equity', [['Acadian Emerging Markets Equity', 'Active · terminating', 0, 1.2, 2.4, 'term'], ['iShares MSCI EM (IEMG)', 'Interim index', 73, 2.3, 2.4, 'new']]],
+        ['Fixed Income & Credit', [['Meridian Core Bond', 'Active core · U.S. Agg', 150, 1.8, 1.6, ''], ['Granite Ridge Aggregate Bond Index', 'Passive · U.S. Agg', 94, 1.6, 1.6, ''], ['Granite Ridge TIPS Index', 'Passive · U.S. TIPS', 61, 1.9, 1.9, ''], ['Ashford Lane High Yield', 'Active · ICE BofA HY', 24, 2.4, 2.1, '']]],
+        ['Diversified Hedge Funds', [['Blackwater Multi-Strategy', 'Multi-strat', 58, 2.0, 1.5, ''], ['Tidewater Macro', 'Global macro', 40, 0.9, 1.5, 'watch']]],
+        ['Private Equity', [['Vista Equity Partners VIII', 'Software buyout', 42, 0.2, 1.0, ''], ['Legacy PE Co-Investment Program', 'Diversified buyout/VC', 31, 0.4, 1.0, '']]],
+        ['Private Credit', [['Ares Senior Direct Lending Fund III', 'Senior direct lending', 44, 2.6, 2.3, ''], ['Beacon Hill Private Credit', 'Opportunistic credit', 41, 2.4, 2.3, '']]],
+        ['Real Assets', [['Brightwater Infrastructure', 'Core+ infrastructure', 46, 2.8, 2.2, ''], ['Cardinal Real Estate Partners', 'Value-add real estate', 39, 1.1, 1.6, '']]],
+        ['Cash', [['Northern Trust Government MMF', 'Government money market', 61, 1.1, 1.1, '']]],
+      ],
+      mgrLead: 'Twenty mandates across the program; net-of-fee Q1 returns against each manager\'s stated benchmark.',
+      mgrAllocNote: 'Allocations as of March 31, 2026. Acadian is in transition (effective termination May 15); EM exposure is held in IEMG on an interim basis pending the replacement search.',
+      mgrNote: '<strong>Walter Scott Global Equity</strong> (+7.1% vs +4.3% ACWI) was the standout, with stock selection in industrials and health care driving roughly 280 bp of excess. <strong>Acadian EM</strong> is being terminated after three years of benchmark-relative underperformance and a portfolio-manager departure; <strong>Tidewater Macro</strong> remains on the watchlist after a soft quarter and an 18-month review window. Private-equity managers show muted Q1 marks consistent with the usual one-quarter reporting lag.',
+      attr: [['Asset allocation', 12, 'Overweight international developed into a strong quarter; modest cash drag offset'], ['Manager selection', 21, 'Walter Scott (+280 bp vs ACWI) and Meridian Core Bond led; Acadian a detractor'], ['Interaction & other', -3, 'Timing of the EM transition and private-market mark lag']],
+      attrTotal: 30, attrTotalNote: '+3.1% portfolio vs +2.8% benchmark',
+      liq: [['Tier 1 — Daily / immediate', 72, 'Public equity, core bonds, TIPS, HY, cash'], ['Tier 2 — Monthly / quarterly', 15, 'Diversified hedge funds, liquid real assets'], ['Tier 3 — Illiquid (>1 yr)', 13, 'Private equity, private credit, value-add real estate']],
+      capital: [['Capital called (Vista VIII, Ares III)', '−$6.2M'], ['Distributions received', '+$9.4M'], ['Net private-market cash flow', '+$3.2M'], ['Unfunded commitments outstanding', '$52M']],
+      capitalNote: 'Unfunded: Vista VIII $24M, Ares III $18M, legacy programs $10M. Projected calls through year-end ~$22M, fully covered by Tier-1 liquidity.',
+      liqLead: 'Tier-1 liquidity of 72% sits well above the 50% IPS floor; commitments are comfortably funded.',
+      liqPara: 'Quarterly spending of $13.8M was funded from income and Tier-1 holdings without selling growth assets. With $52M of unfunded commitments and roughly $22M of expected calls through year-end against a Tier-1 base of more than $875M, no liquidity stress is evident under either the base case or the IPS stress scenarios.',
+      exec: {
+        lead: 'The portfolio advanced <strong>+3.1%</strong> net of fees in the first quarter, ahead of the policy benchmark\'s <strong>+2.8%</strong>, extending the trailing-twelve-month lead to <strong>+11.4%</strong> vs +10.6%.',
+        fiveYr: '+7.6%', fiveYrBench: '+7.1%', sharpe: '0.39', sharpeSub: 'Std. dev 9.2% · TE 1.4%', spending: '4.5%',
+        para1: 'Returns were led by <strong>manager selection</strong> (+21 bp), with Walter Scott Global Equity outpacing the MSCI ACWI by roughly 280 bp and Meridian Core Bond adding value as rates rallied. <strong>Asset allocation</strong> contributed a further +12 bp, helped by a modest overweight to international developed equity into a quarter in which a weaker U.S. dollar lifted unhedged foreign returns. The one notable detractor was emerging-markets equity, where the in-progress termination of Acadian weighed on results.',
+        para2: 'The Investment Committee approved the termination of the Acadian EM mandate effective May 15 and shortlisted three replacement managers; interim exposure is held in a low-cost index vehicle. All asset classes finished the quarter within their IPS policy ranges, Tier-1 liquidity remained well above the 50% floor, and the mission-alignment screens adopted in 2025 operated without exception.',
+        callout: 'A risk-on quarter delivered with discipline: benchmark-beating returns from active managers and a tilt to international, no policy-range breaches, and a clean liquidity and compliance picture — even as the EM sleeve was mid-transition.',
+      },
+      outlook: {
+        lead: 'Maintain strategic positioning; complete the EM manager transition; prepare the FY27 spending analysis.',
+        bullets: [
+          '<strong>Emerging markets manager search.</strong> Bring a single recommendation (Pzena, GMO, or William Blair) to the May 10 special IC meeting; fund from the interim IEMG position to minimize transition cost.',
+          '<strong>Tidewater Macro.</strong> Continue on watchlist; formal go/no-go at the Q2 IC meeting after the 18-month review window closes.',
+          '<strong>FY27 spending.</strong> Prepare the five-year projection requested by the IC, comparing a one-time 4.75% band adjustment against an operating-reserve draw, with corpus-preservation impact under each.',
+          '<strong>Rebalancing.</strong> No trades recommended; monitor public-equity drift and the private-equity NAV catch-up expected in Q3.',
+          '<strong>Private-market pacing.</strong> Maintain the current commitment pace; the program remains on track for its long-term private-markets NAV target.',
+        ],
+        closing: 'We expect a more two-sided market in the balance of the year as the disinflation trade matures and policy data-dependence increases. The portfolio\'s diversification, full-duration core bond sleeve, and disciplined private-markets pacing leave it well positioned to support the spending policy while preserving the real value of the corpus over the long horizon contemplated by the IPS.',
+      },
+    },
+
+    {
+      id: '2025q4', label: 'Q4 2025', qLabel: 'Q4', word: 'Fourth Quarter 2025', end: 'December 31, 2025', prevEnd: 'Sep 30, 2025',
+      emvB: '$1.195B', bmv: '$1,168M', emv: '$1,195M',
+      cover: { qRet: 2.6, bench: 2.4, ttm: 10.2 },
+      perf: [['Quarter (Q4 2025)', 2.6, 2.4], ['Trailing 1 year', 10.2, 9.6], ['Trailing 3 years (ann.)', 6.7, 6.4], ['Trailing 5 years (ann.)', 7.4, 7.0], ['Trailing 10 years (ann.)', 7.0, 6.7], ['Since inception (ann.)', 7.2, 6.9]],
+      mv: [['Net investment gain', '+$31M'], ['Spending distribution', '−$13.8M'], ['Year-end gifts &amp; net flows', '+$9.8M']],
+      risk: { std: '9.3%', benchStd: '9.7%', sharpe: '0.38', dd: '−3.2%', ddNote: 'Brief November pullback', te: '1.4%', ir: '0.30' },
+      mkt: [['S&P 500', 4.5, 13.2], ['Nasdaq Composite', 5.0, 15.0], ['Russell 2000 (small cap)', 3.8, 9.1], ['MSCI ACWI (global)', 4.0, 12.0], ['MSCI EAFE (intl developed)', 3.2, 10.5], ['MSCI EM', 2.0, 6.0], ['Bloomberg U.S. Aggregate', 1.4, 4.2], ['Bloomberg U.S. TIPS', 1.2, 4.6], ['ICE BofA U.S. High Yield', 2.2, 8.0]],
+      macro: [['10-yr U.S. Treasury yield', '4.42%', '−10 bp', 'Drifted lower into year-end'], ['Fed funds target', '4.50–4.75%', '−25 bp', 'December cut; October hold'], ['U.S. CPI (YoY)', '2.7%', '−0.2 pt', 'Goods deflation, services firm'], ['U.S. dollar (DXY)', '104.6', '+1.2%', 'Firmer dollar capped intl returns'], ['WTI crude', '$72/bbl', '+3.0%', 'Winter demand and OPEC+ discipline'], ['Gold', '$2,750/oz', '+4.0%', 'Rate-cut tailwind'], ['VIX (quarter-end)', '16.8', '−2.0 pt', 'Calm year-end tape']],
+      mktLead: 'A year-end risk-on rally as the Fed delivered a December cut and soft-landing optimism took hold.',
+      mktParas: [
+        'After holding steady in October, the Federal Reserve cut 25 bp in December, validating the market\'s soft-landing thesis as headline CPI eased to 2.7%. Equities rallied into year-end, led once again by U.S. large-cap growth (Nasdaq +5.0%), with small caps participating (Russell 2000 +3.8%). The 10-year Treasury yield drifted to 4.42%.',
+        'A firmer U.S. dollar (DXY +1.2%) tempered international returns, leaving MSCI EAFE (+3.2%) behind the S&amp;P 500 (+4.5%) for the quarter. Credit was firm and high yield returned +2.2%. Gold extended its advance on the rate-cut tailwind. Volatility stayed contained after a brief November pullback.',
+      ],
+      positioning: 'The year-end rally rewarded equity beta broadly. We added no risk into strength; the quarter\'s only material action was placing Wellington Global Equity on watchlist and beginning to fund the newly committed Vista VIII.',
+      actual: { us_eq: 22.2, intl_eq: 12.1, em_eq: 5.9, core_fi: 19.8, tips: 5.0, hy: 2.0, hf: 8.0, pe: 5.2, pc: 7.1, ra: 6.9, cash: 5.8 },
+      allocLead: 'All asset classes finished within IPS ranges; cash ran modestly rich ahead of the first Vista VIII capital call.',
+      allocPara: 'The strong equity quarter pushed public equity slightly above target, offset by a private-equity weight still building toward target as Vista VIII funds. Cash at 5.8% reflected year-end gift inflows and pre-funding of the announced capital call. No range-based or cash-flow rebalancing trigger was breached.',
+      acPerf: [['U.S. Equity', 'Russell 3000', 4.6, 4.4, 11.8], ['Intl Developed Equity', 'MSCI EAFE', 3.4, 3.2, 10.0], ['Emerging Markets Equity', 'MSCI EM', 1.6, 2.0, 5.4], ['Core Fixed Income', 'Bloomberg U.S. Agg', 1.5, 1.4, 4.6], ['TIPS', 'Bloomberg U.S. TIPS', 1.2, 1.2, 4.6], ['High-Yield Credit', 'ICE BofA U.S. HY', 2.3, 2.2, 8.4], ['Diversified Hedge Funds', 'HFRI FoF Composite', 1.4, 1.3, 5.9], ['Private Equity', 'Cambridge PE (lagged)', 2.0, 1.8, 11.0], ['Private Credit', 'Cliffwater Direct Lending', 2.4, 2.2, 9.3], ['Real Assets', 'Real Assets Blend', 1.8, 1.6, 7.0], ['Cash', 'ICE BofA 3M T-Bill', 1.2, 1.2, 4.8]],
+      acLead: 'U.S. equity and credit led; the EM sleeve again lagged on Acadian\'s continued underperformance.',
+      sectors: [[24.8, 25.9, 6.4], [16.9, 16.0, 4.1], [11.2, 10.5, 3.6], [11.1, 10.5, 2.8], [10.1, 10.3, 5.2], [7.3, 7.7, 5.5], [6.1, 6.3, 1.0], [4.0, 3.7, -1.2], [3.5, 3.4, 2.6], [2.8, 2.6, 3.1], [2.2, 2.1, 4.0]],
+      sectorLead: 'Technology and communication services led the year-end rally; energy was the lone decliner.',
+      sectorPara: 'The sleeve\'s overweights to Financials and Industrials again contributed, though Information Technology (+6.4%) and Communication Services (+5.5%) led the quarter. The persistent Tech underweight was a modest detractor in the rally. Energy fell on softer crude despite winter demand.',
+      mgrGroups: [
+        ['U.S. Equity', [['Granite Ridge U.S. Equity Index', 'Passive · Russell 3000', 108, 4.5, 4.4, ''], ['Cascade Park U.S. Large Growth', 'Active growth', 88, 5.1, 4.8, ''], ['Harbor & Main U.S. Value', 'Active value', 69, 3.9, 3.8, '']]],
+        ['International & Global Equity', [['Walter Scott Global Equity', 'Active global', 94, 5.0, 4.0, ''], ['Wellington Global Equity', 'Active global', 50, 2.8, 4.0, 'watch']]],
+        ['Emerging Markets Equity', [['Acadian Emerging Markets Equity', 'Active · MSCI EM', 71, 1.4, 2.0, '']]],
+        ['Fixed Income & Credit', [['Meridian Core Bond', 'Active core · U.S. Agg', 146, 1.6, 1.4, ''], ['Granite Ridge Aggregate Bond Index', 'Passive · U.S. Agg', 92, 1.4, 1.4, ''], ['Granite Ridge TIPS Index', 'Passive · U.S. TIPS', 60, 1.2, 1.2, ''], ['Ashford Lane High Yield', 'Active · ICE BofA HY', 24, 2.3, 2.2, '']]],
+        ['Diversified Hedge Funds', [['Blackwater Multi-Strategy', 'Multi-strat', 56, 1.6, 1.3, ''], ['Tidewater Macro', 'Global macro', 39, 0.7, 1.3, 'watch']]],
+        ['Private Equity', [['Vista Equity Partners VIII', 'Software buyout', 18, 0.0, 1.0, 'new'], ['Vista Equity Partners VII', 'Software buyout', 22, 2.1, 1.8, ''], ['Legacy PE Co-Investment Program', 'Diversified buyout/VC', 22, 1.9, 1.8, '']]],
+        ['Private Credit', [['Ares Senior Direct Lending Fund II', 'Senior direct lending', 43, 2.4, 2.2, ''], ['Beacon Hill Private Credit', 'Opportunistic credit', 42, 2.3, 2.2, '']]],
+        ['Real Assets', [['Brightwater Infrastructure', 'Core+ infrastructure', 45, 1.9, 1.6, ''], ['Cardinal Real Estate Partners', 'Value-add real estate', 37, 1.5, 1.6, '']]],
+        ['Cash', [['Northern Trust Government MMF', 'Government money market', 69, 1.2, 1.2, '']]],
+      ],
+      mgrLead: 'Twenty-one mandates; the Vista VIII commitment began funding and Wellington was placed on watchlist.',
+      mgrAllocNote: 'Allocations as of December 31, 2025. The IC committed $30M to Vista VIII on October 16 and placed Wellington Global Equity on watchlist the same day.',
+      mgrNote: '<strong>Walter Scott</strong> (+5.0% vs +4.0% ACWI) again led the global sleeve, while <strong>Wellington Global Equity</strong> (+2.8% vs +4.0%) was placed on watchlist after an 18-month stretch of underperformance and a growth-style drift. <strong>Acadian EM</strong> trailed its benchmark for a sixth consecutive quarter, sharpening the case for the review that would conclude in early 2026.',
+      attr: [['Asset allocation', 8, 'Equity beta and a credit overweight helped; Tech underweight a small drag'], ['Manager selection', 16, 'Walter Scott and Meridian led; Wellington and Acadian detracted'], ['Interaction & other', -4, 'Cash drag and private-equity funding timing']],
+      attrTotal: 20, attrTotalNote: '+2.6% portfolio vs +2.4% benchmark',
+      liq: [['Tier 1 — Daily / immediate', 73, 'Public equity, core bonds, TIPS, HY, cash'], ['Tier 2 — Monthly / quarterly', 14, 'Diversified hedge funds, liquid real assets'], ['Tier 3 — Illiquid (>1 yr)', 13, 'Private equity, private credit, value-add real estate']],
+      capital: [['Capital called (Vista VIII first call)', '−$8.0M'], ['Distributions received', '+$5.5M'], ['Net private-market cash flow', '−$2.5M'], ['Unfunded commitments outstanding', '$58M']],
+      capitalNote: 'Unfunded rose with the new $30M Vista VIII commitment, partly offset by the first call. Tier-1 liquidity easily covers the projected 2026 pacing.',
+      liqLead: 'Tier-1 liquidity of 73% remained well above the 50% floor through year-end inflows and the first Vista VIII call.',
+      liqPara: 'Year-end gift inflows lifted cash, which was earmarked for the announced Vista VIII capital call and the spring spending draw. With $58M of unfunded commitments against a deep Tier-1 base, the program remained comfortably within its liquidity framework.',
+      exec: {
+        lead: 'The portfolio returned <strong>+2.6%</strong> net in the fourth quarter, ahead of the policy benchmark\'s <strong>+2.4%</strong>, closing the calendar year up <strong>+10.2%</strong> vs +9.6%.',
+        fiveYr: '+7.4%', fiveYrBench: '+7.0%', sharpe: '0.38', sharpeSub: 'Std. dev 9.3% · TE 1.4%', spending: '4.5%',
+        para1: 'A year-end risk-on rally lifted results, with <strong>manager selection</strong> (+16 bp) and a +8 bp allocation effect both positive. Walter Scott and Meridian Core Bond led; Wellington Global Equity and Acadian EM were the principal detractors and each drew governance attention during the quarter.',
+        para2: 'The Investment Committee committed $30M to Vista VIII, placed Wellington Global Equity on watchlist, and reaffirmed the 4.5% spending policy for FY26. All asset classes remained within IPS ranges and the mission-alignment screens operated without exception.',
+        callout: 'A clean finish to the calendar year: benchmark-beating returns, the year\'s governance actions teed up (Wellington watchlist, Vista VIII commitment), and the EM underperformance case building toward a Q1 decision.',
+      },
+      outlook: {
+        lead: 'Carry positioning into the new year; advance the Acadian review and the Wellington watchlist.',
+        bullets: [
+          '<strong>Emerging markets.</strong> Complete the Acadian review; prepare a termination recommendation and replacement-search framework for the Q1 IC meeting.',
+          '<strong>Wellington Global Equity.</strong> Monitor on watchlist; evaluate a replacement candidate (Kestrel) for the international sleeve.',
+          '<strong>Vista VIII.</strong> Continue funding per the capital-call schedule; maintain the private-markets pacing plan.',
+          '<strong>FY27 spending.</strong> Begin the preliminary five-year spending projection ahead of the spring review.',
+          '<strong>Rebalancing.</strong> No trades required; manage cash down as the Vista VIII calls and spring spending draw occur.',
+        ],
+        closing: 'Entering 2026, the portfolio is well diversified and fully compliant, with two manager decisions (EM and the international sleeve) set to be resolved in the first half. We expect continued, if more measured, gains as the Fed\'s easing cycle proceeds.',
+      },
+    },
+
+    {
+      id: '2025q3', label: 'Q3 2025', qLabel: 'Q3', word: 'Third Quarter 2025', end: 'September 30, 2025', prevEnd: 'Jun 30, 2025',
+      emvB: '$1.168B', bmv: '$1,150M', emv: '$1,168M',
+      cover: { qRet: 1.3, bench: 1.4, ttm: 9.0 },
+      perf: [['Quarter (Q3 2025)', 1.3, 1.4], ['Trailing 1 year', 9.0, 8.6], ['Trailing 3 years (ann.)', 6.5, 6.3], ['Trailing 5 years (ann.)', 7.2, 6.9], ['Trailing 10 years (ann.)', 6.9, 6.6], ['Since inception (ann.)', 7.1, 6.8]],
+      mv: [['Net investment gain', '+$15M'], ['Spending distribution', '−$12.9M'], ['Net external flows / gifts', '+$15.9M']],
+      risk: { std: '9.6%', benchStd: '9.9%', sharpe: '0.35', dd: '−4.2%', ddNote: 'August VIX spike; recovered by Sep 30', te: '1.5%', ir: '0.28' },
+      mkt: [['S&P 500', 1.0, 11.0], ['Nasdaq Composite', 0.4, 12.0], ['Russell 2000 (small cap)', -2.5, 4.0], ['MSCI ACWI (global)', 0.7, 10.5], ['MSCI EAFE (intl developed)', 0.6, 9.0], ['MSCI EM', -1.2, 5.0], ['Bloomberg U.S. Aggregate', 2.0, 4.0], ['Bloomberg U.S. TIPS', 1.8, 4.4], ['ICE BofA U.S. High Yield', 0.8, 7.0]],
+      macro: [['10-yr U.S. Treasury yield', '4.30%', '−25 bp', 'Yields fell as growth scares hit'], ['Fed funds target', '4.75–5.00%', '0 bp', 'On hold through the turbulence'], ['U.S. CPI (YoY)', '2.9%', '−0.1 pt', 'Sticky but improving'], ['U.S. dollar (DXY)', '103.4', '−0.8%', 'Softer on safe-haven flows abroad'], ['WTI crude', '$70/bbl', '−4.0%', 'Demand worries weighed'], ['Gold', '$2,640/oz', '+5.0%', 'Haven bid during the stress'], ['VIX (quarter-end)', '19.5', '+4.5 pt', 'August spike on regional-bank stress']],
+      mktLead: 'A turbulent quarter — an August volatility spike and regional-bank stress — that markets largely shrugged off by quarter-end.',
+      mktParas: [
+        'Risk assets wobbled in August as a flare-up of regional-bank stress and softer labor data drove the VIX above 30 intraday before settling near 19.5. The Federal Reserve held policy steady. High-quality bonds rallied (Bloomberg Agg +2.0%) as the 10-year yield fell to 4.30%, cushioning balanced portfolios through the stress.',
+        'Equities finished modestly higher but with clear dispersion: large-cap U.S. (S&amp;P 500 +1.0%) edged out, small caps fell (Russell 2000 −2.5%), and emerging markets declined (−1.2%). Gold rallied +5.0% on the haven bid. By September 30 most of the intra-quarter drawdown had been recovered, with no forced rebalancing required.',
+      ],
+      positioning: 'The full-duration core bond sleeve did its job, offsetting equity weakness during the August stress. We made no defensive trades; the quarter\'s headline event was the July 22 adoption of the new Strategic Asset Allocation and updated IPS.',
+      actual: { us_eq: 21.8, intl_eq: 11.8, em_eq: 6.0, core_fi: 20.4, tips: 5.1, hy: 2.0, hf: 8.1, pe: 5.0, pc: 7.0, ra: 7.0, cash: 5.8 },
+      allocLead: 'The new SAA was adopted July 22; the portfolio was brought close to target and held there through the turbulence.',
+      allocPara: 'Following Board adoption of the new SAA and IPS on July 22, the OCIO implemented the target weights and the 50% Tier-1 floor. Allocations sat near target through quarter-end; the August volatility did not push any class outside its range, so no forced rebalancing occurred — consistent with the IPS framework just adopted.',
+      acPerf: [['U.S. Equity', 'Russell 3000', 0.8, 1.0, 10.6], ['Intl Developed Equity', 'MSCI EAFE', 0.4, 0.6, 8.4], ['Emerging Markets Equity', 'MSCI EM', -1.6, -1.2, 4.2], ['Core Fixed Income', 'Bloomberg U.S. Agg', 2.1, 2.0, 4.4], ['TIPS', 'Bloomberg U.S. TIPS', 1.8, 1.8, 4.4], ['High-Yield Credit', 'ICE BofA U.S. HY', 0.9, 0.8, 7.2], ['Diversified Hedge Funds', 'HFRI FoF Composite', 0.6, 1.0, 5.6], ['Private Equity', 'Cambridge PE (lagged)', 1.0, 1.2, 10.6], ['Private Credit', 'Cliffwater Direct Lending', 2.2, 2.1, 9.0], ['Real Assets', 'Real Assets Blend', 0.8, 1.0, 6.4], ['Cash', 'ICE BofA 3M T-Bill', 1.3, 1.3, 5.0]],
+      acLead: 'Bonds and credit carried the quarter; equity sleeves lagged their benchmarks modestly amid the August stress.',
+      sectors: [[24.0, 25.5, -0.8], [17.5, 16.2, 1.2], [11.5, 10.7, 0.9], [11.3, 10.6, 2.6], [9.5, 10.0, -1.5], [6.9, 7.5, 0.4], [6.4, 6.4, 2.4], [4.4, 3.9, -3.2], [3.4, 3.4, -0.5], [3.0, 2.7, 3.6], [2.1, 2.1, 1.8]],
+      sectorLead: 'Defensive sectors outperformed in the risk-off tape; cyclicals and energy lagged.',
+      sectorPara: 'Utilities, Health Care, and Consumer Staples held up best during the August stress, while Energy (−3.2%), Consumer Discretionary (−1.5%), and Information Technology (−0.8%) declined. The sleeve\'s Tech underweight helped on the margin, but a value-and-cyclical tilt was a modest headwind in a flight-to-quality quarter.',
+      mgrGroups: [
+        ['U.S. Equity', [['Granite Ridge U.S. Equity Index', 'Passive · Russell 3000', 106, 1.0, 1.0, ''], ['Cascade Park U.S. Large Growth', 'Active growth', 86, 0.4, 0.6, ''], ['Harbor & Main U.S. Value', 'Active value', 66, 1.1, 1.0, '']]],
+        ['International & Global Equity', [['Walter Scott Global Equity', 'Active global', 92, 1.4, 0.7, ''], ['Wellington Global Equity', 'Active global', 49, 0.2, 0.7, '']]],
+        ['Emerging Markets Equity', [['Acadian Emerging Markets Equity', 'Active · MSCI EM', 70, -1.6, -1.2, '']]],
+        ['Fixed Income & Credit', [['Meridian Core Bond', 'Active core · U.S. Agg', 145, 2.2, 2.0, ''], ['Granite Ridge Aggregate Bond Index', 'Passive · U.S. Agg', 93, 2.0, 2.0, ''], ['Granite Ridge TIPS Index', 'Passive · U.S. TIPS', 60, 1.8, 1.8, ''], ['Ashford Lane High Yield', 'Active · ICE BofA HY', 23, 0.9, 0.8, '']]],
+        ['Diversified Hedge Funds', [['Blackwater Multi-Strategy', 'Multi-strat', 56, 0.8, 1.0, ''], ['Tidewater Macro', 'Global macro', 38, 0.2, 1.0, '']]],
+        ['Private Equity', [['Vista Equity Partners VII', 'Software buyout', 30, 1.1, 1.2, ''], ['Legacy PE Co-Investment Program', 'Diversified buyout/VC', 28, 0.9, 1.2, '']]],
+        ['Private Credit', [['Ares Senior Direct Lending Fund II', 'Senior direct lending', 42, 2.3, 2.1, ''], ['Beacon Hill Private Credit', 'Opportunistic credit', 40, 2.1, 2.1, '']]],
+        ['Real Assets', [['Brightwater Infrastructure', 'Core+ infrastructure', 44, 1.0, 1.0, ''], ['Cardinal Real Estate Partners', 'Value-add real estate', 38, 0.6, 1.0, '']]],
+        ['Cash', [['Northern Trust Government MMF', 'Government money market', 68, 1.3, 1.3, '']]],
+      ],
+      mgrLead: 'Nineteen mandates following the July SAA implementation; results held up given the August turbulence.',
+      mgrAllocNote: 'Allocations as of September 30, 2025, reflecting the SAA implemented July 22. The Vista VIII commitment had not yet been made (approved October 16).',
+      mgrNote: '<strong>Walter Scott</strong> (+1.4% vs +0.7% ACWI) added value through the volatility, while <strong>Meridian Core Bond</strong> benefited from the rate rally. <strong>Acadian EM</strong> (−1.6%) underperformed again in a down quarter for the asset class. Active equity managers broadly lagged in a flight-to-quality tape, the main reason the portfolio finished a touch behind benchmark.',
+      attr: [['Asset allocation', -4, 'A growth tilt and cyclical lean were headwinds in a risk-off quarter'], ['Manager selection', -8, 'Active equity managers lagged; Walter Scott and Meridian partial offsets'], ['Interaction & other', 2, 'Bond overweight timing helped at the margin']],
+      attrTotal: -10, attrTotalNote: '+1.3% portfolio vs +1.4% benchmark',
+      liq: [['Tier 1 — Daily / immediate', 74, 'Public equity, core bonds, TIPS, HY, cash'], ['Tier 2 — Monthly / quarterly', 14, 'Diversified hedge funds, liquid real assets'], ['Tier 3 — Illiquid (>1 yr)', 12, 'Private equity, private credit, value-add real estate']],
+      capital: [['Capital called (legacy programs)', '−$3.0M'], ['Distributions received', '+$4.2M'], ['Net private-market cash flow', '+$1.2M'], ['Unfunded commitments outstanding', '$40M']],
+      capitalNote: 'Ample Tier-1 liquidity meant the August stress required no asset sales; the 50% Tier-1 floor codified in the new IPS was comfortably met throughout.',
+      liqLead: 'Tier-1 liquidity of 74% provided a deep cushion that absorbed the August volatility without any forced selling.',
+      liqPara: 'The quarter validated the newly codified 50% Tier-1 floor: through the August stress, spending and any rebalancing needs were met entirely from liquid holdings. No redemption gates or capital-call pressures arose.',
+      exec: {
+        lead: 'The portfolio returned <strong>+1.3%</strong> net in a turbulent third quarter, just shy of the policy benchmark\'s <strong>+1.4%</strong>, as defensive bond exposure in the benchmark cushioned an active-equity shortfall.',
+        fiveYr: '+7.2%', fiveYrBench: '+6.9%', sharpe: '0.35', sharpeSub: 'Std. dev 9.6% · TE 1.5%', spending: '4.5%',
+        para1: 'An August volatility spike and regional-bank stress drove a −4.2% intra-quarter drawdown that was largely recovered by quarter-end. The full-duration core bond sleeve performed its diversifying role, but active equity managers broadly lagged in the flight-to-quality tape, leaving the portfolio <strong>10 bp behind</strong> the benchmark — the only shortfall of the trailing year.',
+        para2: 'The Board adopted the new Strategic Asset Allocation and updated IPS on July 22, codifying tighter equity ranges, private credit as a distinct class, the 50% Tier-1 floor, and mission-alignment provisions. The portfolio was implemented to target and held within range throughout the turbulence.',
+        callout: 'A stress test, passed: a sharp August drawdown was absorbed without forced selling, the new IPS framework was implemented mid-quarter, and the modest benchmark shortfall came from active risk rather than any policy breach.',
+      },
+      outlook: {
+        lead: 'Bed down the new SAA; intensify oversight of the lagging EM and global mandates.',
+        bullets: [
+          '<strong>SAA implementation.</strong> Complete the transition to the adopted target weights and confirm the policy-benchmark composition with the IC.',
+          '<strong>Emerging markets.</strong> Deepen the review of Acadian after another quarter of underperformance.',
+          '<strong>Global equity.</strong> Begin a formal performance review of Wellington Global Equity.',
+          '<strong>Private markets.</strong> Evaluate the pending Vista VIII commitment for Q4 approval to maintain pacing.',
+          '<strong>Liquidity.</strong> Maintain the comfortable Tier-1 buffer demonstrated during the August stress.',
+        ],
+        closing: 'The quarter demonstrated the resilience the new IPS framework is designed to deliver. We will use the balance of the year to complete implementation and to act on the manager-level concerns the period brought into focus.',
+      },
+    },
+
+    {
+      id: '2025q2', label: 'Q2 2025', qLabel: 'Q2', word: 'Second Quarter 2025', end: 'June 30, 2025', prevEnd: 'Mar 31, 2025',
+      emvB: '$1.150B', bmv: '$1,118M', emv: '$1,150M',
+      cover: { qRet: 3.9, bench: 3.6, ttm: 11.8 },
+      perf: [['Quarter (Q2 2025)', 3.9, 3.6], ['Trailing 1 year', 11.8, 11.0], ['Trailing 3 years (ann.)', 6.6, 6.3], ['Trailing 5 years (ann.)', 7.5, 7.1], ['Trailing 10 years (ann.)', 6.9, 6.6], ['Since inception (ann.)', 7.1, 6.8]],
+      mv: [['Net investment gain', '+$44M'], ['Spending distribution', '−$12.6M'], ['Net external flows / fees', '+$0.6M']],
+      risk: { std: '9.4%', benchStd: '9.8%', sharpe: '0.37', dd: '−2.6%', ddNote: 'Shallow April dip', te: '1.5%', ir: '0.31' },
+      mkt: [['S&P 500', 5.2, 12.0], ['Nasdaq Composite', 6.1, 14.5], ['Russell 2000 (small cap)', 3.0, 6.5], ['MSCI ACWI (global)', 4.8, 11.5], ['MSCI EAFE (intl developed)', 4.0, 10.0], ['MSCI EM', 3.1, 7.5], ['Bloomberg U.S. Aggregate', 1.2, 3.5], ['Bloomberg U.S. TIPS', 1.0, 4.0], ['ICE BofA U.S. High Yield', 2.0, 7.8]],
+      macro: [['10-yr U.S. Treasury yield', '4.55%', '+5 bp', 'Range-bound as growth held up'], ['Fed funds target', '4.75–5.00%', '0 bp', 'On hold; data-dependent'], ['U.S. CPI (YoY)', '3.0%', '−0.2 pt', 'Cooling toward target'], ['U.S. dollar (DXY)', '104.0', '−1.0%', 'Slightly softer'], ['WTI crude', '$76/bbl', '+2.0%', 'Steady demand'], ['Gold', '$2,540/oz', '+3.0%', 'Gradual grind higher'], ['VIX (quarter-end)', '14.0', '−1.0 pt', 'Calm, low-volatility regime']],
+      mktLead: 'A broad spring rally as resilient growth and cooling inflation lifted nearly every risk asset.',
+      mktParas: [
+        'Markets advanced steadily through the spring as growth proved resilient and headline CPI eased toward 3.0%. The Federal Reserve held policy unchanged and reiterated a data-dependent stance. U.S. large-cap growth led (Nasdaq +6.1%), with the S&amp;P 500 up +5.2%; gains were broad, and small caps and emerging markets both participated.',
+        'Fixed income posted modest positive returns (Bloomberg Agg +1.2%) with the 10-year yield range-bound near 4.55%. Credit spreads were firm and high yield returned +2.0%. Volatility stayed low — the VIX ended near 14 — in one of the calmer quarters in recent memory.',
+      ],
+      positioning: 'This quarter pre-dates the July 22 adoption of the current SAA; the portfolio was managed under prior-period guidance that was broadly consistent with the framework subsequently adopted. We remained fully invested through the rally.',
+      actual: { us_eq: 21.5, intl_eq: 11.5, em_eq: 6.2, core_fi: 21.0, tips: 5.0, hy: 2.2, hf: 8.2, pe: 4.8, pc: 6.6, ra: 6.8, cash: 6.2 },
+      allocLead: 'Positioning under prior-period guidance was broadly consistent with the SAA later adopted in July; shown here against those targets for comparability.',
+      allocPara: 'Because the current Strategic Asset Allocation was not adopted until July 22, this quarter\'s weights reflect prior-period guidance. We present them against the new SAA targets for continuity. The largest gaps — a heavier core fixed-income weight and a lighter private-credit weight — were precisely the differences the new SAA was designed to address by elevating private credit to a distinct asset class.',
+      acPerf: [['U.S. Equity', 'Russell 3000', 5.0, 4.8, 11.4], ['Intl Developed Equity', 'MSCI EAFE', 4.2, 4.0, 9.6], ['Emerging Markets Equity', 'MSCI EM', 2.8, 3.1, 6.8], ['Core Fixed Income', 'Bloomberg U.S. Agg', 1.3, 1.2, 3.8], ['TIPS', 'Bloomberg U.S. TIPS', 1.0, 1.0, 4.0], ['High-Yield Credit', 'ICE BofA U.S. HY', 2.1, 2.0, 7.4], ['Diversified Hedge Funds', 'HFRI FoF Composite', 1.8, 1.5, 5.4], ['Private Equity', 'Cambridge PE (lagged)', 2.6, 2.2, 10.4], ['Private Credit', 'Cliffwater Direct Lending', 2.5, 2.3, 8.8], ['Real Assets', 'Real Assets Blend', 2.0, 1.8, 6.6], ['Cash', 'ICE BofA 3M T-Bill', 1.3, 1.3, 5.0]],
+      acLead: 'A broad-based rally lifted every sleeve; growth-oriented equity and private equity led.',
+      sectors: [[25.5, 25.4, 7.2], [16.0, 16.0, 4.0], [10.8, 10.4, 4.6], [10.6, 10.6, 2.0], [10.4, 10.4, 6.8], [7.8, 7.6, 6.4], [6.0, 6.4, 1.6], [3.8, 4.0, 2.0], [3.3, 3.5, 3.0], [2.7, 2.6, 1.0], [2.1, 2.1, 0.8]],
+      sectorLead: 'Growth and technology led the spring rally; defensives lagged in the risk-on tape.',
+      sectorPara: 'Information Technology (+7.2%), Communication Services (+6.4%), and Consumer Discretionary (+6.8%) led as growth reasserted leadership. The equity sleeve sat close to benchmark weights this quarter, so sector positioning was a small factor; stock selection within Technology was the larger contributor.',
+      mgrGroups: [
+        ['U.S. Equity', [['Granite Ridge U.S. Equity Index', 'Passive · Russell 3000', 102, 5.0, 4.8, ''], ['Cascade Park U.S. Large Growth', 'Active growth', 84, 6.2, 5.6, ''], ['Harbor & Main U.S. Value', 'Active value', 64, 3.8, 3.9, '']]],
+        ['International & Global Equity', [['Walter Scott Global Equity', 'Active global', 88, 5.6, 4.8, ''], ['Wellington Global Equity', 'Active global', 48, 3.6, 4.8, '']]],
+        ['Emerging Markets Equity', [['Acadian Emerging Markets Equity', 'Active · MSCI EM', 69, 2.4, 3.1, '']]],
+        ['Fixed Income & Credit', [['Meridian Core Bond', 'Active core · U.S. Agg', 142, 1.4, 1.2, ''], ['Granite Ridge Aggregate Bond Index', 'Passive · U.S. Agg', 90, 1.2, 1.2, ''], ['Granite Ridge TIPS Index', 'Passive · U.S. TIPS', 58, 1.0, 1.0, ''], ['Ashford Lane High Yield', 'Active · ICE BofA HY', 24, 2.1, 2.0, '']]],
+        ['Diversified Hedge Funds', [['Blackwater Multi-Strategy', 'Multi-strat', 55, 1.9, 1.5, ''], ['Tidewater Macro', 'Global macro', 38, 1.5, 1.5, '']]],
+        ['Private Equity', [['Vista Equity Partners VII', 'Software buyout', 30, 2.7, 2.2, ''], ['Legacy PE Co-Investment Program', 'Diversified buyout/VC', 27, 2.4, 2.2, '']]],
+        ['Private Credit', [['Ares Senior Direct Lending Fund II', 'Senior direct lending', 41, 2.5, 2.3, ''], ['Beacon Hill Private Credit', 'Opportunistic credit', 39, 2.4, 2.3, '']]],
+        ['Real Assets', [['Brightwater Infrastructure', 'Core+ infrastructure', 43, 2.2, 1.8, ''], ['Cardinal Real Estate Partners', 'Value-add real estate', 37, 1.7, 1.8, '']]],
+        ['Cash', [['Northern Trust Government MMF', 'Government money market', 70, 1.3, 1.3, '']]],
+      ],
+      mgrLead: 'Nineteen mandates under prior-period guidance; a strong, broad quarter for the active lineup.',
+      mgrAllocNote: 'Allocations as of June 30, 2025, prior to the SAA adopted July 22. The private-credit and EM lineups predate the 2025–26 restructuring.',
+      mgrNote: '<strong>Walter Scott</strong> (+5.6% vs +4.8% ACWI) and <strong>Cascade Park U.S. Large Growth</strong> (+6.2% vs +5.6%) led in a growth-driven quarter, while <strong>Wellington Global Equity</strong> (+3.6% vs +4.8%) began the underperformance that would later place it on watchlist. <strong>Acadian EM</strong> trailed its benchmark, an early data point in the case that built through the year.',
+      attr: [['Asset allocation', 10, 'A growth-and-equity posture aligned well with the rally'], ['Manager selection', 22, 'Walter Scott and Cascade Park led; Wellington an offset'], ['Interaction & other', -2, 'Private-market mark lag in a strong tape']],
+      attrTotal: 30, attrTotalNote: '+3.9% portfolio vs +3.6% benchmark',
+      liq: [['Tier 1 — Daily / immediate', 75, 'Public equity, core bonds, TIPS, HY, cash'], ['Tier 2 — Monthly / quarterly', 13, 'Diversified hedge funds, liquid real assets'], ['Tier 3 — Illiquid (>1 yr)', 12, 'Private equity, private credit, real estate']],
+      capital: [['Capital called (legacy programs)', '−$4.5M'], ['Distributions received', '+$6.0M'], ['Net private-market cash flow', '+$1.5M'], ['Unfunded commitments outstanding', '$38M']],
+      capitalNote: 'A net positive private-market cash flow quarter as distributions outpaced calls. Liquidity remained ample ahead of the planned 2025–26 commitment activity.',
+      liqLead: 'Tier-1 liquidity of 75% reflected the pre-SAA positioning, which carried a heavier liquid-asset weight than the new target.',
+      liqPara: 'Liquidity was abundant under prior-period guidance, with a heavier core fixed-income and cash position than the SAA would later target. Distributions modestly exceeded capital calls, and quarterly spending was met comfortably from income and liquid holdings.',
+      exec: {
+        lead: 'The portfolio gained <strong>+3.9%</strong> net in a broad spring rally, ahead of the policy benchmark\'s <strong>+3.6%</strong>, with the trailing year up <strong>+11.8%</strong> vs +11.0%.',
+        fiveYr: '+7.5%', fiveYrBench: '+7.1%', sharpe: '0.37', sharpeSub: 'Std. dev 9.4% · TE 1.5%', spending: '4.5%',
+        para1: 'A resilient-growth, cooling-inflation backdrop lifted nearly every risk asset. <strong>Manager selection</strong> (+22 bp) led, with Walter Scott and Cascade Park outperforming, and a +10 bp allocation effect from the equity-and-growth posture. The quarter capped a strong fiscal year for the endowment.',
+        para2: 'This quarter pre-dates the current Strategic Asset Allocation, adopted July 22, 2025. Positioning followed prior-period guidance broadly consistent with the framework later adopted; this report presents results against the new policy benchmark for continuity across quarters.',
+        callout: 'A strong spring close to the fiscal year — broad gains, benchmark-beating active results, and the groundwork being laid for the July SAA and IPS overhaul.',
+      },
+      outlook: {
+        lead: 'Finalize the new SAA and IPS for July adoption; prepare implementation and the FY26 plan.',
+        bullets: [
+          '<strong>SAA and IPS.</strong> Complete mean-variance optimization and bring the new Strategic Asset Allocation and updated IPS to the Board for July adoption.',
+          '<strong>Private credit.</strong> Prepare to elevate private credit to a distinct asset class with its own policy range.',
+          '<strong>Emerging markets.</strong> Continue monitoring Acadian after a below-benchmark quarter.',
+          '<strong>Custody.</strong> Conclude the custodian RFP (Northern Trust) ahead of the July governance cycle.',
+          '<strong>Liquidity.</strong> Maintain ample liquidity ahead of the planned 2025–26 commitment pacing.',
+        ],
+        closing: 'The portfolio enters the new fiscal year in a position of strength. The summer\'s governance agenda — a new SAA, an updated IPS, and a custodian decision — will modernize the framework that guides the program for the years ahead.',
+      },
+    },
+  ];
+
+  let qrSelected = null;
+
+  function buildQuarterlyReportHtml(r) {
     const sign = (v, d = 1) => `${v >= 0 ? '+' : ''}${v.toFixed(d)}%`;
     const cls = (v) => (v > 0.0001 ? 'qr-pos' : v < -0.0001 ? 'qr-neg' : 'qr-muted');
     const exc = (v, d = 1) => `<span class="${cls(v)}">${sign(v, d)}</span>`;
     const bp = (v) => `<span class="${cls(v)}">${v >= 0 ? '+' : ''}${v} bp</span>`;
     const usd = (mm) => `$${mm.toFixed(0)}M`;
+    const excess = Math.round((r.cover.qRet - r.cover.bench) * 100);
 
     const exhibit = (label, title, headCells, bodyRows, note) => `
       <div class="qr-exhibit">
@@ -2660,161 +2938,50 @@
         ${note ? `<div class="qr-exhibit-note">${note}</div>` : ''}
       </div>`;
 
-    // ---- Total portfolio performance (net of fees) ----
-    const perfRows = [
-      ['Quarter (Q1 2026)', 3.1, 2.8],
-      ['Trailing 1 year', 11.4, 10.6],
-      ['Trailing 3 years (ann.)', 6.9, 6.5],
-      ['Trailing 5 years (ann.)', 7.6, 7.1],
-      ['Trailing 10 years (ann.)', 7.1, 6.8],
-      ['Since inception (ann.)', 7.3, 7.0],
-    ].map(([p, r, b]) => `<tr><td>${p}</td><td>${sign(r)}</td><td>${sign(b)}</td><td>${bp(Math.round((r - b) * 100))}</td></tr>`).join('');
+    const perfRows = r.perf.map(([p, ret, b]) => `<tr><td>${p}</td><td>${sign(ret)}</td><td>${sign(b)}</td><td>${bp(Math.round((ret - b) * 100))}</td></tr>`).join('');
 
-    // ---- Market / index returns ----
-    const mkt = [
-      ['S&P 500', 4.1, 12.9], ['Nasdaq Composite', 3.2, 14.1], ['Russell 2000 (small cap)', 1.8, 6.4],
-      ['MSCI ACWI (global)', 4.3, 12.4], ['MSCI EAFE (intl developed)', 6.2, 13.8], ['MSCI EM', 2.4, 8.1],
-      ['Bloomberg U.S. Aggregate', 1.6, 4.9], ['Bloomberg U.S. TIPS', 1.9, 5.2], ['ICE BofA U.S. High Yield', 2.1, 8.6],
-    ].map(([n, q, y]) => `<tr><td>${n}</td><td>${sign(q)}</td><td>${sign(y)}</td></tr>`).join('');
-    const macro = [
-      ['10-yr U.S. Treasury yield', '4.18%', '−24 bp', 'Rallied as growth cooled and the Fed eased'],
-      ['Fed funds target', '4.25–4.50%', '−25 bp', 'One cut delivered at the March FOMC'],
-      ['U.S. CPI (YoY)', '2.6%', '−0.3 pt', 'Disinflation continued; services sticky'],
-      ['U.S. dollar (DXY)', '102.1', '−2.4%', 'Weaker dollar lifted unhedged intl returns'],
-      ['WTI crude', '$68/bbl', '−5.1%', 'Ample supply; soft global demand'],
-      ['Gold', '$2,940/oz', '+6.8%', 'Real-rate decline and central-bank buying'],
-      ['VIX (quarter-end)', '15.2', '−1.6 pt', 'Low realized vol; brief Feb risk-off'],
-    ].map(([n, lv, ch, c]) => `<tr><td>${n}</td><td>${lv}</td><td class="qr-muted">${ch}</td><td style="text-align:left;font-family:inherit;white-space:normal;color:var(--ink-2);">${c}</td></tr>`).join('');
+    const mvBody = `<tr><td>Beginning market value (${r.prevEnd})</td><td>${r.bmv}</td></tr>`
+      + r.mv.map(([n, v]) => `<tr><td>${n}</td><td>${v}</td></tr>`).join('')
+      + `<tr class="qr-total"><td>Ending market value (${r.end})</td><td>${r.emv}</td></tr>`;
 
-    // ---- Asset allocation vs policy ----
-    const allocRows = [
-      ['us_eq', 'U.S. Equity', 22.0, 28.0, '20–35'],
-      ['intl_eq', 'Intl Developed Equity', 12.0, 15.0, '10–20'],
-      ['em_eq', 'Emerging Markets Equity', 6.0, 8.0, '5–12'],
-      ['core_fi', 'Core Fixed Income', 20.0, 27.0, '10–25'],
-      ['tips', 'TIPS', 5.0, '—', '0–7'],
-      ['hy', 'High-Yield Credit', 2.0, '—', '0–7'],
-      ['hf', 'Diversified Hedge Funds', 8.0, '—', '0–10'],
-      ['pe', 'Private Equity', 6.0, '—', '5–15'],
-      ['pc', 'Private Credit', 7.0, '—', '0–10'],
-      ['ra', 'Real Assets', 7.0, '—', '3–10'],
-      ['cash', 'Cash', 5.0, '—', '0–5'],
-    ];
-    // current weights drift slightly from the 7/22/25 SAA targets; show actual vs target
-    const targets = { us_eq: 22, intl_eq: 12, em_eq: 6, core_fi: 20, tips: 5, hy: 2, hf: 8, pe: 6, pc: 7, ra: 7, cash: 5 };
-    const actual = { us_eq: 22.6, intl_eq: 12.4, em_eq: 5.6, core_fi: 19.2, tips: 5.0, hy: 2.0, hf: 8.1, pe: 5.4, pc: 7.2, ra: 7.0, cash: 5.5 };
-    const allocBody = allocRows.map(([id, name]) => {
-      const a = actual[id], t = targets[id];
-      const drift = a - t;
-      return `<tr><td>${name}</td><td>${a.toFixed(1)}%</td><td>${t.toFixed(0)}%</td><td>${exc(drift, 1)}</td><td class="qr-muted">${IPS_RANGE[id] ? `${(IPS_RANGE[id][0]*100).toFixed(0)}–${(IPS_RANGE[id][1]*100).toFixed(0)}%` : '—'}</td></tr>`;
+    const mkt = r.mkt.map(([n, q, y]) => `<tr><td>${n}</td><td>${sign(q)}</td><td>${sign(y)}</td></tr>`).join('');
+    const macro = r.macro.map(([n, lv, ch, c]) => `<tr><td>${n}</td><td>${lv}</td><td class="qr-muted">${ch}</td><td style="text-align:left;font-family:inherit;white-space:normal;color:var(--ink-2);">${c}</td></tr>`).join('');
+
+    const allocBody = QR_ALLOC_META.map(([id, name]) => {
+      const a = r.actual[id], t = QR_TARGETS[id];
+      return `<tr><td>${name}</td><td>${a.toFixed(1)}%</td><td>${t.toFixed(0)}%</td><td>${exc(a - t, 1)}</td><td class="qr-muted">${IPS_RANGE[id] ? `${(IPS_RANGE[id][0] * 100).toFixed(0)}–${(IPS_RANGE[id][1] * 100).toFixed(0)}%` : '—'}</td></tr>`;
     }).join('') + `<tr class="qr-total"><td>Total Portfolio</td><td>100.0%</td><td>100%</td><td>—</td><td class="qr-muted">—</td></tr>`;
 
-    // ---- Asset-class performance vs benchmark (Q1) ----
-    const acPerf = [
-      ['U.S. Equity', 'Russell 3000', 4.3, 4.0, 12.6],
-      ['Intl Developed Equity', 'MSCI EAFE', 6.8, 6.2, 14.1],
-      ['Emerging Markets Equity', 'MSCI EM', 1.6, 2.4, 6.9],
-      ['Core Fixed Income', 'Bloomberg U.S. Agg', 1.7, 1.6, 5.1],
-      ['TIPS', 'Bloomberg U.S. TIPS', 1.9, 1.9, 5.2],
-      ['High-Yield Credit', 'ICE BofA U.S. HY', 2.4, 2.1, 9.0],
-      ['Diversified Hedge Funds', 'HFRI FoF Composite', 1.6, 1.5, 6.3],
-      ['Private Equity', 'Cambridge PE (lagged)', 0.2, 1.0, 11.8],
-      ['Private Credit', 'Cliffwater Direct Lending', 2.5, 2.3, 9.7],
-      ['Real Assets', 'Real Assets Blend', 2.0, 1.9, 7.6],
-      ['Cash', 'ICE BofA 3M T-Bill', 1.1, 1.1, 4.6],
-    ].map(([n, b, q, bm, y]) => `<tr><td>${n}<div style="font-size:10.5px;color:var(--muted);font-family:'JetBrains Mono',monospace;">vs ${b}</div></td><td>${sign(q)}</td><td>${sign(bm)}</td><td>${bp(Math.round((q - bm) * 100))}</td><td>${sign(y)}</td></tr>`).join('');
+    const barMax = 28;
+    const bars = QR_ALLOC_META.map(([id, name]) => {
+      const a = r.actual[id], t = QR_TARGETS[id];
+      return `<div class="qr-bar-row"><div class="qb-label">${name}</div><div class="qr-bar-track"><div class="qr-bar-fill" style="width:${((a / barMax) * 100).toFixed(1)}%;"></div><div class="qr-bar-target" style="left:${((t / barMax) * 100).toFixed(1)}%;" title="Target ${t}%"></div></div><div class="qb-val">${a.toFixed(1)}%</div></div>`;
+    }).join('');
 
-    // ---- Equity sector breakdown (GICS, vs MSCI ACWI) ----
-    const sectors = [
-      ['Information Technology', 24.5, 25.8, 3.2],
-      ['Financials', 17.2, 16.1, 5.8],
-      ['Industrials', 11.4, 10.6, 5.1],
-      ['Health Care', 11.0, 10.4, 2.1],
-      ['Consumer Discretionary', 9.8, 10.2, 3.9],
-      ['Communication Services', 7.1, 7.6, 4.4],
-      ['Consumer Staples', 6.0, 6.2, 1.3],
-      ['Energy', 4.2, 3.8, 6.7],
-      ['Materials', 3.6, 3.5, 4.0],
-      ['Utilities', 2.9, 2.7, 2.5],
-      ['Real Estate', 2.3, 2.1, -0.6],
-    ].map(([n, pw, bw, r]) => `<tr><td>${n}</td><td>${pw.toFixed(1)}%</td><td>${bw.toFixed(1)}%</td><td>${exc(pw - bw, 1)}</td><td>${sign(r)}</td></tr>`).join('');
+    const acPerf = r.acPerf.map(([n, b, q, bm, y]) => `<tr><td>${n}<div style="font-size:10.5px;color:var(--muted);font-family:'JetBrains Mono',monospace;">vs ${b}</div></td><td>${sign(q)}</td><td>${sign(bm)}</td><td>${bp(Math.round((q - bm) * 100))}</td><td>${sign(y)}</td></tr>`).join('');
 
-    // ---- Manager performance, grouped by asset class ----
-    const mgrGroups = [
-      ['U.S. Equity', [
-        ['Granite Ridge U.S. Equity Index', 'Passive · Russell 3000', 110, 4.1, 4.0, ''],
-        ['Cascade Park U.S. Large Growth', 'Active growth', 90, 3.6, 2.9, ''],
-        ['Harbor & Main U.S. Value', 'Active value', 68, 5.2, 5.0, ''],
-      ]],
-      ['International & Global Equity', [
-        ['Walter Scott Global Equity', 'Active global', 96, 7.1, 4.3, ''],
-        ['Kestrel International Developed', 'Active · MSCI EAFE', 50, 6.5, 6.2, ''],
-      ]],
-      ['Emerging Markets Equity', [
-        ['Acadian Emerging Markets Equity', 'Active · terminating', 0, 1.2, 2.4, 'term'],
-        ['iShares MSCI EM (IEMG)', 'Interim index', 73, 2.3, 2.4, 'new'],
-      ]],
-      ['Fixed Income & Credit', [
-        ['Meridian Core Bond', 'Active core · U.S. Agg', 150, 1.8, 1.6, ''],
-        ['Granite Ridge Aggregate Bond Index', 'Passive · U.S. Agg', 94, 1.6, 1.6, ''],
-        ['Granite Ridge TIPS Index', 'Passive · U.S. TIPS', 61, 1.9, 1.9, ''],
-        ['Ashford Lane High Yield', 'Active · ICE BofA HY', 24, 2.4, 2.1, ''],
-      ]],
-      ['Diversified Hedge Funds', [
-        ['Blackwater Multi-Strategy', 'Multi-strat', 58, 2.0, 1.5, ''],
-        ['Tidewater Macro', 'Global macro', 40, 0.9, 1.5, 'watch'],
-      ]],
-      ['Private Equity', [
-        ['Vista Equity Partners VIII', 'Software buyout', 42, 0.2, 1.0, ''],
-        ['Legacy PE Co-Investment Program', 'Diversified buyout/VC', 31, 0.4, 1.0, ''],
-      ]],
-      ['Private Credit', [
-        ['Ares Senior Direct Lending Fund III', 'Senior direct lending', 44, 2.6, 2.3, ''],
-        ['Beacon Hill Private Credit', 'Opportunistic credit', 41, 2.4, 2.3, ''],
-      ]],
-      ['Real Assets', [
-        ['Brightwater Infrastructure', 'Core+ infrastructure', 46, 2.8, 2.2, ''],
-        ['Cardinal Real Estate Partners', 'Value-add real estate', 39, 1.1, 1.6, ''],
-      ]],
-      ['Cash', [
-        ['Northern Trust Government MMF', 'Government money market', 61, 1.1, 1.1, ''],
-      ]],
-    ];
+    const sectors = r.sectors.map((row, i) => { const [pw, bw, ret] = row; return `<tr><td>${QR_SECTOR_NAMES[i]}</td><td>${pw.toFixed(1)}%</td><td>${bw.toFixed(1)}%</td><td>${exc(pw - bw, 1)}</td><td>${sign(ret)}</td></tr>`; }).join('');
+
     const tagHtml = (t) => t === 'term' ? '<span class="qr-tag t-term">Terminating</span>'
       : t === 'watch' ? '<span class="qr-tag t-watch">Watchlist</span>'
-      : t === 'new' ? '<span class="qr-tag t-new">Interim</span>' : '';
-    const mgrBody = mgrGroups.map(([grp, rows]) => {
+      : t === 'new' ? '<span class="qr-tag t-new">New</span>' : '';
+    let mgrCount = 0;
+    const mgrBody = r.mgrGroups.map(([grp, rows]) => {
       const header = `<tr class="qr-group"><td colspan="6">${grp}</td></tr>`;
       const body = rows.map(([name, mandate, mm, q, bm, tag]) => {
-        const excess = Math.round((q - bm) * 100);
-        return `<tr class="qr-sub"><td>${name} ${tagHtml(tag)}<div style="font-size:10.5px;color:var(--muted);">${mandate}</div></td><td>${mm > 0 ? usd(mm) : '—'}</td><td>${sign(q)}</td><td>${sign(bm)}</td><td>${bp(excess)}</td><td class="qr-muted">Q1</td></tr>`;
+        mgrCount++;
+        return `<tr class="qr-sub"><td>${name} ${tagHtml(tag)}<div style="font-size:10.5px;color:var(--muted);">${mandate}</div></td><td>${mm > 0 ? usd(mm) : '—'}</td><td>${sign(q)}</td><td>${sign(bm)}</td><td>${bp(Math.round((q - bm) * 100))}</td><td class="qr-muted">${r.qLabel}</td></tr>`;
       }).join('');
       return header + body;
     }).join('');
 
-    // ---- Attribution ----
-    const attrRows = [
-      ['Asset allocation', 12, 'Overweight international developed into a strong quarter; modest cash drag offset'],
-      ['Manager selection', 21, 'Walter Scott (+280 bp vs ACWI) and Meridian Core Bond led; Acadian a detractor'],
-      ['Interaction & other', -3, 'Timing of the EM transition and private-market mark lag'],
-    ].map(([n, v, c]) => `<tr><td>${n}</td><td>${bp(v)}</td><td style="text-align:left;font-family:inherit;white-space:normal;color:var(--ink-2);">${c}</td></tr>`).join('')
-      + `<tr class="qr-total"><td>Total excess vs policy benchmark</td><td>${bp(30)}</td><td class="qr-muted" style="text-align:left;">+3.1% portfolio vs +2.8% benchmark</td></tr>`;
+    const attrRows = r.attr.map(([n, v, c]) => `<tr><td>${n}</td><td>${bp(v)}</td><td style="text-align:left;font-family:inherit;white-space:normal;color:var(--ink-2);">${c}</td></tr>`).join('')
+      + `<tr class="qr-total"><td>Total excess vs policy benchmark</td><td>${bp(r.attrTotal)}</td><td class="qr-muted" style="text-align:left;">${r.attrTotalNote}</td></tr>`;
 
-    // ---- Liquidity tiers ----
-    const liq = [
-      ['Tier 1 — Daily / immediate', 72, 'Public equity, core bonds, TIPS, HY, cash'],
-      ['Tier 2 — Monthly / quarterly', 15, 'Diversified hedge funds, liquid real assets'],
-      ['Tier 3 — Illiquid (>1 yr)', 13, 'Private equity, private credit, value-add real estate'],
-    ].map(([n, w, c]) => `<tr><td>${n}</td><td>${w}%</td><td style="text-align:left;font-family:inherit;white-space:normal;color:var(--ink-2);">${c}</td></tr>`).join('')
+    const liq = r.liq.map(([n, w, c]) => `<tr><td>${n}</td><td>${w}%</td><td style="text-align:left;font-family:inherit;white-space:normal;color:var(--ink-2);">${c}</td></tr>`).join('')
       + `<tr class="qr-total"><td>Total</td><td>100%</td><td class="qr-muted" style="text-align:left;">Tier-1 floor (IPS §8): 50% — compliant</td></tr>`;
 
-    // ---- Allocation bar visual (actual vs target) ----
-    const barMax = 28;
-    const bars = allocRows.map(([id, name]) => {
-      const a = actual[id], t = targets[id];
-      const w = (a / barMax) * 100, tx = (t / barMax) * 100;
-      return `<div class="qr-bar-row"><div class="qb-label">${name}</div><div class="qr-bar-track"><div class="qr-bar-fill" style="width:${w.toFixed(1)}%;"></div><div class="qr-bar-target" style="left:${tx.toFixed(1)}%;" title="Target ${t}%"></div></div><div class="qb-val">${a.toFixed(1)}%</div></div>`;
-    }).join('');
+    const capital = r.capital.map(([n, v]) => `<tr><td>${n}</td><td>${v}</td></tr>`).join('');
 
     const toc = [
       ['qr-s1', 'Executive summary'], ['qr-s2', 'Market environment'], ['qr-s3', 'Total portfolio'],
@@ -2827,13 +2994,13 @@
       <div class="qr-cover">
         <div class="qr-kicker">Quarterly Investment Report · Prepared by Reve (OCIO)</div>
         <div class="qr-cover-title">Dream University Endowment</div>
-        <div class="qr-cover-sub">First Quarter 2026 — quarter ended March 31, 2026. A review of portfolio performance, positioning, manager results, and the market environment, measured against the policy benchmark and IPS framework adopted July 22, 2025.</div>
+        <div class="qr-cover-sub">${r.word} — quarter ended ${r.end}. A review of portfolio performance, positioning, manager results, and the market environment, measured against the policy benchmark and IPS framework adopted July 22, 2025.</div>
         <div class="qr-cover-facts">
-          <div class="qf"><div class="qf-label">Ending market value</div><div class="qf-value">$1.220B</div></div>
-          <div class="qf"><div class="qf-label">Quarter return (net)</div><div class="qf-value">+3.1%</div></div>
-          <div class="qf"><div class="qf-label">Policy benchmark</div><div class="qf-value">+2.8%</div></div>
-          <div class="qf"><div class="qf-label">Excess</div><div class="qf-value">+30 bp</div></div>
-          <div class="qf"><div class="qf-label">Trailing 1-yr</div><div class="qf-value">+11.4%</div></div>
+          <div class="qf"><div class="qf-label">Ending market value</div><div class="qf-value">${r.emvB}</div></div>
+          <div class="qf"><div class="qf-label">Quarter return (net)</div><div class="qf-value">${sign(r.cover.qRet)}</div></div>
+          <div class="qf"><div class="qf-label">Policy benchmark</div><div class="qf-value">${sign(r.cover.bench)}</div></div>
+          <div class="qf"><div class="qf-label">Excess</div><div class="qf-value">${excess >= 0 ? '+' : ''}${excess} bp</div></div>
+          <div class="qf"><div class="qf-label">Trailing 1-yr</div><div class="qf-value">${sign(r.cover.ttm)}</div></div>
         </div>
       </div>
 
@@ -2841,119 +3008,103 @@
 
       <div class="qr-section" id="qr-s1">
         <h3><span class="qr-sec-num">01</span> Executive summary</h3>
-        <p class="qr-sec-lead">The portfolio advanced <strong>+3.1%</strong> net of fees in the first quarter, ahead of the policy benchmark's <strong>+2.8%</strong>, extending the trailing-twelve-month lead to <strong>+11.4%</strong> vs +10.6%.</p>
+        <p class="qr-sec-lead">${r.exec.lead}</p>
         <div class="qr-kpis">
-          <div class="qr-kpi"><div class="k-label">Q1 Return (net)</div><div class="k-value">+3.1%</div><div class="k-sub">Benchmark +2.8% · +30 bp</div></div>
-          <div class="qr-kpi"><div class="k-label">Trailing 5-yr (ann.)</div><div class="k-value">+7.6%</div><div class="k-sub">Benchmark +7.1%</div></div>
-          <div class="qr-kpi"><div class="k-label">5-yr Sharpe</div><div class="k-value">0.39</div><div class="k-sub">Std. dev 9.2% · TE 1.4%</div></div>
-          <div class="qr-kpi"><div class="k-label">Spending rate</div><div class="k-value">4.5%</div><div class="k-sub">12-qtr average · IPS band 4–5.5%</div></div>
+          <div class="qr-kpi"><div class="k-label">${r.qLabel} Return (net)</div><div class="k-value">${sign(r.cover.qRet)}</div><div class="k-sub">Benchmark ${sign(r.cover.bench)} · ${excess >= 0 ? '+' : ''}${excess} bp</div></div>
+          <div class="qr-kpi"><div class="k-label">Trailing 5-yr (ann.)</div><div class="k-value">${r.exec.fiveYr}</div><div class="k-sub">Benchmark ${r.exec.fiveYrBench}</div></div>
+          <div class="qr-kpi"><div class="k-label">5-yr Sharpe</div><div class="k-value">${r.exec.sharpe}</div><div class="k-sub">${r.exec.sharpeSub}</div></div>
+          <div class="qr-kpi"><div class="k-label">Spending rate</div><div class="k-value">${r.exec.spending}</div><div class="k-sub">12-qtr average · IPS band 4–5.5%</div></div>
         </div>
-        <p>Returns were led by <strong>manager selection</strong> (+21 bp), with Walter Scott Global Equity outpacing the MSCI ACWI by roughly 280 bp and Meridian Core Bond adding value as rates rallied. <strong>Asset allocation</strong> contributed a further +12 bp, helped by a modest overweight to international developed equity into a quarter in which a weaker U.S. dollar lifted unhedged foreign returns. The one notable detractor was emerging-markets equity, where the in-progress termination of Acadian weighed on results.</p>
-        <p>The Investment Committee approved the termination of the Acadian EM mandate effective May 15 and shortlisted three replacement managers; interim exposure is held in a low-cost index vehicle. All asset classes finished the quarter within their IPS policy ranges, Tier-1 liquidity remained well above the 50% floor, and the mission-alignment screens adopted in 2025 operated without exception.</p>
+        <p>${r.exec.para1}</p>
+        <p>${r.exec.para2}</p>
         <div class="qr-callout">
           <div class="qc-label">Quarter in one line</div>
-          <p>A risk-on quarter delivered with discipline: benchmark-beating returns from active managers and a tilt to international, no policy-range breaches, and a clean liquidity and compliance picture — even as the EM sleeve was mid-transition.</p>
+          <p>${r.exec.callout}</p>
         </div>
       </div>
 
       <div class="qr-section" id="qr-s2">
         <h3><span class="qr-sec-num">02</span> Market environment &amp; commentary</h3>
-        <p class="qr-sec-lead">Global equities advanced, bonds rallied as the Fed cut once, and international markets outpaced the U.S. on a weaker dollar.</p>
-        <p>Risk assets extended their advance in the first quarter as disinflation continued and the Federal Reserve delivered a widely anticipated 25 bp cut at its March meeting, taking the funds target to 4.25–4.50%. Headline CPI eased to 2.6% year-over-year. With growth cooling modestly and policy turning more accommodative, the 10-year Treasury yield fell roughly 24 bp to 4.18%, lifting high-quality fixed income.</p>
-        <p>Equity leadership broadened beyond the largest U.S. technology names. International developed markets (MSCI EAFE +6.2%) outperformed the S&amp;P 500 (+4.1%), aided by a 2.4% decline in the U.S. dollar and more attractive starting valuations. Emerging markets (+2.4%) lagged, held back by uneven Chinese activity data. In credit, spreads tightened further and high yield returned +2.1%. Gold (+6.8%) benefited from lower real rates, while crude softened on ample supply. Realized volatility stayed low — the VIX ended near 15 — despite a brief February risk-off episode.</p>
-        ${exhibit('Exhibit 2a · Index returns', 'Major asset-class indices (total return)', ['Index', 'Q1 2026', 'Trailing 1Y'], mkt, 'Source: index providers; total returns in USD. Trailing one-year through March 31, 2026.')}
-        ${exhibit('Exhibit 2b · Macro snapshot', 'Rates, inflation, and cross-asset markers', ['Indicator', 'Level', 'Q1 change', 'Commentary'], macro)}
+        <p class="qr-sec-lead">${r.mktLead}</p>
+        <p>${r.mktParas[0]}</p>
+        <p>${r.mktParas[1]}</p>
+        ${exhibit(`Exhibit 2a · Index returns`, 'Major asset-class indices (total return)', ['Index', r.label, 'Trailing 1Y'], mkt, `Source: index providers; total returns in USD. Trailing one-year through ${r.end}.`)}
+        ${exhibit('Exhibit 2b · Macro snapshot', 'Rates, inflation, and cross-asset markers', ['Indicator', 'Level', `${r.qLabel} change`, 'Commentary'], macro)}
         <div class="qr-callout">
           <div class="qc-label">Positioning read-through</div>
-          <p>The environment rewarded the portfolio's standing tilts — an overweight to international developed equity and a full-duration core bond sleeve. We did not chase the rally; positioning changes this quarter were limited to the planned EM manager transition.</p>
+          <p>${r.positioning}</p>
         </div>
       </div>
 
       <div class="qr-section" id="qr-s3">
         <h3><span class="qr-sec-num">03</span> Total portfolio performance</h3>
-        <p class="qr-sec-lead">Ahead of the policy benchmark across every trailing period shown, with risk metrics inside IPS tolerances.</p>
+        <p class="qr-sec-lead">Total portfolio vs the policy benchmark across trailing periods, with risk metrics versus IPS tolerances.</p>
         ${exhibit('Exhibit 3a · Performance', 'Total portfolio vs policy benchmark (net of fees)', ['Period', 'Portfolio', 'Benchmark', 'Excess'], perfRows, 'The policy benchmark is the IPS strategic weights applied to each asset class’s index. Returns over one year are annualized.')}
         <h4>Market value reconciliation</h4>
-        ${exhibit('Exhibit 3b · Market value', 'Quarterly change in market value ($M)', ['Item', 'Amount'], [
-          ['Beginning market value (Dec 31, 2025)', '$1,195M'],
-          ['Net investment gain', '+$37M'],
-          ['Spending distribution', '−$13.8M'],
-          ['Net external flows / fees', '+$1.8M'],
-        ].map(([n, v]) => `<tr><td>${n}</td><td>${v}</td></tr>`).join('') + `<tr class="qr-total"><td>Ending market value (Mar 31, 2026)</td><td>$1,220M</td></tr>`)}
+        ${exhibit('Exhibit 3b · Market value', 'Quarterly change in market value', ['Item', 'Amount'], mvBody)}
         <h4>Risk metrics (trailing 5 years)</h4>
         <div class="qr-kpis">
-          <div class="qr-kpi"><div class="k-label">Std. deviation</div><div class="k-value">9.2%</div><div class="k-sub">Benchmark 9.6%</div></div>
-          <div class="qr-kpi"><div class="k-label">Sharpe ratio</div><div class="k-value">0.39</div><div class="k-sub">RF 3.4%</div></div>
-          <div class="qr-kpi"><div class="k-label">Max drawdown</div><div class="k-value">−4.1%</div><div class="k-sub">Intra-Q1, recovered</div></div>
-          <div class="qr-kpi"><div class="k-label">Tracking error</div><div class="k-value">1.4%</div><div class="k-sub">Info ratio 0.36</div></div>
+          <div class="qr-kpi"><div class="k-label">Std. deviation</div><div class="k-value">${r.risk.std}</div><div class="k-sub">Benchmark ${r.risk.benchStd}</div></div>
+          <div class="qr-kpi"><div class="k-label">Sharpe ratio</div><div class="k-value">${r.risk.sharpe}</div><div class="k-sub">RF 3.4%</div></div>
+          <div class="qr-kpi"><div class="k-label">Max drawdown</div><div class="k-value">${r.risk.dd}</div><div class="k-sub">${r.risk.ddNote}</div></div>
+          <div class="qr-kpi"><div class="k-label">Tracking error</div><div class="k-value">${r.risk.te}</div><div class="k-sub">Info ratio ${r.risk.ir}</div></div>
         </div>
       </div>
 
       <div class="qr-section" id="qr-s4">
         <h3><span class="qr-sec-num">04</span> Performance attribution</h3>
-        <p class="qr-sec-lead">The +30 bp of excess return split between manager selection and asset allocation.</p>
-        ${exhibit('Exhibit 4 · Attribution', 'Sources of excess return vs policy benchmark (Q1)', ['Source', 'Contribution', 'Drivers'], attrRows)}
+        <p class="qr-sec-lead">Sources of the quarter's return relative to the policy benchmark.</p>
+        ${exhibit('Exhibit 4 · Attribution', `Sources of excess return vs policy benchmark (${r.qLabel})`, ['Source', 'Contribution', 'Drivers'], attrRows)}
       </div>
 
       <div class="qr-section" id="qr-s5">
         <h3><span class="qr-sec-num">05</span> Asset allocation review</h3>
-        <p class="qr-sec-lead">Every asset class finished the quarter inside its IPS policy range; no rebalancing trades were required.</p>
-        ${exhibit('Exhibit 5a · Allocation', 'Actual vs target weights and policy ranges', ['Asset class', 'Actual', 'Target', 'Drift', 'IPS range'], allocBody, 'Targets are the Strategic Asset Allocation adopted July 22, 2025. Drift reflects market movement since the last rebalance; all classes remain within range.')}
+        <p class="qr-sec-lead">${r.allocLead}</p>
+        ${exhibit('Exhibit 5a · Allocation', 'Actual vs target weights and policy ranges', ['Asset class', 'Actual', 'Target', 'Drift', 'IPS range'], allocBody, 'Targets are the Strategic Asset Allocation adopted July 22, 2025. Drift reflects market movement since the last rebalance.')}
         <h4>Allocation vs target</h4>
         <div class="qr-exhibit" style="padding:14px 16px;">
           ${bars}
           <div style="font-size:10.5px;color:var(--muted);margin-top:10px;font-family:'JetBrains Mono',monospace;">Bars show actual weight; the vertical marker is the SAA target.</div>
         </div>
-        <p>Public equity drifted modestly above target on strong quarterly returns (actual 40.6% across U.S., international, and EM vs a 40.0% target), while private equity sits slightly below target at 5.4% on delayed Q1 marks for Vista VIII, expected to normalize by Q3. Cash ran a touch rich at 5.5% to pre-fund the spring spending draw and pending capital calls. None of these warranted a trade under the range-based and cash-flow rebalancing triggers in IPS §11.</p>
+        <p>${r.allocPara}</p>
       </div>
 
       <div class="qr-section" id="qr-s6">
         <h3><span class="qr-sec-num">06</span> Performance by asset class</h3>
-        <p class="qr-sec-lead">Public equity led; private equity trailed on mark lag; the EM sleeve was the lone real detractor.</p>
-        ${exhibit('Exhibit 6 · Asset-class returns', 'Composite returns vs asset-class benchmarks', ['Asset class', 'Q1', 'Benchmark', 'Excess', 'Trailing 1Y'], acPerf, 'Composites are net-of-fee, asset-weighted across underlying managers. Private-market benchmarks are reported on a one-quarter lag, consistent with NAV reporting.')}
+        <p class="qr-sec-lead">${r.acLead}</p>
+        ${exhibit('Exhibit 6 · Asset-class returns', 'Composite returns vs asset-class benchmarks', ['Asset class', r.qLabel, 'Benchmark', 'Excess', 'Trailing 1Y'], acPerf, 'Composites are net-of-fee, asset-weighted across underlying managers. Private-market benchmarks are reported on a one-quarter lag, consistent with NAV reporting.')}
       </div>
 
       <div class="qr-section" id="qr-s7">
         <h3><span class="qr-sec-num">07</span> Equity sector breakdown</h3>
-        <p class="qr-sec-lead">Public-equity sleeve positioning vs the MSCI ACWI, with quarterly sector returns.</p>
-        ${exhibit('Exhibit 7 · Sectors', 'Equity sleeve vs MSCI ACWI (GICS sectors)', ['Sector', 'Portfolio', 'Benchmark', 'Over/under', 'Q1 return'], sectors, 'Sector weights are look-through across all public-equity managers. Over/underweights are relative to the MSCI ACWI.')}
-        <p>The equity sleeve carries a slight underweight to Information Technology and overweights to Financials and Industrials — a modest value-and-cyclical tilt that helped in a quarter when Financials (+5.8%) and Industrials (+5.1%) outpaced Tech (+3.2%). Real Estate was the only sector to decline. The look-through reflects the combined positioning of the active and index equity managers and is not separately managed at the sector level.</p>
+        <p class="qr-sec-lead">${r.sectorLead}</p>
+        ${exhibit('Exhibit 7 · Sectors', 'Equity sleeve vs MSCI ACWI (GICS sectors)', ['Sector', 'Portfolio', 'Benchmark', 'Over/under', `${r.qLabel} return`], sectors, 'Sector weights are look-through across all public-equity managers. Over/underweights are relative to the MSCI ACWI.')}
+        <p>${r.sectorPara}</p>
       </div>
 
       <div class="qr-section" id="qr-s8">
         <h3><span class="qr-sec-num">08</span> Manager performance</h3>
-        <p class="qr-sec-lead">Twenty mandates across the program; net-of-fee Q1 returns against each manager's stated benchmark.</p>
-        ${exhibit('Exhibit 8 · Managers', 'Underlying manager results by asset class', ['Manager / mandate', 'Allocation', 'Q1', 'Benchmark', 'Excess', 'Period'], mgrBody, 'Allocations as of March 31, 2026. Acadian is in transition (effective termination May 15); EM exposure is held in IEMG on an interim basis pending the replacement search.')}
+        <p class="qr-sec-lead">${r.mgrLead}</p>
+        ${exhibit('Exhibit 8 · Managers', 'Underlying manager results by asset class', ['Manager / mandate', 'Allocation', r.qLabel, 'Benchmark', 'Excess', 'Period'], mgrBody, r.mgrAllocNote)}
         <div class="qr-callout">
           <div class="qc-label">Manager notes</div>
-          <p><strong>Walter Scott Global Equity</strong> (+7.1% vs +4.3% ACWI) was the standout, with stock selection in industrials and health care driving roughly 280 bp of excess. <strong>Acadian EM</strong> is being terminated after three years of benchmark-relative underperformance and a portfolio-manager departure; <strong>Tidewater Macro</strong> remains on the watchlist after a soft quarter and an 18-month review window. Private-equity managers show muted Q1 marks consistent with the usual one-quarter reporting lag.</p>
+          <p>${r.mgrNote}</p>
         </div>
       </div>
 
       <div class="qr-section" id="qr-s9">
         <h3><span class="qr-sec-num">09</span> Liquidity &amp; capital activity</h3>
-        <p class="qr-sec-lead">Tier-1 liquidity of 72% sits well above the 50% IPS floor; commitments are comfortably funded.</p>
+        <p class="qr-sec-lead">${r.liqLead}</p>
         ${exhibit('Exhibit 9a · Liquidity tiers', 'Portfolio by liquidity tier', ['Tier', 'Weight', 'Composition'], liq)}
-        ${exhibit('Exhibit 9b · Capital activity', 'Private-market capital flows (Q1 2026, $M)', ['Item', 'Amount'], [
-          ['Capital called (Vista VIII, Ares III)', '−$6.2M'],
-          ['Distributions received', '+$9.4M'],
-          ['Net private-market cash flow', '+$3.2M'],
-          ['Unfunded commitments outstanding', '$52M'],
-        ].map(([n, v]) => `<tr><td>${n}</td><td>${v}</td></tr>`).join(''), 'Unfunded: Vista VIII $24M, Ares III $18M, legacy programs $10M. Projected calls through year-end ~$22M, fully covered by Tier-1 liquidity.')}
-        <p>Quarterly spending of $13.8M was funded from income and Tier-1 holdings without selling growth assets. With $52M of unfunded commitments and roughly $22M of expected calls through year-end against a Tier-1 base of more than $875M, no liquidity stress is evident under either the base case or the IPS stress scenarios.</p>
+        ${exhibit('Exhibit 9b · Capital activity', `Private-market capital flows (${r.label})`, ['Item', 'Amount'], capital, r.capitalNote)}
+        <p>${r.liqPara}</p>
       </div>
 
       <div class="qr-section" id="qr-s10">
         <h3><span class="qr-sec-num">10</span> Outlook &amp; recommended actions</h3>
-        <p class="qr-sec-lead">Maintain strategic positioning; complete the EM manager transition; prepare the FY27 spending analysis.</p>
-        <ul>
-          <li><strong>Emerging markets manager search.</strong> Bring a single recommendation (Pzena, GMO, or William Blair) to the May 10 special IC meeting; fund from the interim IEMG position to minimize transition cost.</li>
-          <li><strong>Tidewater Macro.</strong> Continue on watchlist; formal go/no-go at the Q2 IC meeting after the 18-month review window closes.</li>
-          <li><strong>FY27 spending.</strong> Prepare the five-year projection requested by the IC, comparing a one-time 4.75% band adjustment against an operating-reserve draw, with corpus-preservation impact under each.</li>
-          <li><strong>Rebalancing.</strong> No trades recommended; monitor public-equity drift and the private-equity NAV catch-up expected in Q3.</li>
-          <li><strong>Private-market pacing.</strong> Maintain the current commitment pace; the program remains on track for its long-term private-markets NAV target.</li>
-        </ul>
-        <p>We expect a more two-sided market in the balance of the year as the disinflation trade matures and policy data-dependence increases. The portfolio's diversification, full-duration core bond sleeve, and disciplined private-markets pacing leave it well positioned to support the spending policy while preserving the real value of the corpus over the long horizon contemplated by the IPS.</p>
+        <p class="qr-sec-lead">${r.outlook.lead}</p>
+        <ul>${r.outlook.bullets.map((b) => `<li>${b}</li>`).join('')}</ul>
+        <p>${r.outlook.closing}</p>
         <div class="qr-disclosures">
           Prepared by Reve as Outsourced Chief Investment Officer for the Dream University Endowment. Performance is net of investment-management and OCIO fees and is presented on a time-weighted basis. Private-market valuations are reported on a one-quarter lag. Past performance is not indicative of future results. Benchmark and index data are sourced from third-party providers and believed reliable but not guaranteed. This report is for the use of the Investment Committee and Board of Trustees and is not investment advice to any other party. Figures are illustrative and shown for demonstration purposes.
         </div>
@@ -2961,14 +3112,19 @@
     `;
   }
 
-  function openQuarterlyReportView() {
+  function openQuarterlyReportView(periodId) {
     if (!state.org.name) return;
     state.module = 'reports';
-    artifactTitle.textContent = 'Quarterly report';
+    const id = periodId || qrSelected || QUARTERLY_REPORTS[0].id;
+    const r = QUARTERLY_REPORTS.find((x) => x.id === id) || QUARTERLY_REPORTS[0];
+    qrSelected = r.id;
+    artifactTitle.textContent = `Quarterly report · ${r.label}`;
     enterItemView();
+    const pills = QUARTERLY_REPORTS.map((x) => `<button class="qr-period-btn${x.id === r.id ? ' active' : ''}" data-action="qr-period" data-id="${x.id}">${x.label}</button>`).join('');
     artifactBody.innerHTML = `
       ${itemHeadHtml('Quarterly report')}
-      ${buildQuarterlyReportHtml()}
+      <div class="qr-period-bar">${pills}</div>
+      ${buildQuarterlyReportHtml(r)}
     `;
     artifactFooter.classList.remove('visible');
     updateUrl();
@@ -3963,6 +4119,7 @@
     const params = new URLSearchParams();
     if (state.clientId) params.set('client', state.clientId);
     if (state.module && state.module !== 'vault') params.set('view', state.module);
+    if (state.module === 'reports' && qrSelected) params.set('report', qrSelected);
     const qs = params.toString();
     const url = qs ? `/demo?${qs}` : '/demo';
     try { window.history.replaceState(null, '', url); } catch {}
@@ -3982,7 +4139,7 @@
     else if (view === 'profile') openClientProfileView();
     else if (view === 'board') openBoardNotesView();
     else if (view === 'decisions') openDecisionLogView();
-    else if (view === 'reports') openQuarterlyReportView();
+    else if (view === 'reports') openQuarterlyReportView(params.get('report'));
     return true;
   }
 
