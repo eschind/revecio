@@ -521,6 +521,63 @@
   .mm-rec { font-weight: 500; color: var(--ink) !important; }
   @media (max-width: 680px) { .mm-meta, .mm-cases, .mm-cols { grid-template-columns: 1fr; } }
 
+  /* ============ Communications ============ */
+  .cm-tag { font-family: 'JetBrains Mono', monospace; font-size: 8.5px; letter-spacing: 0.06em; text-transform: uppercase; padding: 2px 7px; border-radius: 4px; vertical-align: middle; }
+  .cm-t-email { background: rgba(31,112,80,0.13); color: var(--accent); }
+  .cm-t-meeting { background: rgba(74,108,150,0.14); color: #3f6493; }
+  .cm-t-call { background: rgba(122,90,160,0.14); color: #6b4f8f; }
+  .cm-card { display: flex; align-items: flex-start; gap: 12px; padding: 13px 15px; border: 1px solid var(--line); border-radius: 9px; margin-bottom: 8px; cursor: pointer; text-decoration: none; background: var(--panel); transition: border-color 0.15s, box-shadow 0.15s; }
+  .cm-card:hover { border-color: var(--ink); box-shadow: 0 1px 6px rgba(20,23,28,0.06); }
+  .cm-card-icon { width: 30px; height: 30px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .cm-card-icon.cm-t-email { background: rgba(31,112,80,0.12); color: var(--accent); }
+  .cm-card-icon.cm-t-meeting { background: rgba(74,108,150,0.12); color: #3f6493; }
+  .cm-card-icon.cm-t-call { background: rgba(122,90,160,0.12); color: #6b4f8f; }
+  .cm-card-main { flex: 1; min-width: 0; }
+  .cm-card-subject { font-family: 'Newsreader', serif; font-size: 15.5px; color: var(--ink); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .cm-card-with { font-size: 11.5px; color: var(--muted); margin: 3px 0 5px; }
+  .cm-card-preview { font-size: 12.5px; color: var(--ink-2); line-height: 1.45; }
+  .cm-card-date { font-family: 'JetBrains Mono', monospace; font-size: 10.5px; color: var(--muted); flex-shrink: 0; white-space: nowrap; padding-top: 2px; }
+
+  .cm-detail-head { margin-bottom: 18px; padding-bottom: 14px; border-bottom: 1px solid var(--line-soft); }
+  .cm-detail-title { font-family: 'Newsreader', serif; font-size: 23px; letter-spacing: -0.01em; color: var(--ink); display: flex; align-items: center; gap: 10px; flex-wrap: wrap; line-height: 1.2; }
+  .cm-detail-sub { font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.04em; color: var(--muted); margin-top: 6px; }
+  .cm-muted { color: var(--muted); }
+  .cm-avatar { width: 28px; height: 28px; border-radius: 50%; background: var(--bg-2); border: 1px solid var(--line); color: var(--ink-2); display: inline-flex; align-items: center; justify-content: center; font-family: 'JetBrains Mono', monospace; font-size: 9.5px; flex-shrink: 0; }
+  .cm-avatar-reve { background: var(--accent); color: var(--bg); border-color: var(--accent); }
+  .cm-msg-role { font-family: 'JetBrains Mono', monospace; font-size: 9.5px; letter-spacing: 0.03em; color: var(--muted); text-transform: none; }
+
+  /* Email thread */
+  .cm-msg { border: 1px solid var(--line); border-radius: 10px; padding: 13px 16px; margin-bottom: 12px; background: var(--panel); }
+  .cm-msg-out { border-left: 3px solid var(--accent); }
+  .cm-msg-in { border-left: 3px solid var(--line); }
+  .cm-msg-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .cm-msg-from { font-size: 13px; color: var(--ink); font-weight: 600; }
+  .cm-msg-date { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--muted); margin-top: 2px; }
+  .cm-msg-body { font-size: 13.5px; line-height: 1.62; color: var(--ink-2); }
+  .cm-msg-body p { margin: 7px 0; }
+  .cm-msg-body strong { color: var(--ink); font-weight: 600; }
+  .cm-msg-body em { font-style: italic; }
+
+  /* Meeting notes */
+  .cm-attendees { font-size: 12.5px; color: var(--ink-2); margin-bottom: 14px; }
+  .cm-attendees-label { font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-right: 6px; }
+  .cm-notes h5 { font-family: 'JetBrains Mono', monospace; font-size: 9.5px; letter-spacing: 0.09em; text-transform: uppercase; color: var(--muted); margin: 16px 0 4px; }
+  .cm-notes p { font-size: 13.5px; line-height: 1.62; color: var(--ink-2); margin: 5px 0; }
+  .cm-notes ul { font-size: 13.5px; line-height: 1.55; color: var(--ink-2); padding-left: 20px; margin: 5px 0; }
+  .cm-notes li { margin: 3px 0; }
+  .cm-notes strong { color: var(--ink); font-weight: 600; }
+
+  /* Call transcript */
+  .cm-summary { font-size: 13.5px; line-height: 1.62; color: var(--ink-2); background: var(--bg-2); border-radius: 8px; padding: 12px 14px; margin-bottom: 16px; }
+  .cm-transcript-label, .cm-actions-label { font-family: 'JetBrains Mono', monospace; font-size: 9.5px; letter-spacing: 0.09em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+  .cm-turn { display: flex; gap: 11px; padding: 8px 0; border-bottom: 1px solid var(--line-soft); }
+  .cm-turn:last-child { border-bottom: 0; }
+  .cm-turn-who { font-size: 12px; color: var(--ink); font-weight: 600; margin-bottom: 2px; }
+  .cm-turn-body p { font-size: 13.5px; line-height: 1.6; color: var(--ink-2); margin: 0; }
+  .cm-actions { margin-top: 18px; border-top: 1px solid var(--line-soft); padding-top: 14px; }
+  .cm-actions ul { font-size: 13px; line-height: 1.5; color: var(--ink-2); padding-left: 20px; margin: 6px 0 0; }
+  .cm-actions li { margin: 4px 0; }
+
   .draft-streaming { opacity: 0.35; }
   .draft-cursor { display: inline-block; width: 6px; height: 14px; background: var(--accent); margin-left: 2px; animation: blink 1s infinite; vertical-align: -2px; }
   @keyframes blink { 50% { opacity: 0.2; } }
@@ -1899,6 +1956,13 @@
     } else if (a === 'mm-filter') {
       mmFilter = btn.dataset.filter || 'all';
       openManagerMemosView();
+    } else if (a === 'open-comm') {
+      openCommunicationView(btn.dataset.id);
+    } else if (a === 'comms-back') {
+      openCommunicationsView();
+    } else if (a === 'comm-filter') {
+      commFilter = btn.dataset.filter || 'all';
+      openCommunicationsView();
     } else if (a === 'view-ips-section') {
       const num = Number(btn.dataset.num);
       const idx = IPS_SECTIONS.findIndex((s) => s.num === num);
@@ -2430,7 +2494,7 @@
       {
         label: 'Client service',
         items: [
-          item({ id: 'comms', label: 'Communications', icon: svg('<path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>'), disabled: true, status: 'soon' }),
+          item({ id: 'comms', action: 'open-workflow', label: 'Communications', icon: svg('<path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>'), status: `${COMMUNICATIONS.length}`, statusKind: 'muted' }),
         ],
       },
     ];
@@ -3773,6 +3837,215 @@
     updateUrl();
   }
 
+  // ============ Communications ============
+  // Email threads and meeting/call records with the client (Dream University).
+  // Consistent with the established narrative: Q1 2026 report, the Acadian
+  // termination and EM search, FY27 spending, the Tidewater watch, Vista VIII.
+  // Emails render the full back-and-forth; meetings render notes; calls render
+  // a transcript. Newest first.
+  const COMMUNICATIONS = [
+    {
+      id: 'call-gmo-finalist', type: 'call', subject: 'EM finalist call — GMO Emerging Markets', date: '2026-05-06',
+      with: 'Reve (OCIO) · Susan Liu (CIO) · GMO portfolio manager', preview: 'Finalist diligence call ahead of the May 10 IC; GMO walks through process and the China underweight.',
+      summary: `Forty-minute video call with GMO's lead EM portfolio manager as the final step of diligence before the May 10 special IC. Susan Liu joined for the second half. Focus: investment process, the current China underweight, fees, and transition mechanics from the interim IEMG position.`,
+      transcript: [
+        { speaker: 'Reve', role: 'OCIO', text: `Thanks for making time. For the committee's benefit, can you frame how your EM process differs from the manager we're replacing — quality-value with explicit valuation discipline, as we understand it?` },
+        { speaker: 'GMO PM', role: 'GMO', text: `That's right. We anchor on long-horizon real returns and valuation, with a quality screen to avoid the value traps that hurt naive deep-value in EM. Right now that pushes us underweight the most expensive large-cap China names and overweight selected Latin America and India financials.` },
+        { speaker: 'Reve', role: 'OCIO', text: `The China underweight matters to us — the endowment is sensitive to concentrated single-country policy risk. How is that exposure sized and governed?` },
+        { speaker: 'GMO PM', role: 'GMO', text: `China sits roughly six points below the index for us today, and it's a valuation-and-governance call, not a macro bet. We cap single-country active weight at ten points and review it monthly.` },
+        { speaker: 'Susan Liu', role: 'CIO, Dream University', text: `On mission alignment — we carry Catholic Social Teaching exclusions. Can you run our screen in a separate account rather than the commingled fund?` },
+        { speaker: 'GMO PM', role: 'GMO', text: `Yes. At your size we can offer an SMA with your exclusion list applied, with the same model portfolio. We'd phase in from your IEMG position over two to three weeks to manage transaction costs.` },
+        { speaker: 'Reve', role: 'OCIO', text: `Good. We'll bring GMO and the two other finalists to the committee on the 10th with a recommendation. Fees as discussed — 0.65% on the SMA — which we'll confirm in writing.` },
+      ],
+      actions: ['Reve to finalize the finalist comparison memo for the May 10 IC.', 'Confirm GMO SMA fee (0.65%) and exclusion-list implementation in writing.', 'Model the IEMG-to-GMO transition cost and timeline.'],
+    },
+    {
+      id: 'email-fy27-spending', type: 'email', subject: 'FY27 spending — five-year projection', date: '2026-05-04',
+      with: 'Mark Foster (VP Finance) · Reve (OCIO)', preview: 'Mark requests the five-year projection the IC asked for; Reve delivers three scenarios and they set a working session.',
+      messages: [
+        { from: 'Mark Foster', role: 'VP Finance, Dream University', dir: 'in', date: 'May 4, 2026 · 8:42 AM', body: `<p>Hi team,</p><p>Following the April IC, the committee asked for the five-year spending projection before we brief the Board. As a reminder, FY27 operating need is projected at $58M against a calculated 4.5% draw of roughly $55.8M — about a $2.2M gap.</p><p>Could you put together the three options we discussed: (1) a one-time band adjustment to 4.75%, (2) a $2.2M operating-reserve draw, and (3) accepting the gap with offsetting savings? We'd like the corpus-preservation impact of each over five years.</p><p>Thanks,<br>Mark</p>` },
+        { from: 'Reve', role: 'OCIO', dir: 'out', date: 'May 4, 2026 · 4:15 PM', body: `<p>Mark,</p><p>Attached is the five-year projection with all three scenarios, modeled off the adopted SAA (6.7% expected return, 9.1% vol) and the 12-quarter smoothing rule.</p><p>Headline: the one-time 4.75% adjustment funds the gap with a modest, recoverable drag on real corpus — roughly 30 bp of cumulative real value over five years versus the 4.5% base case. The operating-reserve draw preserves the corpus but draws down a reserve you may want for genuine emergencies. Option 3 is cleanest for the endowment but pushes the problem onto the operating budget.</p><p>Our recommendation leans to a one-time adjustment with an explicit sunset back to 4.5% in FY28, but it's genuinely a Board values call. Happy to walk through it live.</p><p>— Reve</p>` },
+        { from: 'Mark Foster', role: 'VP Finance, Dream University', dir: 'in', date: 'May 5, 2026 · 9:03 AM', body: `<p>This is exactly what we needed — the sunset framing is helpful. Let's do a working session before the Board packet goes out. I'll send an invite for next week with Susan.</p><p>Mark</p>` },
+      ],
+    },
+    {
+      id: 'meeting-odd-kickoff', type: 'meeting', subject: 'Annual operational due diligence — kickoff', date: '2026-05-01',
+      with: 'Reve (OCIO) · Mark Foster (VP Finance) · external auditor (observer)', preview: 'Kickoff of the FY annual ODD cycle; scope, manager questionnaires, and timeline through May 30.',
+      attendees: 'Reve (lead), Mark Foster (VP Finance), Plante Moran (observer)', durationOrLocation: '45 min · video',
+      notes: `<h5>Scope</h5><p>Annual operational due diligence across all external managers, with deeper reviews triggered for the EM transition (Acadian → finalist) and the Wellington-to-Kestrel handover completed in Q1.</p><h5>Process</h5><ul><li>Standardized ODD questionnaires issued to all managers May 1; responses due May 20.</li><li>Independent verification of administrator, custody, and audit relationships.</li><li>Focused review of side-letter compliance, including the mission-alignment exclusion language at Vista and Kestrel.</li></ul><h5>Custody &amp; reconciliation</h5><p>Northern Trust reconciliations through March 31 reviewed; no material discrepancies. The auditor expects to issue the FY25 opinion in May with no anticipated findings.</p>`,
+      actions: ['Managers to return ODD questionnaires by May 20.', 'Reve to verify Vista and Kestrel side-letter exclusion compliance.', 'Summarize ODD findings for the Q2 IC meeting.'],
+    },
+    {
+      id: 'email-em-search', type: 'email', subject: 'EM equity replacement — finalist shortlist for May 10', date: '2026-04-24',
+      with: 'Reve (OCIO) · Investment Committee', preview: 'Reve circulates the three EM finalists; James Reilly presses on governance and fees; Reve responds.',
+      messages: [
+        { from: 'Reve', role: 'OCIO', dir: 'out', date: 'Apr 24, 2026 · 11:20 AM', body: `<p>Committee,</p><p>Ahead of the May 10 special meeting, here is the finalist shortlist to replace the terminated Acadian EM mandate: <strong>Pzena Emerging Markets Value</strong>, <strong>GMO Emerging Markets</strong>, and <strong>William Blair Emerging Markets Growth</strong>. Interim exposure remains in the IEMG index position.</p><p>Each was screened for diversification (no concentrated single-country bets), governance, fees, and the ability to honor our mission-alignment exclusions via a separate account. Full comparison memo to follow Monday; finalist calls are being scheduled.</p><p>— Reve</p>` },
+        { from: 'James Reilly', role: 'IC Chair, Dream University', dir: 'in', date: 'Apr 24, 2026 · 2:48 PM', body: `<p>Thanks. Two questions before the 10th: first, how comfortable are we with each firm's governance and ownership stability — we just lived through a PM departure at Acadian. Second, where do the fees land relative to what we were paying?</p><p>James</p>` },
+        { from: 'Reve', role: 'OCIO', dir: 'out', date: 'Apr 24, 2026 · 5:31 PM', body: `<p>James,</p><p>On governance: all three are stable, employee-influenced firms with documented succession; none has the single-PM dependency that hurt us at Acadian. The memo grades each on team depth and key-person risk explicitly.</p><p>On fees: all three come in at or below the Acadian level on an SMA basis (0.60–0.70% vs the ~0.75% we were paying), and the index-replacement option (staying in IEMG) is materially cheaper if the committee prefers to go passive in EM. We'll lay out active-vs-passive squarely so it's a real choice, not a foregone conclusion.</p><p>— Reve</p>` },
+      ],
+    },
+    {
+      id: 'call-cio-review', type: 'call', subject: 'Q1 portfolio review — 1:1 with CIO', date: '2026-04-22',
+      with: 'Reve (OCIO) · Susan Liu (CIO)', preview: 'Susan and Reve walk the Q1 report 1:1; EM drag, the international overweight, and Tidewater come up.',
+      summary: `Thirty-minute 1:1 with CIO Susan Liu to walk through the Q1 2026 report before the broader Board briefing. Tone constructive; main topics were the EM drag, the international-developed overweight, and the Tidewater watch.`,
+      transcript: [
+        { speaker: 'Susan Liu', role: 'CIO, Dream University', text: `Good quarter overall — +3.1 against +2.8. My main question is the EM sleeve. How much of the drag was Acadian versus the asset class?` },
+        { speaker: 'Reve', role: 'OCIO', text: `Most of it was Acadian. The class benchmark was +2.4; our sleeve returned +1.6, and essentially all of that 80-bp gap was Acadian underperforming into its termination. The interim IEMG position tracked the index closely.` },
+        { speaker: 'Susan Liu', role: 'CIO, Dream University', text: `Good. And the international overweight that helped this quarter — are we comfortable holding it given the dollar?` },
+        { speaker: 'Reve', role: 'OCIO', text: `We are, within the policy range. It's our preferred equity overweight — cheaper valuations and a softening dollar both help. The swing factor is FX, so it's sized inside the range, not maxed. If the dollar reverses hard we'd revisit.` },
+        { speaker: 'Susan Liu', role: 'CIO, Dream University', text: `And Tidewater — the Board will ask. Are we close to a decision?` },
+        { speaker: 'Reve', role: 'OCIO', text: `Formal go/no-go at the Q2 IC, once the 18-month window closes. The thesis is intact but the manager has under-monetized a macro environment that should suit them. We'll bring a redemption-and-redeploy plan in case it's a no-go.` },
+      ],
+      actions: ['Reve to prepare the Board summary version of the Q1 report.', 'Add an FX-scenario note to the international-equity section.', 'Bring the Tidewater go/no-go with a redeploy plan to the Q2 IC.'],
+    },
+    {
+      id: 'meeting-q1-ic', type: 'meeting', subject: 'Q1 2026 Investment Committee', date: '2026-04-18',
+      with: 'Investment Committee · OCIO (Reve) · CFO · external auditor (observer)', preview: 'Quarterly IC: reviewed Q1 performance, approved the Acadian termination, and previewed the FY27 spending review.',
+      attendees: '7 IC members · Reve (OCIO) · Mark Foster (CFO) · Plante Moran (observer)', durationOrLocation: '2 hrs · in person',
+      notes: `<h5>Performance review</h5><p>Total portfolio +3.1% in Q1 vs policy benchmark +2.8%; trailing year +11.4% vs +10.6%. Risk metrics within tolerance (std dev 9.2%, Sharpe 0.39, max drawdown −4.1%). Attribution: allocation +12 bp, selection +21 bp.</p><h5>Manager actions</h5><p>The committee voted unanimously to terminate the Acadian EM mandate effective May 15, citing three-year benchmark-relative underperformance and the February PM departure. Reve to bring a single replacement recommendation (Pzena, GMO, or William Blair) to a May 10 special meeting; interim exposure in IEMG.</p><h5>Spending</h5><p>FY27 operating need projected at $58M vs a calculated 4.5% draw of ~$55.8M. Reve to prepare a five-year projection comparing a one-time 4.75% band adjustment, an operating-reserve draw, and accepting the gap.</p><h5>Liquidity &amp; compliance</h5><p>Tier-1 liquidity well above the 50% floor; $52M unfunded commitments comfortably covered. Mission-alignment screens operated without exception.</p>`,
+      actions: ['Reve to circulate the EM finalist memo and schedule the May 10 special IC.', 'Reve to deliver the five-year FY27 spending projection.', 'Mark Foster to draft the FY27 budget memo for the Board.', 'Annual operational DD reports due May 30.'],
+    },
+    {
+      id: 'email-tidewater', type: 'email', subject: 'Tidewater Macro — watchlist status', date: '2026-04-14',
+      with: 'James Reilly (IC Chair) · Reve (OCIO)', preview: 'James asks why the macro laggard is still in the book; Reve lays out the watch rationale and timeline.',
+      messages: [
+        { from: 'James Reilly', role: 'IC Chair, Dream University', dir: 'in', date: 'Apr 14, 2026 · 7:55 AM', body: `<p>Reve — Tidewater shows up again as a laggard in the Q1 numbers (+0.9% vs +1.5%). It's a 2-and-20 macro fund that's underperformed for a year and a half. Help me understand why it's still in the portfolio.</p><p>James</p>` },
+        { from: 'Reve', role: 'OCIO', dir: 'out', date: 'Apr 14, 2026 · 10:12 AM', body: `<p>James — fair challenge, and it's exactly why we put Tidewater on formal watch.</p><p>The case <em>for</em> patience: it's a genuine crisis-alpha diversifier — it returned over +20% in 2022 and was positive during the August 2025 stress when equities sold off. That convexity is the role it plays in the hedge-fund sleeve alongside Blackwater.</p><p>The case <em>against</em>: it has under-monetized a trending, disinflationary macro environment that should suit it, and there's real key-person dependence on the founder with no clear succession. We're not willing to keep paying 2-and-20 indefinitely for that.</p><p>The plan: formal go/no-go at the Q2 IC once the 18-month review window closes, and we'll bring a redemption-and-redeploy plan so the committee has a concrete alternative in hand. If the process doesn't re-engage in a more two-sided market, we'll recommend exiting.</p><p>— Reve</p>` },
+      ],
+    },
+    {
+      id: 'email-mission-screen', type: 'email', subject: 'Q1 mission-alignment screen — clean attestation', date: '2026-04-11',
+      with: 'Reve (OCIO) · Susan Liu (CIO)', preview: 'Reve attests the Q1 exclusion screen ran clean; Susan acknowledges for the Board file.',
+      messages: [
+        { from: 'Reve', role: 'OCIO', dir: 'out', date: 'Apr 11, 2026 · 3:20 PM', body: `<p>Susan,</p><p>Confirming the Q1 2026 mission-alignment attestation for the Board file. The Catholic Social Teaching exclusion screens — weapons manufacturers, tobacco, predatory lending, and adult entertainment — ran without exception across all separately-managed accounts and screened commingled vehicles.</p><p>The Vista and Kestrel side letters with excuse rights remain in force; the one edge case this quarter (a defense-adjacent name in the U.S. value SMA) was caught by the screen and not held. Full attestation memo attached.</p><p>— Reve</p>` },
+        { from: 'Susan Liu', role: 'CIO, Dream University', dir: 'in', date: 'Apr 11, 2026 · 5:02 PM', body: `<p>Received, thank you — I'll add it to the Board governance packet. Good to see the edge case handled cleanly.</p><p>Susan</p>` },
+      ],
+    },
+    {
+      id: 'email-q1-report', type: 'email', subject: 'Q1 2026 quarterly report — for your review', date: '2026-04-09',
+      with: 'Reve (OCIO) · Susan Liu (CIO) · Mark Foster (VP Finance) · James Reilly (IC Chair)', preview: 'Reve delivers the Q1 report; Susan asks about the EM drag and the FY27 spending gap; Reve responds.',
+      messages: [
+        { from: 'Reve', role: 'OCIO', dir: 'out', date: 'Apr 9, 2026 · 9:14 AM', body: `<p>All,</p><p>The Q1 2026 quarterly report is posted to your workspace ahead of the April 18 IC. Headline: the portfolio returned <strong>+3.1%</strong> net, ahead of the policy benchmark at +2.8%, extending the trailing-year lead to +11.4% vs +10.6%.</p><p>Returns were led by manager selection — Walter Scott added roughly 280 bp over the ACWI — with a modest international-developed overweight helping as the dollar weakened. The one detractor was EM, where Acadian weighed on results into its planned transition.</p><p>Happy to take questions here or at the IC.</p><p>— Reve</p>` },
+        { from: 'Susan Liu', role: 'CIO, Dream University', dir: 'in', date: 'Apr 9, 2026 · 1:37 PM', body: `<p>Thanks — clear report. Two things I'll want to be able to speak to with the Board:</p><p>1) The EM drag — is it Acadian or the asset class, and is the interim position costing us anything? 2) The FY27 spending gap you flagged — how big is it and what are our options?</p><p>Susan</p>` },
+        { from: 'Reve', role: 'OCIO', dir: 'out', date: 'Apr 9, 2026 · 4:48 PM', body: `<p>Susan,</p><p>1) The EM drag is almost entirely Acadian — the class benchmark was +2.4% and our sleeve +1.6%, with the gap attributable to Acadian. The interim IEMG position is low-cost and tracking the index closely, so we're not bleeding value while the search runs.</p><p>2) FY27 operating need is projected around $58M against a ~$55.8M calculated draw — roughly a $2.2M gap. The options are a one-time band adjustment to 4.75%, an operating-reserve draw, or absorbing it in the operating budget. We'll bring a full five-year projection to the committee; Mark and I are coordinating.</p><p>— Reve</p>` },
+      ],
+    },
+    {
+      id: 'email-vista-call', type: 'email', subject: 'Vista Equity Partners VIII — capital call #3 notice', date: '2026-02-12',
+      with: 'Reve (OCIO) · Mark Foster (VP Finance)', preview: 'Operational capital-call notice for Vista VIII; Mark confirms the wire.',
+      messages: [
+        { from: 'Reve', role: 'OCIO', dir: 'out', date: 'Feb 12, 2026 · 10:05 AM', body: `<p>Mark,</p><p>Vista Equity Partners VIII has issued capital call #3 for the endowment: <strong>$6.2M</strong>, due February 26. This is within the pacing plan; it brings called capital to roughly $24M of the $30M commitment, leaving ~$6M unfunded.</p><p>Funding from the Tier-1 cash buffer as planned — no asset sales required. Wire instructions and the call notice are attached. Please confirm when the wire is initiated.</p><p>— Reve</p>` },
+        { from: 'Mark Foster', role: 'VP Finance, Dream University', dir: 'in', date: 'Feb 13, 2026 · 11:40 AM', body: `<p>Confirmed — wire initiated this morning for $6.2M, value date Feb 26. I've logged it against the Vista VIII commitment in our tracker. Thanks for the clean notice.</p><p>Mark</p>` },
+      ],
+    },
+  ];
+
+  let commFilter = 'all';
+  let commOpenId = null;
+
+  function cmTypeMeta(t) {
+    if (t === 'email') return { label: 'Email', cls: 'cm-t-email', icon: '<path d="M4 4h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/><polyline points="22 6 12 13 2 6"/>' };
+    if (t === 'meeting') return { label: 'Meeting', cls: 'cm-t-meeting', icon: '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>' };
+    return { label: 'Call', cls: 'cm-t-call', icon: '<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/>' };
+  }
+  function cmTag(t) { const m = cmTypeMeta(t); return `<span class="cm-tag ${m.cls}">${m.label}</span>`; }
+  function cmInitials(name) { return (name || '').split(/\s+/).filter(Boolean).slice(0, 2).map((s) => s[0].toUpperCase()).join('') || '?'; }
+
+  function buildCommDetailHtml(c) {
+    let body = '';
+    if (c.type === 'email') {
+      body = c.messages.map((msg) => `
+        <div class="cm-msg cm-msg-${msg.dir}">
+          <div class="cm-msg-head">
+            <span class="cm-avatar ${msg.dir === 'out' ? 'cm-avatar-reve' : ''}">${cmInitials(msg.from)}</span>
+            <div class="cm-msg-meta"><div class="cm-msg-from">${msg.from} <span class="cm-msg-role">${msg.role}</span></div><div class="cm-msg-date">${msg.date}</div></div>
+          </div>
+          <div class="cm-msg-body">${msg.body}</div>
+        </div>`).join('');
+    } else if (c.type === 'meeting') {
+      const actions = (c.actions || []).map((a) => `<li>${a}</li>`).join('');
+      body = `
+        <div class="cm-attendees"><span class="cm-attendees-label">Attendees</span> ${c.attendees}${c.durationOrLocation ? ` · <span class="cm-muted">${c.durationOrLocation}</span>` : ''}</div>
+        <div class="cm-notes">${c.notes}</div>
+        ${actions ? `<div class="cm-actions"><div class="cm-actions-label">Action items</div><ul>${actions}</ul></div>` : ''}`;
+    } else {
+      const turns = c.transcript.map((t) => `
+        <div class="cm-turn">
+          <span class="cm-avatar ${t.role === 'OCIO' ? 'cm-avatar-reve' : ''}">${cmInitials(t.speaker)}</span>
+          <div class="cm-turn-body"><div class="cm-turn-who">${t.speaker} <span class="cm-msg-role">${t.role}</span></div><p>${t.text}</p></div>
+        </div>`).join('');
+      const actions = (c.actions || []).map((a) => `<li>${a}</li>`).join('');
+      body = `
+        ${c.summary ? `<div class="cm-summary">${c.summary}</div>` : ''}
+        <div class="cm-transcript-label">Transcript</div>
+        <div class="cm-transcript">${turns}</div>
+        ${actions ? `<div class="cm-actions"><div class="cm-actions-label">Action items</div><ul>${actions}</ul></div>` : ''}`;
+    }
+    return `
+      <a class="mm-back" data-action="comms-back"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>All communications</a>
+      <div class="cm-detail-head">
+        <div class="cm-detail-title">${c.subject} ${cmTag(c.type)}</div>
+        <div class="cm-detail-sub">${fmtDate(c.date)} · ${c.with}</div>
+      </div>
+      ${body}
+    `;
+  }
+
+  function commCardHtml(c) {
+    const m = cmTypeMeta(c.type);
+    return `<a class="cm-card" data-action="open-comm" data-id="${c.id}">
+      <span class="cm-card-icon ${m.cls}"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">${m.icon}</svg></span>
+      <div class="cm-card-main">
+        <div class="cm-card-subject">${c.subject} ${cmTag(c.type)}</div>
+        <div class="cm-card-with">${c.with}</div>
+        <div class="cm-card-preview">${c.preview}</div>
+      </div>
+      <div class="cm-card-date">${fmtDate(c.date)}</div>
+    </a>`;
+  }
+
+  function openCommunicationsView() {
+    if (!state.org.name) return;
+    state.module = 'comms';
+    commOpenId = null;
+    artifactTitle.textContent = 'Communications';
+    enterItemView();
+    const counts = { email: 0, meeting: 0, call: 0 };
+    COMMUNICATIONS.forEach((c) => { counts[c.type] = (counts[c.type] || 0) + 1; });
+    const filters = [
+      ['all', `All (${COMMUNICATIONS.length})`], ['email', `Email (${counts.email})`],
+      ['meeting', `Meetings (${counts.meeting})`], ['call', `Calls (${counts.call})`],
+    ].map(([f, label]) => `<button class="qr-period-btn${commFilter === f ? ' active' : ''}" data-action="comm-filter" data-filter="${f}">${label}</button>`).join('');
+    const shown = COMMUNICATIONS.filter((c) => commFilter === 'all' || c.type === commFilter);
+    const list = shown.map(commCardHtml).join('');
+    artifactBody.innerHTML = `
+      ${itemHeadHtml('Communications')}
+      <div class="ips-title">${escapeHtml(state.org.name)} · Communications</div>
+      <div class="ips-sub">Email threads and meeting &amp; call records with the client. Click any record to see the full interaction.</div>
+      <div class="qr-period-bar">${filters}</div>
+      ${list || '<div class="pf-empty">No communications match this filter.</div>'}
+    `;
+    artifactFooter.classList.remove('visible');
+    updateUrl();
+  }
+
+  function openCommunicationView(id) {
+    const c = COMMUNICATIONS.find((x) => x.id === id);
+    if (!c) { openCommunicationsView(); return; }
+    if (!state.org.name) return;
+    state.module = 'comms';
+    commOpenId = c.id;
+    artifactTitle.textContent = `Comms · ${c.subject}`;
+    enterItemView();
+    artifactBody.innerHTML = `
+      ${itemHeadHtml('Communication')}
+      ${buildCommDetailHtml(c)}
+    `;
+    artifactBody.scrollTop = 0;
+    artifactFooter.classList.remove('visible');
+    updateUrl();
+  }
+
   function openMaterialsView() {
     if (!state.org.name) return;
     state.module = 'materials';
@@ -4701,6 +4974,7 @@
       else if (wf === 'decisions') openDecisionLogView();
       else if (wf === 'reports') openQuarterlyReportView();
       else if (wf === 'memos') openManagerMemosView();
+      else if (wf === 'comms') openCommunicationsView();
     } else if (a === 'pm-run') {
       const desc = document.getElementById('pm-footer-desc');
       if (desc) desc.textContent = 'Running 4,000-sample Monte Carlo optimization…';
@@ -4765,6 +5039,7 @@
     if (state.module && state.module !== 'vault') params.set('view', state.module);
     if (state.module === 'reports' && qrSelected) params.set('report', qrSelected);
     if (state.module === 'memos' && mmOpenId) params.set('memo', mmOpenId);
+    if (state.module === 'comms' && commOpenId) params.set('comm', commOpenId);
     const qs = params.toString();
     const url = qs ? `/demo?${qs}` : '/demo';
     try { window.history.replaceState(null, '', url); } catch {}
@@ -4786,6 +5061,7 @@
     else if (view === 'decisions') openDecisionLogView();
     else if (view === 'reports') openQuarterlyReportView(params.get('report'));
     else if (view === 'memos') { const mid = params.get('memo'); if (mid) openManagerMemoView(mid); else openManagerMemosView(); }
+    else if (view === 'comms') { const cid = params.get('comm'); if (cid) openCommunicationView(cid); else openCommunicationsView(); }
     return true;
   }
 
