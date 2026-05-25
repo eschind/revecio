@@ -1334,6 +1334,15 @@
       return;
     }
 
+    // Ready-to-save step — if the user types instead of clicking, treat it as
+    // a go-ahead: save the client and start drafting.
+    if (state.phase === 'ready-to-draft') {
+      if (!text.trim()) return;
+      persistClient();
+      await draftIps();
+      return;
+    }
+
     // Interviewing — record answer to current question
     if (state.phase === 'interviewing') {
       const q = state.questions[state.qIdx];
@@ -1695,10 +1704,39 @@
     hint.style.display = state.currentExample && !composerInput.value ? 'inline-flex' : 'none';
   }
 
+  function saveClientCard() {
+    const typeLabel = TYPE_LABELS[state.org.type] || 'Client';
+    const aumRow = state.aum ? `<div class="fact-row"><div class="k">AUM</div><div class="v">${fmtAum(state.aum)}</div></div>` : '';
+    return `<div class="tool-card">
+      <div class="tc-label"><span class="dot"></span>Ready to save</div>
+      <div class="fact-row"><div class="k">Organization</div><div class="v">${escapeHtml(state.org.name || 'New client')}</div></div>
+      <div class="fact-row"><div class="k">Type</div><div class="v">${typeLabel}</div></div>
+      ${aumRow}
+      <div class="actions">
+        <button class="pill-btn accent" data-action="save-and-draft">Save client &amp; draft IPS</button>
+      </div>
+    </div>`;
+  }
+
+  function saveClientCardConfirmed() {
+    return `<div class="confirmed-row">✓ Saved to Active clients</div>
+      <div class="fact-row" style="margin-top: 8px;"><div class="k">Organization</div><div class="v">${escapeHtml(state.org.name || 'New client')}</div></div>
+      <div class="fact-row"><div class="k">Type</div><div class="v">${TYPE_LABELS[state.org.type] || ''}</div></div>`;
+  }
+
+  // After the interview, save the client first — then draft the IPS.
   async function wrapUpInterview() {
+    state.phase = 'ready-to-draft';
+    composerInput.placeholder = 'Save the client to continue…';
+    state.currentExample = null;
+    updateExampleHint();
+    await agentReply(() => `<p>That's everything I need. Let me save <strong>${escapeHtml(state.org.name || 'this client')}</strong> to your active clients — then I'll draft the IPS.</p>${saveClientCard()}`);
+  }
+
+  async function draftIps() {
     state.phase = 'drafting';
     composerInput.placeholder = 'Ask the agent for revisions, or share more context…';
-    await agentReply(`<p>That's everything I need. Drafting the IPS now — opening the artifact panel.</p>`);
+    await agentReply(`<p>Drafting the IPS now — opening the artifact panel.</p>`);
     await think(400);
     openArtifact();
     await streamIps();
@@ -2134,6 +2172,15 @@
 
     if (a === 'use-sample-nysym') {
       useSampleOnboarding('nysym');
+      return;
+    }
+
+    if (a === 'save-and-draft') {
+      if (btn.disabled) return;
+      btn.disabled = true;
+      persistClient();
+      if (card) { card.classList.add('confirmed'); card.innerHTML = saveClientCardConfirmed(); }
+      await draftIps();
       return;
     }
 
@@ -2589,7 +2636,10 @@
     });
     return overrides;
   }
-  function saveClient() {
+  // Persist the client (localStorage + sidebar) WITHOUT navigating into the
+  // workspace — used to save during onboarding, before the IPS is drafted, so
+  // the chat/drafting flow continues uninterrupted.
+  function persistClient() {
     if (!state.org.name) return null;
     const all = listLocalClients();
     // If we're editing a sample, save as a new copy instead of mutating the sample
@@ -2618,8 +2668,13 @@
     state.ipsDirty = false;
     refreshIpsSaveBtn();
     renderActiveClients();
-    enterClientWorkspace();
     return record;
+  }
+
+  function saveClient() {
+    const rec = persistClient();
+    if (rec) enterClientWorkspace();
+    return rec;
   }
 
   function loadClient(id) {
