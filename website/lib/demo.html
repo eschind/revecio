@@ -278,6 +278,10 @@
   .nav-sub .client-link.active { background: var(--ink); color: var(--dark-ink); }
   .nav-sub .client-link .ci-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .nav-sub .client-link .ci-type { font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 0.06em; text-transform: uppercase; opacity: 0.55; flex-shrink: 0; }
+  .nav-sub .client-link .ci-delete { display: none; width: 16px; height: 16px; align-items: center; justify-content: center; border-radius: 4px; font-size: 14px; line-height: 1; color: var(--muted); flex-shrink: 0; cursor: pointer; background: transparent; border: 0; padding: 0; }
+  .nav-sub .client-link:hover .ci-delete { display: inline-flex; }
+  .nav-sub .client-link .ci-delete:hover { background: rgba(20,23,28,0.08); color: var(--ink); }
+  .nav-sub .client-link.active .ci-delete:hover { background: rgba(244,241,234,0.15); color: var(--dark-ink); }
   .nav-sub .client-empty { padding: 6px 10px; font-size: 11.5px; color: var(--muted); font-style: italic; }
   .artifact-body h3 .sub-num { color: var(--muted); margin-right: 4px; font-weight: 400; }
   .artifact-body h4 { font-family: 'Newsreader', serif; font-weight: 500; font-size: 14.5px; margin: 14px 0 4px; letter-spacing: -0.005em; }
@@ -313,13 +317,9 @@
     <aside class="sidebar">
       <div class="nav-group">
         <div class="nav-label">Workspace</div>
-        <div class="nav-item active">
+        <div class="nav-item active" id="nav-new-client" data-action="new-client" title="Start a new onboarding">
           <span class="icon"><svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><path d="M20 8v6M23 11h-6"/></svg></span>
-          Onboarding
-          <span class="badge">1</span>
-        </div>
-        <div class="nav-sub" id="nav-onboarding-sub">
-          <a class="active" id="nav-new-client">New client</a>
+          New client
         </div>
         <div class="nav-label" style="margin-top: 8px;">Active clients</div>
         <div class="nav-sub" id="nav-active-clients"></div>
@@ -1530,7 +1530,8 @@
     activeClientsEl.innerHTML = all.map((c) => {
       const typeShort = { foundation: 'FDN', endowment: 'ENDW', arts: 'ARTS' }[c.type] || '';
       const active = c.id === state.clientId ? ' active' : '';
-      return `<a class="client-link${active}" data-action="load-client" data-id="${escapeHtml(c.id)}"><span class="ci-name">${escapeHtml(c.name)}</span><span class="ci-type">${typeShort}</span></a>`;
+      const del = isSampleId(c.id) ? '' : `<button class="ci-delete" data-action="delete-client" data-id="${escapeHtml(c.id)}" title="Delete client" aria-label="Delete client">×</button>`;
+      return `<a class="client-link${active}" data-action="load-client" data-id="${escapeHtml(c.id)}"><span class="ci-name">${escapeHtml(c.name)}</span><span class="ci-type">${typeShort}</span>${del}</a>`;
     }).join('');
   }
 
@@ -1552,6 +1553,46 @@
   const _originalRenderSection = renderSection;
   // Note: renderSection is a const? Let's check — it's a function declaration. Replace inline via a wrapper.
 
+  function deleteClient(id) {
+    if (!id || isSampleId(id)) return;
+    const all = listLocalClients();
+    const rec = all.find((c) => c.id === id);
+    if (!rec) return;
+    if (!confirm(`Delete ${rec.name}? This can't be undone.`)) return;
+    writeClients(all.filter((c) => c.id !== id));
+    if (state.clientId === id) startFresh();
+    else renderActiveClients();
+  }
+
+  function startFresh() {
+    state.org = { name: null, type: null };
+    state.materials = [];
+    state.facts = {};
+    state.phase = 'opening';
+    state.pendingFacts = null;
+    state.pendingDrop = [];
+    state.qIdx = 0;
+    state.questions = [];
+    state.ipsRendered = false;
+    state.clientId = null;
+    state.sectionOverrides = {};
+    state.currentExample = null;
+    state.reviewIdx = 0;
+    closeArtifact();
+    artifactFooter.classList.remove('visible');
+    artifactBody.innerHTML = '';
+    feedInner.innerHTML = '';
+    clientChip.style.display = 'none';
+    composerInput.value = '';
+    composerInput.style.height = 'auto';
+    composerInput.placeholder = 'Drop files, paste a link, or type a message…';
+    refreshMaterialsCount();
+    refreshComposerFiles();
+    updateExampleHint();
+    renderActiveClients();
+    startConversation();
+  }
+
   // Save / keep-editing button handlers
   document.addEventListener('click', (e) => {
     const btn = e.target.closest('[data-action]');
@@ -1566,6 +1607,12 @@
     } else if (a === 'load-client') {
       const id = btn.dataset.id;
       if (id) loadClient(id);
+    } else if (a === 'delete-client') {
+      e.preventDefault();
+      e.stopPropagation();
+      deleteClient(btn.dataset.id);
+    } else if (a === 'new-client') {
+      startFresh();
     }
   });
 
