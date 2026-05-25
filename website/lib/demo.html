@@ -983,6 +983,11 @@
       return;
     }
 
+    if (intent === 'optimize') {
+      await runInlineOptimization(route?.query || 'metrics');
+      return;
+    }
+
     if (intent === 'open') {
       const target = route?.targetModule;
       if (target === 'portfolio') {
@@ -1052,6 +1057,10 @@
     }
 
     // Safety net: if the LLM didn't classify an obvious analytic question, try regex-matching it.
+    if (guessOptimizationIntent(text)) {
+      await runInlineOptimization(guessAnalyticQuery(text) || 'metrics');
+      return;
+    }
     const analyticGuess = guessAnalyticQuery(text);
     if (analyticGuess) {
       const html = answerAnalysisQuery(analyticGuess);
@@ -1065,6 +1074,31 @@
 
     // Fallback for unexpected intent
     await agentReply(`<p>Could you clarify what you'd like to do — open something, ask for a metric, or make an edit?</p>`);
+  }
+
+  function guessOptimizationIntent(text) {
+    const t = (text || '').toLowerCase();
+    return /\b(mvo|mean[\s-]?variance|optimi[sz]e|optimi[sz]ation|optimal|max[\s-]?sharpe|run the optimizer)\b/.test(t);
+  }
+
+  async function runInlineOptimization(query) {
+    if (!state.org.name) {
+      await agentReply(`<p>Open a client first — then I can run the optimizer for them.</p>`);
+      return;
+    }
+    // Run MVO if not already cached
+    if (!state_pm.mvo || !state_pm.mvo.optimal) {
+      state_pm.mvo = runMVO();
+    }
+    if (!state_pm.mvo || !state_pm.mvo.optimal) {
+      await agentReply(`<p>Optimizer didn't find a feasible portfolio under the current bounds + Tier-1 floor. Try widening the IPS ranges.</p>`);
+      return;
+    }
+    // Set the working portfolio to the max-Sharpe optimum so analyze answers reflect it
+    state_pm.weights = { ...state_pm.mvo.optimal.w };
+    const html = answerAnalysisQuery(query) || answerAnalysisQuery('metrics');
+    const optMetrics = state_pm.mvo.optimal.m;
+    await agentReply(`<p>Ran mean-variance optimization — max Sharpe under IPS bounds + ${pmFmtPct(LIQ_FLOOR, 0)} Tier-1 floor. Sharpe: <strong>${optMetrics.sharpe.toFixed(2)}</strong>, return ${pmFmtPct(optMetrics.ret,1)}, vol ${pmFmtPct(optMetrics.vol,1)}.</p>${html}<p style="font-size:12.5px;color:var(--muted);">Open the Asset allocation item to inspect or adopt this as the SAA.</p>`);
   }
 
   // Pattern-match common analytic phrases so they get answered even when the router hesitates.

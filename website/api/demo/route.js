@@ -12,7 +12,7 @@ You receive:
 Classify the message and return ONLY a single JSON object (no markdown, no commentary):
 
 {
-  "intent": "analyze" | "open" | "next" | "previous" | "switch" | "edit" | "switch_and_edit" | "question" | "unclear",
+  "intent": "analyze" | "optimize" | "open" | "next" | "previous" | "switch" | "edit" | "switch_and_edit" | "question" | "unclear",
   "targetModule": "ips" | "portfolio" | "materials" | null,
   "targetSectionNum": <number or null>,
   "query": "sharpe" | "return" | "vol" | "real_return" | "allocation" | "liquidity" | "metrics" | null,
@@ -30,6 +30,11 @@ Rules:
   - "liquidity coverage?" / "spending cushion?" / "can we cover capital calls?" / "how much liquidity?" → query="liquidity"
   - "summarize the portfolio" / "give me the key metrics" / "headline numbers" → query="metrics"
   If a question mentions a metric word (Sharpe, vol, allocation, weights, return, real return, liquidity, coverage, cushion), it is almost always analyze.
+- "optimize" — user asks for the MEAN-VARIANCE OPTIMIZED / MAX-SHARPE / OPTIMAL allocation. Run optimization inline. Set "query" if a specific metric is asked, otherwise leave null and we'll show the full metrics. Examples:
+  - "run MVO" / "what does MVO give us?" / "what's the optimal allocation?" → optimize, query=null
+  - "what's the MVO Sharpe?" / "what would the Sharpe be optimized?" / "what would the sharpe be based on mean variance optimization" → optimize, query="sharpe"
+  - "what does the optimizer recommend?" / "show me the max-Sharpe portfolio" → optimize, query="allocation"
+  - "what if we ran mean-variance optimization on this?" → optimize, query=null
 - "open" — user wants to pull up a vault item to WORK in it, not just ask a factual question. Examples: "open the IPS", "let's model the portfolio", "show me the materials". Set targetModule.
 - "next" / "previous" — only when IPS is in focus and the user wants to advance/retreat through sections.
 - "switch" — focus on a different IPS section without editing.
