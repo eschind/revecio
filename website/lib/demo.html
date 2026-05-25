@@ -1300,13 +1300,19 @@
     if (state.phase === 'materials-pending' && (dropped.length > 0 || state.materials.length > 0)) {
       state.phase = 'confirming-org';
       const inferred = inferOrgFromMaterials(state.materials);
-      const typeLabel = { foundation: 'private/community foundation', endowment: 'university or college endowment', arts: 'arts or cultural organization' }[inferred.type] || null;
-      const fmt = inferred.name && typeLabel ? `<strong>${escapeHtml(inferred.name)}</strong>, looks like a ${typeLabel}` : (inferred.name ? `<strong>${escapeHtml(inferred.name)}</strong>` : (typeLabel ? `a ${typeLabel}` : 'a new client'));
+      const know = gatherMaterialsKnowledge(state.materials);
+      // Prefer the recognized org name/type from known materials over the
+      // filename heuristic, which can grab a document title (e.g. "Symphony
+      // Audited Financials") instead of the actual organization name.
+      const resolved = { name: know.orgName || inferred.name, type: know.orgType || inferred.type };
+      if (know.aum && !state.aum) state.aum = know.aum;
+      const typeLabel = { foundation: 'private/community foundation', endowment: 'university or college endowment', arts: 'arts or cultural organization' }[resolved.type] || null;
+      const fmt = resolved.name && typeLabel ? `<strong>${escapeHtml(resolved.name)}</strong>, looks like a ${typeLabel}` : (resolved.name ? `<strong>${escapeHtml(resolved.name)}</strong>` : (typeLabel ? `a ${typeLabel}` : 'a new client'));
 
       await agentReply(() => `
         <p>I read through the ${state.materials.length} ${state.materials.length === 1 ? 'item' : 'items'} you shared. From the contents and filenames, this appears to be for ${fmt}.</p>
         <p>Quick confirm before I dig in:</p>
-        ${factsCard(inferred)}
+        ${factsCard(resolved)}
       `);
       return;
     }
