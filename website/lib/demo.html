@@ -66,6 +66,22 @@
 
   .mat-kind { font-family: 'JetBrains Mono', monospace; font-size: 9.5px; letter-spacing: 0.06em; padding: 2px 6px; background: var(--bg-2); color: var(--muted); border-radius: 4px; }
 
+  /* Board notes */
+  .bn-card { border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; margin-bottom: 14px; background: #fff; }
+  .bn-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-bottom: 6px; }
+  .bn-card-title { font-family: 'Newsreader', serif; font-size: 16px; color: var(--ink); line-height: 1.25; }
+  .bn-card-meta { font-family: 'JetBrains Mono', monospace; font-size: 10.5px; letter-spacing: 0.04em; color: var(--muted); margin-top: 3px; }
+  .bn-card-summary { font-size: 13px; color: var(--ink-2); margin: 6px 0 10px; line-height: 1.5; font-style: italic; }
+  .bn-card-body p { font-size: 13px; line-height: 1.6; color: var(--ink-2); margin: 4px 0; }
+
+  /* Decision log */
+  .dl-row { display: grid; grid-template-columns: 110px 1fr; gap: 14px; padding: 12px 0; border-bottom: 1px solid var(--line-soft); }
+  .dl-row:last-child { border-bottom: none; }
+  .dl-date { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted); letter-spacing: 0.04em; padding-top: 2px; }
+  .dl-title { font-size: 13.5px; color: var(--ink); margin-bottom: 4px; font-weight: 500; }
+  .dl-text { font-size: 12.5px; color: var(--ink-2); line-height: 1.55; }
+  .dl-meta { display: flex; gap: 12px; margin-top: 6px; font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+
   /* Vault items (inside client workspace) */
   #vault-items { display: flex; flex-direction: column; gap: 2px; }
   .vault-item { display: flex; align-items: center; gap: 10px; padding: 7px 10px; font-size: 13px; color: var(--ink-2); text-decoration: none; border-radius: 6px; cursor: pointer; user-select: none; }
@@ -627,8 +643,11 @@
     qIdx: 0,
     questions: [],
     ipsRendered: false,
-    module: 'ips',  // 'ips' | 'portfolio' | 'vault' | 'materials' | 'profile'
+    module: 'ips',  // 'ips' | 'portfolio' | 'vault' | 'materials' | 'profile' | 'board' | 'decisions'
     saa: null,      // adopted Strategic Asset Allocation
+    ipsStatus: 'Draft',
+    boardNotes: [],
+    decisions: [],
     ipsDirty: false, // true when there are unsaved IPS edits
   };
 
@@ -1724,6 +1743,72 @@
       constraints: 'Alignment with Catholic Social Teaching: exclusions for weapons manufacturers, tobacco, predatory lending, and adult entertainment. Preference for impact investments aligned with the university\'s mission.',
     },
     sectionOverrides: {},
+    ipsStatus: 'Live',
+    // Adopted SAA (max-Sharpe MVO output, IPS-bounded, ≥50% Tier-1). Metrics computed at load.
+    saa: {
+      // Max-Sharpe MVO output: IPS-bounded, ≥50% Tier-1 floor. ~6.7% return, ~9.1% vol, 0.36 Sharpe.
+      weights: {
+        us_eq: 0.22, intl_eq: 0.12, em_eq: 0.06,
+        core_fi: 0.20, tips: 0.05, hy: 0.02,
+        hf: 0.08, pe: 0.06, pc: 0.07, ra: 0.07, cash: 0.05,
+      },
+      adoptedAt: '2025-07-22T15:00:00.000Z',
+      source: 'JPM 2025 LTCMA',
+      liquidityFloor: 0.50,
+    },
+    boardNotes: [
+      {
+        date: '2026-04-18',
+        title: 'Q1 2026 Investment Committee',
+        attendees: '7 IC members · OCIO (Reve) · CFO · external auditor (observer)',
+        summary: 'Reviewed Q1 performance vs benchmark, approved manager replacement in EM equity, and previewed FY27 spending review.',
+        body: `<p><strong>Performance.</strong> Total portfolio returned +3.1% in Q1 vs policy benchmark +2.8%. Public equity in line; private credit ahead on income yield. Private equity NAV flat (Q1 marks typically lag).</p>
+<p><strong>Manager actions.</strong> Acadian Emerging Markets Equity terminated effective May 15 — three-year underperformance vs MSCI EM (−110bps annualized) and key-personnel departure (PM moved to competitor in February). Replacement search shortlist: Pzena, GMO, William Blair. OCIO to bring recommendation in May.</p>
+<p><strong>Spending policy.</strong> FY27 budget discussion previewed. Operating support need projected at $58M (vs $55M FY26). 4.5% policy still within band given trailing average growth. Re-affirmed for FY27.</p>
+<p><strong>Action items.</strong> (1) OCIO to circulate EM manager recommendation by May 10. (2) Mark Foster to draft FY27 budget memo for the Board. (3) Annual operational DD reports due May 30.</p>`,
+      },
+      {
+        date: '2026-01-24',
+        title: 'Q4 2025 Investment Committee · Annual strategic review',
+        attendees: '7 IC members · OCIO (Reve) · CFO · CIO (Susan Liu)',
+        summary: 'Annual review of return objective, asset allocation, and spending policy. Reaffirmed SAA targets and Tier-1 liquidity floor. Approved $20M Ares private credit commitment.',
+        body: `<p><strong>FY25 in review.</strong> Total return +9.7% net of fees; policy benchmark +9.1%. Five-year annualized return 7.4%, ahead of CPI+4.5% spending target. Drawdown peak-to-trough max 6.1% (March 2025).</p>
+<p><strong>SAA reaffirmation.</strong> Reviewed the policy ranges and current targets adopted July 2025. No structural shifts proposed. The IC reaffirmed (a) the 50% Tier-1 liquidity floor and (b) the 5-15% Private Equity range. Real return assumption 4.7% above 2.4% CPI; comfortably above 4.5% spending policy.</p>
+<p><strong>Capital deployment.</strong> Approved a $20M commitment to Ares Senior Direct Lending Fund III; vintage diversification within the 0-10% private credit sleeve. Pacing plan keeps PE program on schedule for the 10% target.</p>
+<p><strong>Spending policy.</strong> 4.5% of 12-quarter trailing average reaffirmed for FY26.</p>`,
+      },
+      {
+        date: '2025-10-16',
+        title: 'Q3 2025 Investment Committee',
+        attendees: '6 IC members · OCIO (Reve) · CFO',
+        summary: 'Reviewed Q3 market volatility, updated ESG/SRI screening policy, and approved $30M Vista Equity commitment.',
+        body: `<p><strong>Market context.</strong> Q3 turbulence (August VIX spike, regional bank stress) absorbed within policy ranges; no forced rebalancing. Drawdown 4.2% peak-to-trough; recovered by quarter end.</p>
+<p><strong>ESG/SRI policy.</strong> Updated mission-alignment screen to formally reflect Catholic Social Teaching. Excluded categories: weapons manufacturers, tobacco, predatory lending, adult entertainment. Documented as an addendum to the IPS Section 13. Implementation through customized index where direct, manager-level engagement where in commingled vehicles.</p>
+<p><strong>Capital deployment.</strong> Approved a $30M commitment to Vista Equity Partners VIII (mid-large software buyout); fits the 5-15% PE range; deployed alongside existing GP relationships.</p>
+<p><strong>Manager review.</strong> Wellington Global Equity: 18-month underperformance and style drift toward growth bias inconsistent with mandate. Watchlist established with formal review in Q1.</p>`,
+      },
+      {
+        date: '2025-07-22',
+        title: 'Q2 2025 Investment Committee · New IPS + SAA adoption',
+        attendees: '7 IC members · OCIO (Reve) · CFO · Board chair (observer)',
+        summary: 'Adopted updated IPS and refreshed Strategic Asset Allocation. Approved custodian RFP results — Northern Trust retained.',
+        body: `<p><strong>IPS adoption.</strong> The Board adopted the updated Investment Policy Statement, replacing the 2022 version. Material changes: (a) reduced policy-range width on public equity to tighten rebalancing discipline, (b) added private credit as a distinct asset class (was previously inside fixed income), (c) codified the 50% Tier-1 liquidity floor, (d) added mission-alignment language for review in Q3.</p>
+<p><strong>SAA refresh.</strong> Adopted new strategic asset allocation targets following mean-variance optimization conducted by Reve OCIO. Headline: increased PE target band to 5-15% (was 3-12%), introduced 0-10% private credit, modest reduction in Core FI to fund alternatives. Targets sit on the IPS-bounded max-Sharpe portfolio: modeled 10-year expected return ~6.7%, vol ~9.1%, Sharpe ~0.36 at rf 3.4%, real return ~4.3% above 2.4% CPI.</p>
+<p><strong>Custodian.</strong> Northern Trust retained following RFP; fee step-down of 4bps achieved on first $500M.</p>
+<p><strong>Spending policy.</strong> 4.5% of 12-quarter trailing average reaffirmed.</p>`,
+      },
+    ],
+    decisions: [
+      { date: '2026-04-18', title: 'Terminate Acadian Emerging Markets Equity', body: 'Three-year benchmark-relative underperformance (−110bps ann.) and PM departure in February. Capital to be reallocated to interim EM index until new manager selected by May 10.', author: 'IC', votes: 'Unanimous' },
+      { date: '2026-01-24', title: 'Commit $20M to Ares Senior Direct Lending Fund III', body: 'Vintage diversification within the 0-10% private credit sleeve; expected gross IRR 9.5-11%. Pacing plan maintains 4% NAV target by FY28.', author: 'IC', votes: 'Unanimous' },
+      { date: '2026-01-24', title: 'Reaffirm 4.5% spending policy for FY26', body: 'Trailing 12-quarter average growth and projected operating need ($55M) keep spending within the 4.0-5.5% band.', author: 'IC + Board', votes: 'Unanimous' },
+      { date: '2025-10-16', title: 'Commit $30M to Vista Equity Partners VIII', body: 'Mid-large software buyout; long-standing GP relationship; fits within 5-15% PE range. Capital call schedule estimated 2025 Q4 through 2028.', author: 'IC', votes: 'Unanimous' },
+      { date: '2025-10-16', title: 'Place Wellington Global Equity on watchlist', body: '18-month underperformance and style drift toward growth bias. Formal review and decision at Q1 2026 IC.', author: 'IC + OCIO', votes: 'Unanimous' },
+      { date: '2025-10-16', title: 'Adopt mission-alignment ESG/SRI policy update', body: 'Formal exclusions: weapons manufacturers, tobacco, predatory lending, adult entertainment. Implementation via customized index where direct; manager engagement where commingled. Filed as addendum to IPS §13.', author: 'IC + Board', votes: 'Unanimous' },
+      { date: '2025-07-22', title: 'Adopt Strategic Asset Allocation (max-Sharpe under IPS bounds)', body: 'Targets established via mean-variance optimization, IPS-bounded, with 50% Tier-1 floor. Public equity 40%, fixed income 27%, alternatives 28%, cash 5%. Modeled Sharpe 0.36 at 6.7% return / 9.1% vol.', author: 'IC + Board', votes: 'Unanimous' },
+      { date: '2025-07-22', title: 'Adopt updated Investment Policy Statement', body: 'Replaces 2022 IPS. Key changes: tighter equity policy ranges, private credit as distinct asset class, 50% Tier-1 floor, mission-alignment provisions.', author: 'Board', votes: 'Unanimous' },
+      { date: '2025-07-22', title: 'Retain Northern Trust as custodian', body: 'RFP process concluded; fee step-down of 4bps on first $500M secured. Three-year term with annual review.', author: 'IC', votes: 'Unanimous' },
+    ],
     savedAt: '2026-05-20T14:30:00.000Z',
     isSample: true,
   }];
@@ -1770,6 +1855,9 @@
       facts: state.facts,
       sectionOverrides: captureSectionOverrides(),
       saa: state.saa,
+      ipsStatus: state.ipsStatus || 'Draft',
+      boardNotes: state.boardNotes || [],
+      decisions: state.decisions || [],
       savedAt: new Date().toISOString(),
     };
     if (existingIdx >= 0) all[existingIdx] = record;
@@ -1795,6 +1883,16 @@
     state.clientId = client.id;
     state.sectionOverrides = client.sectionOverrides || {};
     state.saa = client.saa || null;
+    state.ipsStatus = client.ipsStatus || 'Draft';
+    state.boardNotes = client.boardNotes || [];
+    state.decisions = client.decisions || [];
+    // Lazily fill in SAA metrics + IPS §7 override if the sample only has weights
+    if (state.saa && state.saa.weights && !state.saa.metrics) {
+      state.saa.metrics = portfolioMetrics(state.saa.weights);
+    }
+    if (state.saa && !state.sectionOverrides['sec-7']) {
+      state.sectionOverrides['sec-7'] = buildSaaSectionHtml(state.saa);
+    }
     state.ipsDirty = false;
     state.module = 'ips';
     state_pm.weights = null;
@@ -1927,9 +2025,9 @@
       {
         label: 'Governance',
         items: [
-          item({ id: 'ips', action: 'open-workflow', label: 'Investment Policy Statement', icon: svg('<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><polyline points="14 3 14 8 19 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/>'), status: 'Draft', statusKind: 'muted' }),
-          item({ id: 'board-notes', label: 'Board meeting notes', icon: svg('<path d="M9 2h6a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z"/><line x1="11" y1="7" x2="13" y2="7"/><line x1="9" y1="11" x2="15" y2="11"/><line x1="9" y1="15" x2="13" y2="15"/>'), disabled: true, status: 'soon' }),
-          item({ id: 'decisions', label: 'Decision log', icon: svg('<circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/>'), disabled: true, status: 'soon' }),
+          item({ id: 'ips', action: 'open-workflow', label: 'Investment Policy Statement', icon: svg('<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><polyline points="14 3 14 8 19 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/>'), status: state.ipsStatus || 'Draft', statusKind: (state.ipsStatus === 'Live' ? 'ok' : 'muted') }),
+          item({ id: 'board-notes', action: 'open-workflow', label: 'Board meeting notes', icon: svg('<path d="M9 2h6a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z"/><line x1="11" y1="7" x2="13" y2="7"/><line x1="9" y1="11" x2="15" y2="11"/><line x1="9" y1="15" x2="13" y2="15"/>'), status: (state.boardNotes && state.boardNotes.length) ? `${state.boardNotes.length}` : '—', statusKind: 'muted', disabled: !(state.boardNotes && state.boardNotes.length) }),
+          item({ id: 'decisions', action: 'open-workflow', label: 'Decision log', icon: svg('<circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/>'), status: (state.decisions && state.decisions.length) ? `${state.decisions.length}` : '—', statusKind: 'muted', disabled: !(state.decisions && state.decisions.length) }),
         ],
       },
       {
@@ -2175,6 +2273,67 @@
     if (state.clientId) saveClient();
   }
 
+  function fmtDate(iso) {
+    if (!iso) return '';
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return iso;
+    return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+  }
+
+  function openBoardNotesView() {
+    if (!state.org.name) return;
+    state.module = 'board';
+    artifactTitle.textContent = 'Board meeting notes';
+    enterItemView();
+    const notes = state.boardNotes || [];
+    const cards = notes.map((n, i) => `
+      <div class="bn-card">
+        <div class="bn-card-head">
+          <div>
+            <div class="bn-card-title">${escapeHtml(n.title)}</div>
+            <div class="bn-card-meta">${fmtDate(n.date)}${n.attendees ? ` · ${escapeHtml(n.attendees)}` : ''}</div>
+          </div>
+        </div>
+        <p class="bn-card-summary">${escapeHtml(n.summary || '')}</p>
+        <div class="bn-card-body">${n.body || ''}</div>
+      </div>
+    `).join('');
+    artifactBody.innerHTML = `
+      ${itemHeadHtml('Board meeting notes')}
+      <div class="ips-title">${escapeHtml(state.org.name)} · Board meeting notes</div>
+      <div class="ips-sub">${notes.length} meetings on record. Newest first.</div>
+      ${cards || '<div class="pf-empty">No board notes yet.</div>'}
+    `;
+    artifactFooter.classList.remove('visible');
+    updateUrl();
+  }
+
+  function openDecisionLogView() {
+    if (!state.org.name) return;
+    state.module = 'decisions';
+    artifactTitle.textContent = 'Decision log';
+    enterItemView();
+    const decisions = state.decisions || [];
+    const rows = decisions.map((d) => `
+      <div class="dl-row">
+        <div class="dl-date">${fmtDate(d.date)}</div>
+        <div class="dl-body">
+          <div class="dl-title">${escapeHtml(d.title)}</div>
+          <div class="dl-text">${escapeHtml(d.body || '')}</div>
+          <div class="dl-meta">${d.author ? `<span>${escapeHtml(d.author)}</span>` : ''}${d.votes ? `<span>${escapeHtml(d.votes)}</span>` : ''}</div>
+        </div>
+      </div>
+    `).join('');
+    artifactBody.innerHTML = `
+      ${itemHeadHtml('Decision log')}
+      <div class="ips-title">${escapeHtml(state.org.name)} · Decision log</div>
+      <div class="ips-sub">${decisions.length} decisions on record. Newest first.</div>
+      ${rows || '<div class="pf-empty">No decisions on record.</div>'}
+    `;
+    artifactFooter.classList.remove('visible');
+    updateUrl();
+  }
+
   function openMaterialsView() {
     if (!state.org.name) return;
     state.module = 'materials';
@@ -2269,6 +2428,9 @@
     state.people = [];
     state.materials = [];
     state.facts = {};
+    state.boardNotes = [];
+    state.decisions = [];
+    state.ipsStatus = 'Draft';
     state.phase = 'opening';
     state.pendingFacts = null;
     state.pendingDrop = [];
@@ -3092,6 +3254,8 @@
       else if (wf === 'ips') switchToIpsView();
       else if (wf === 'materials') openMaterialsView();
       else if (wf === 'profile') openClientProfileView();
+      else if (wf === 'board-notes') openBoardNotesView();
+      else if (wf === 'decisions') openDecisionLogView();
     } else if (a === 'pm-run') {
       const desc = document.getElementById('pm-footer-desc');
       if (desc) desc.textContent = 'Running 4,000-sample Monte Carlo optimization…';
@@ -3171,6 +3335,8 @@
     else if (view === 'portfolio') openPortfolioModule();
     else if (view === 'materials') openMaterialsView();
     else if (view === 'profile') openClientProfileView();
+    else if (view === 'board') openBoardNotesView();
+    else if (view === 'decisions') openDecisionLogView();
     return true;
   }
 
