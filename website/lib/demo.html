@@ -66,6 +66,38 @@
 
   .mat-kind { font-family: 'JetBrains Mono', monospace; font-size: 9.5px; letter-spacing: 0.06em; padding: 2px 6px; background: var(--bg-2); color: var(--muted); border-radius: 4px; }
 
+  /* Portfolio monitoring */
+  .pm-drift-ok { color: var(--muted); }
+  .pm-drift-flag { color: #c4830d; font-weight: 500; }
+  .pm-drift-warn { color: #b13a3a; font-weight: 500; }
+  .pm-pos { color: var(--accent); font-weight: 500; }
+  .pm-neg { color: #b13a3a; font-weight: 500; }
+  .pm-bench { color: var(--muted); }
+  .pm-bench-name { font-size: 11px; color: var(--muted); }
+  .pm-status-pill { display: inline-block; margin-left: 8px; padding: 1px 6px; border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 0.06em; text-transform: uppercase; background: var(--line); color: var(--muted); }
+  .pm-st-ok { background: rgba(31,112,80,0.14); color: var(--accent); }
+  .pm-st-warn { background: rgba(196,131,13,0.15); color: #8a5d0a; }
+  .pm-st-muted { background: rgba(107,92,138,0.14); color: #4d3f6b; }
+  .pm-exp-row { display: grid; grid-template-columns: 180px 1fr 60px; gap: 12px; align-items: center; padding: 4px 0; }
+  .pm-exp-label { font-size: 12.5px; color: var(--ink-2); }
+  .pm-exp-bar { height: 10px; background: var(--line-soft); border-radius: 5px; overflow: hidden; }
+  .pm-exp-fill { height: 100%; transition: width 0.3s; }
+  .pm-exp-val { font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: var(--ink-2); text-align: right; }
+  .pm-updates { display: flex; flex-direction: column; gap: 10px; }
+  .pm-update-card { padding: 12px 14px; background: #fff; border: 1px solid var(--line); border-radius: 8px; }
+  .pm-update-card.pm-update-new { border-left: 3px solid var(--accent); padding-left: 11px; background: rgba(31,112,80,0.02); }
+  .pm-update-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 4px; font-size: 11px; }
+  .pm-update-kind { font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 0.1em; padding: 2px 6px; border-radius: 3px; background: var(--bg-2); color: var(--muted); }
+  .pm-k-manager { background: rgba(31,112,80,0.12); color: var(--accent); }
+  .pm-k-market { background: rgba(43,90,138,0.14); color: #2b5a8a; }
+  .pm-k-sector { background: rgba(196,131,13,0.14); color: #8a5d0a; }
+  .pm-k-geo { background: rgba(107,92,138,0.14); color: #4d3f6b; }
+  .pm-update-new-badge { font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 0.1em; padding: 2px 6px; border-radius: 3px; background: var(--accent); color: var(--dark-ink); }
+  .pm-update-date { font-family: 'JetBrains Mono', monospace; color: var(--muted); }
+  .pm-update-source { color: var(--ink-2); margin-left: auto; font-size: 11.5px; }
+  .pm-update-title { font-size: 13.5px; color: var(--ink); margin: 6px 0 4px; line-height: 1.35; font-weight: 500; }
+  .pm-update-body { font-size: 12.5px; color: var(--ink-2); line-height: 1.55; }
+
   /* Board notes */
   .bn-card { border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; margin-bottom: 14px; background: #fff; }
   .bn-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-bottom: 6px; }
@@ -820,6 +852,7 @@
     ipsStatus: 'Draft',
     boardNotes: [],
     decisions: [],
+    portfolio: null,
     ipsDirty: false, // true when there are unsaved IPS edits
   };
 
@@ -1233,6 +1266,27 @@
       if (target === 'materials') {
         openMaterialsView();
         await agentReply(`<p>Materials are in the panel — ${(state.materials || []).length} items.</p>`);
+        return;
+      }
+      if (target === 'monitoring') {
+        openMonitoringView();
+        const newCount = (state.portfolio?.updates || []).filter((u) => u.isNew).length;
+        await agentReply(`<p>Pulled up portfolio monitoring${newCount ? ` — <strong>${newCount} new update${newCount === 1 ? '' : 's'}</strong>` : ''}. Tell me which cut you want — by manager, sector, geography, asset class, or by news kind.</p>`);
+        return;
+      }
+      if (target === 'board') {
+        openBoardNotesView();
+        await agentReply(`<p>Board meeting notes — ${(state.boardNotes || []).length} on record.</p>`);
+        return;
+      }
+      if (target === 'decisions') {
+        openDecisionLogView();
+        await agentReply(`<p>Decision log — ${(state.decisions || []).length} entries.</p>`);
+        return;
+      }
+      if (target === 'profile') {
+        openClientProfileView();
+        await agentReply(`<p>Profile is open.</p>`);
         return;
       }
       await agentReply(`<p>${escapeHtml(route?.reply || 'Which item would you like to open?')}</p>`);
@@ -2192,6 +2246,80 @@
       { date: '2025-07-22', title: 'Adopt updated Investment Policy Statement', body: 'Replaces 2022 IPS. Key changes: tighter equity policy ranges, private credit as distinct asset class, 50% Tier-1 floor, mission-alignment provisions.', author: 'Board', votes: 'Unanimous' },
       { date: '2025-07-22', title: 'Retain Northern Trust as custodian', body: 'RFP process concluded; fee step-down of 4bps on first $500M secured. Three-year term with annual review.', author: 'IC', votes: 'Unanimous' },
     ],
+    portfolio: {
+      asOf: '2026-05-22',
+      actualWeights: {
+        us_eq: 0.235, intl_eq: 0.118, em_eq: 0.055,
+        core_fi: 0.195, tips: 0.045, hy: 0.025,
+        hf: 0.082, pe: 0.054, pc: 0.078, ra: 0.067, cash: 0.046,
+      },
+      sectorExposure: {
+        'Technology': 0.28, 'Financials': 0.14, 'Healthcare': 0.13,
+        'Consumer': 0.11, 'Industrials': 0.10, 'Communication Services': 0.05,
+        'Energy': 0.06, 'Real Estate': 0.05, 'Materials': 0.04, 'Utilities': 0.04,
+      },
+      geoExposure: {
+        'United States': 0.60, 'International Developed': 0.22,
+        'Emerging Markets': 0.11, 'Global / Multi-region': 0.07,
+      },
+      realizedRisk: {
+        // trailing twelve months (T12M)
+        vol: 0.096,       // realized vol
+        modeledVol: 0.091,
+        sharpe: 0.41,
+        maxDD: 0.061,
+        beta: 0.62,       // to MSCI ACWI
+      },
+      // Per-asset-class performance (net of fees). YTD = 2026 calendar YTD; trailing windows.
+      performance: {
+        us_eq:   { ytd: 0.052, oneY: 0.139, threeY: 0.082, itd: 0.094, benchYtd: 0.048, benchOneY: 0.128, benchThreeY: 0.078, benchName: 'S&P 500' },
+        intl_eq: { ytd: 0.061, oneY: 0.124, threeY: 0.054, itd: 0.071, benchYtd: 0.054, benchOneY: 0.118, benchThreeY: 0.051, benchName: 'MSCI EAFE' },
+        em_eq:   { ytd: 0.031, oneY: 0.058, threeY: 0.024, itd: 0.041, benchYtd: 0.042, benchOneY: 0.071, benchThreeY: 0.035, benchName: 'MSCI EM' },
+        core_fi: { ytd: 0.018, oneY: 0.046, threeY: 0.023, itd: 0.037, benchYtd: 0.016, benchOneY: 0.043, benchThreeY: 0.021, benchName: 'Bloomberg US Agg' },
+        tips:    { ytd: 0.015, oneY: 0.041, threeY: 0.028, itd: 0.035, benchYtd: 0.014, benchOneY: 0.040, benchThreeY: 0.027, benchName: 'Bloomberg TIPS' },
+        hy:      { ytd: 0.024, oneY: 0.071, threeY: 0.041, itd: 0.058, benchYtd: 0.023, benchOneY: 0.068, benchThreeY: 0.040, benchName: 'Bloomberg HY' },
+        hf:      { ytd: 0.021, oneY: 0.061, threeY: 0.046, itd: 0.052, benchYtd: 0.018, benchOneY: 0.052, benchThreeY: 0.039, benchName: 'HFRI Fund-of-Funds' },
+        pe:      { ytd: 0.005, oneY: 0.124, threeY: 0.149, itd: 0.158, benchYtd: 0.011, benchOneY: 0.118, benchThreeY: 0.142, benchName: 'Burgiss Buyout' },
+        pc:      { ytd: 0.029, oneY: 0.098, threeY: 0.087, itd: 0.092, benchYtd: 0.025, benchOneY: 0.094, benchThreeY: 0.082, benchName: 'Cliffwater Direct Lending' },
+        ra:      { ytd: 0.017, oneY: 0.079, threeY: 0.058, itd: 0.067, benchYtd: 0.015, benchOneY: 0.074, benchThreeY: 0.054, benchName: 'Wilshire Real Assets' },
+      },
+      managers: [
+        { id: 'vti', name: 'Vanguard Total Stock Market', assetClass: 'us_eq', vehicle: 'ETF', aum: 178_000_000, ytd: 0.051, oneY: 0.135, since: '2018-09', status: 'normal' },
+        { id: 'pzena', name: 'Pzena Large Cap Value', assetClass: 'us_eq', vehicle: 'SMA', aum: 64_000_000, ytd: 0.058, oneY: 0.144, since: '2020-03', status: 'normal' },
+        { id: 'walter_scott', name: 'Walter Scott Global Equity', assetClass: 'intl_eq', vehicle: 'SMA', aum: 106_000_000, ytd: 0.067, oneY: 0.139, since: '2019-06', status: 'highlight' },
+        { id: 'johcm', name: 'JOHCM Intl Select Equity', assetClass: 'intl_eq', vehicle: 'Commingled', aum: 38_000_000, ytd: 0.054, oneY: 0.118, since: '2021-01', status: 'normal' },
+        { id: 'wellington_ge', name: 'Wellington Global Equity', assetClass: 'intl_eq', vehicle: 'Commingled', aum: 41_000_000, ytd: 0.045, oneY: 0.101, since: '2020-10', status: 'watchlist' },
+        { id: 'iemg', name: 'iShares MSCI EM (interim)', assetClass: 'em_eq', vehicle: 'ETF', aum: 67_000_000, ytd: 0.041, oneY: 0.064, since: '2026-05', status: 'transition' },
+        { id: 'pimco_tr', name: 'PIMCO Total Return', assetClass: 'core_fi', vehicle: 'SMA', aum: 124_000_000, ytd: 0.019, oneY: 0.048, since: '2017-04', status: 'normal' },
+        { id: 'western_cp', name: 'Western Asset Core Plus', assetClass: 'core_fi', vehicle: 'SMA', aum: 114_000_000, ytd: 0.017, oneY: 0.045, since: '2019-02', status: 'normal' },
+        { id: 'vti_tips', name: 'Vanguard Inflation-Protected', assetClass: 'tips', vehicle: 'ETF', aum: 55_000_000, ytd: 0.015, oneY: 0.041, since: '2020-07', status: 'normal' },
+        { id: 'pgim_hy', name: 'PGIM High Yield', assetClass: 'hy', vehicle: 'Commingled', aum: 31_000_000, ytd: 0.025, oneY: 0.072, since: '2020-09', status: 'normal' },
+        { id: 'bridgewater', name: 'Bridgewater Pure Alpha Major Markets', assetClass: 'hf', vehicle: 'Hedge Fund', aum: 52_000_000, ytd: 0.024, oneY: 0.072, since: '2019-04', status: 'normal' },
+        { id: 'millennium', name: 'Millennium Multi-Strategy', assetClass: 'hf', vehicle: 'Hedge Fund', aum: 48_000_000, ytd: 0.018, oneY: 0.054, since: '2021-08', status: 'normal' },
+        { id: 'vista7', name: 'Vista Equity Partners VII', assetClass: 'pe', vehicle: 'PE Fund', aum: 26_000_000, committed: 30_000_000, ytd: 0.008, oneY: 0.142, since: '2022-09', status: 'normal' },
+        { id: 'vista8', name: 'Vista Equity Partners VIII', assetClass: 'pe', vehicle: 'PE Fund', aum: 11_000_000, committed: 30_000_000, ytd: -0.002, oneY: null, since: '2025-10', status: 'building' },
+        { id: 'hfx', name: 'Hellman & Friedman X', assetClass: 'pe', vehicle: 'PE Fund', aum: 29_000_000, committed: 30_000_000, ytd: 0.014, oneY: 0.121, since: '2021-12', status: 'normal' },
+        { id: 'ares_sdl2', name: 'Ares Senior Direct Lending II', assetClass: 'pc', vehicle: 'Private Credit', aum: 50_000_000, committed: 50_000_000, ytd: 0.031, oneY: 0.102, since: '2023-03', status: 'normal' },
+        { id: 'ares_sdl3', name: 'Ares Senior Direct Lending III', assetClass: 'pc', vehicle: 'Private Credit', aum: 46_000_000, committed: 60_000_000, ytd: 0.028, oneY: null, since: '2026-02', status: 'building' },
+        { id: 'brookfield', name: 'Brookfield Infrastructure IV', assetClass: 'ra', vehicle: 'Private RA', aum: 44_000_000, committed: 50_000_000, ytd: 0.016, oneY: 0.082, since: '2022-06', status: 'normal' },
+        { id: 'vnq', name: 'Vanguard Real Estate', assetClass: 'ra', vehicle: 'ETF', aum: 38_000_000, ytd: 0.019, oneY: 0.075, since: '2018-09', status: 'normal' },
+        { id: 'cash', name: 'Operating cash (Northern Trust)', assetClass: 'cash', vehicle: 'Cash', aum: 56_000_000, ytd: 0.013, oneY: 0.034, since: '2017-01', status: 'normal' },
+      ],
+      updates: [
+        { date: '2026-05-22', kind: 'manager', source: 'Vista Equity Partners', title: 'Vista VIII Q1 2026 LP letter', body: 'Q1 deployment $200M across three cybersecurity platforms (incl. extension of position in Trellix). Portfolio company revenue growth tracking +18% YoY. No new realizations in Q1; pipeline strong for Q3.', isNew: true },
+        { date: '2026-05-20', kind: 'manager', source: 'Ares Management', title: 'Ares SDL III April monthly', body: 'April NAV +0.24%. Deployed an additional $42M into seven new loans (average yield 10.1%, average leverage 0.5x). 30% of committed capital now drawn. No watchlist or default-related credits.', isNew: true },
+        { date: '2026-05-18', kind: 'manager', source: 'Walter Scott', title: 'Q1 commentary — defensive positioning', body: 'Reduced cyclicals exposure on rising macroeconomic uncertainty. Added to consumer staples and healthcare. Portfolio beta down to 0.85 from 0.94 last quarter. April performance +2.1% vs MSCI ACWI +1.7%.', isNew: true },
+        { date: '2026-05-15', kind: 'manager', source: 'Acadian / iShares', title: 'EM Equity transition complete', body: 'Acadian EM mandate fully liquidated. Proceeds reinvested in iShares MSCI EM (IEMG) as interim placeholder pending May 17 vote on permanent replacement. Tracking error in transition window 18bps.', isNew: true },
+        { date: '2026-05-12', kind: 'manager', source: 'PIMCO', title: 'Q2 fixed-income outlook', body: 'Recent credit spread widening of 25bp creates entry opportunities in BBB- to BB+ range. Maintaining overweight to short-duration corporates. Duration neutral to benchmark.' },
+        { date: '2026-05-08', kind: 'market', source: 'Federal Reserve', title: 'Fed signals possible Q3 cut after CPI print', body: 'May CPI of 2.1% YoY came in 10bps below consensus. Futures now pricing 70% probability of a 25bp cut at September FOMC. Treasury curve flattened modestly on the news.' },
+        { date: '2026-05-05', kind: 'manager', source: 'Bridgewater', title: 'Pure Alpha April update', body: 'Strategy +1.2% in April (vol-adjusted). Long DM equity, short EM FX, long gold. Risk allocation roughly balanced across the three macro themes.' },
+        { date: '2026-04-30', kind: 'sector', source: 'Reve research desk', title: 'Tech earnings: AI infrastructure demand strong', body: 'Q1 earnings season for technology sector tracking +14% YoY EPS growth, ahead of +11% consensus. AI hyperscaler capex guidance raised for FY26. Implications for Vista, H&F software-heavy portfolios: positive tailwind.' },
+        { date: '2026-04-28', kind: 'manager', source: 'Brookfield', title: 'Infrastructure IV — $500M green energy deployment', body: 'New investment in transmission and storage assets across Texas and ERCOT. Long-term contracted revenue; expected unlevered yield 7.5-8.5%. Brings Fund IV to 78% deployed.' },
+        { date: '2026-04-22', kind: 'manager', source: 'Hellman & Friedman', title: 'H&F X Q1 NAV mark +3.4%', body: 'Q1 mark-to-market gain driven primarily by strong revenue growth at three portfolio companies in healthcare services and consumer software. Two exits in active dialogue; estimated proceeds $80-100M for the fund (Dream pro-rata ~3%).' },
+        { date: '2026-04-15', kind: 'geography', source: 'Reve research desk', title: 'EM dispersion widening; India remains strong', body: 'Within MSCI EM, India equities +8.4% YTD vs broad index +4.2%; China weighing on returns. Current portfolio EM exposure (post-Acadian) is index-like; permanent replacement selection will revisit country concentration.' },
+        { date: '2026-04-08', kind: 'market', source: 'Bank of England', title: 'BoE holds rates, dovish guidance', body: 'BoE held base rate at 4.25% as expected. Statement language softened on inflation persistence. Sterling weakened 60bps against USD on the news. Limited direct portfolio impact (intl FX hedged).' },
+      ],
+    },
     savedAt: '2026-05-20T14:30:00.000Z',
     isSample: true,
   }];
@@ -2241,6 +2369,7 @@
       ipsStatus: state.ipsStatus || 'Draft',
       boardNotes: state.boardNotes || [],
       decisions: state.decisions || [],
+      portfolio: state.portfolio || null,
       savedAt: new Date().toISOString(),
     };
     if (existingIdx >= 0) all[existingIdx] = record;
@@ -2269,6 +2398,7 @@
     state.ipsStatus = client.ipsStatus || 'Draft';
     state.boardNotes = client.boardNotes || [];
     state.decisions = client.decisions || [];
+    state.portfolio = client.portfolio || null;
     // Lazily fill in SAA metrics + IPS §7 override if the sample only has weights
     if (state.saa && state.saa.weights && !state.saa.metrics) {
       state.saa.metrics = portfolioMetrics(state.saa.weights);
@@ -2417,7 +2547,14 @@
         label: 'Investment strategy',
         items: [
           item({ id: 'portfolio', action: 'open-workflow', label: 'Asset allocation', icon: svg('<path d="M3 3v18h18"/><path d="M7 14l3-3 3 3 5-6"/>'), status: saaStatus.text, statusKind: saaStatus.kind }),
-          item({ id: 'monitoring', label: 'Portfolio monitoring', icon: svg('<path d="M2 12h4l3 8 4-16 3 8h6"/>'), disabled: true, status: 'soon' }),
+          (function () {
+            const p = state.portfolio;
+            if (!p) return item({ id: 'monitoring', label: 'Portfolio monitoring', icon: svg('<path d="M2 12h4l3 8 4-16 3 8h6"/>'), disabled: true, status: 'soon' });
+            const newCount = (p.updates || []).filter((u) => u.isNew).length;
+            const status = newCount > 0 ? `${newCount} NEW` : 'Updated';
+            const statusKind = newCount > 0 ? 'ok' : 'muted';
+            return item({ id: 'monitoring', action: 'open-workflow', label: 'Portfolio monitoring', icon: svg('<path d="M2 12h4l3 8 4-16 3 8h6"/>'), status, statusKind });
+          })(),
         ],
       },
       {
@@ -2654,6 +2791,194 @@
     profileEdit[id] = false;
     rerenderProfileSection(id);
     if (state.clientId) saveClient();
+  }
+
+  function fmtMoney(n) {
+    if (!n && n !== 0) return '—';
+    if (n >= 1e9) return `$${(n/1e9).toFixed(2)}B`;
+    if (n >= 1e6) return `$${(n/1e6).toFixed(1)}M`;
+    if (n >= 1e3) return `$${(n/1e3).toFixed(0)}K`;
+    return `$${n.toFixed(0)}`;
+  }
+
+  function openMonitoringView() {
+    if (!state.org.name) return;
+    if (!state.portfolio) {
+      addAgent(`<p>No monitoring data available for this client yet — the portfolio module hasn't been populated.</p>`);
+      return;
+    }
+    state.module = 'monitoring';
+    artifactTitle.textContent = 'Portfolio monitoring';
+    enterItemView();
+    const p = state.portfolio;
+    const saaW = state.saa?.weights || {};
+    const target = (id) => saaW[id] || 0;
+    const drift = (id) => (p.actualWeights[id] || 0) - target(id);
+    const driftClass = (d, id) => {
+      const [lo, hi] = IPS_RANGE[id];
+      const actual = p.actualWeights[id] || 0;
+      if (actual < lo - 1e-6 || actual > hi + 1e-6) return 'warn';
+      if (Math.abs(d) >= 0.015) return 'flag';
+      return '';
+    };
+
+    // Drift rows
+    const driftRows = CMA.map((c) => {
+      const t = target(c.id), a = p.actualWeights[c.id] || 0, d = a - t;
+      const cls = driftClass(d, c.id);
+      const sign = d >= 0 ? '+' : '';
+      return `<tr><td>${c.name}</td><td class="num">${pmFmtPct(t, 1)}</td><td class="num">${pmFmtPct(a, 1)}</td><td class="num pm-drift-${cls || 'ok'}">${sign}${(d*100).toFixed(2)}pp</td><td>${pmFmtPct(IPS_RANGE[c.id][0],0)}–${pmFmtPct(IPS_RANGE[c.id][1],0)}</td></tr>`;
+    }).join('');
+
+    // Performance rows
+    const perfRows = CMA.filter((c) => p.performance[c.id]).map((c) => {
+      const x = p.performance[c.id];
+      const beat = (a, b) => a > b ? 'pm-pos' : (a < b ? 'pm-neg' : '');
+      return `<tr><td>${c.name}</td>
+        <td class="num ${beat(x.ytd, x.benchYtd)}">${pmFmtPct(x.ytd, 1)}</td><td class="num pm-bench">${pmFmtPct(x.benchYtd, 1)}</td>
+        <td class="num ${beat(x.oneY, x.benchOneY)}">${pmFmtPct(x.oneY, 1)}</td><td class="num pm-bench">${pmFmtPct(x.benchOneY, 1)}</td>
+        <td class="num ${beat(x.threeY, x.benchThreeY)}">${pmFmtPct(x.threeY, 1)}</td><td class="num pm-bench">${pmFmtPct(x.benchThreeY, 1)}</td>
+        <td class="num">${pmFmtPct(x.itd, 1)}</td>
+        <td class="pm-bench-name">${escapeHtml(x.benchName)}</td>
+      </tr>`;
+    }).join('');
+
+    // Manager rows
+    const statusBadge = (s) => {
+      const map = { normal: '', highlight: 'pm-st-ok', watchlist: 'pm-st-warn', transition: 'pm-st-warn', building: 'pm-st-muted' };
+      const label = { normal: '', highlight: 'Top', watchlist: 'Watch', transition: 'Transition', building: 'Building' }[s] || '';
+      return label ? `<span class="pm-status-pill ${map[s] || ''}">${label}</span>` : '';
+    };
+    const mgrRows = p.managers.map((m) => {
+      const cma = CMA_BY[m.assetClass];
+      const aumPct = m.aum / (state.aum || 1);
+      return `<tr><td>${escapeHtml(m.name)}${statusBadge(m.status)}</td>
+        <td>${cma ? cma.name : m.assetClass}</td>
+        <td><span class="mat-kind">${m.vehicle.toUpperCase().replace(/\s+/g,'_').slice(0,12)}</span></td>
+        <td class="num">${fmtMoney(m.aum)}</td>
+        <td class="num">${(aumPct*100).toFixed(1)}%</td>
+        <td class="num">${m.ytd !== null && m.ytd !== undefined ? pmFmtPct(m.ytd, 1) : '—'}</td>
+        <td class="num">${m.oneY !== null && m.oneY !== undefined ? pmFmtPct(m.oneY, 1) : '—'}</td>
+        <td>${escapeHtml(m.since || '')}</td>
+      </tr>`;
+    }).join('');
+
+    // Exposure breakdowns
+    const exposureBar = (obj, palette) => {
+      const entries = Object.entries(obj).sort((a, b) => b[1] - a[1]);
+      const max = Math.max(...entries.map(([, v]) => v));
+      return entries.map(([k, v], i) => `
+        <div class="pm-exp-row">
+          <div class="pm-exp-label">${escapeHtml(k)}</div>
+          <div class="pm-exp-bar"><div class="pm-exp-fill" style="width: ${((v/max)*100).toFixed(1)}%; background: ${palette[i % palette.length]};"></div></div>
+          <div class="pm-exp-val">${pmFmtPct(v, 1)}</div>
+        </div>
+      `).join('');
+    };
+    const sectorPalette = ['#1f7050','#2b5a8a','#c4830d','#6b5c8a','#7c7468','#8a5d3e','#3e7c70','#a35d8a','#5d7ca3','#7c8a3e'];
+    const geoPalette = ['#1f7050','#2b5a8a','#c4830d','#6b5c8a'];
+
+    // Realized risk vs modeled
+    const rr = p.realizedRisk;
+    const saaMetrics = state.saa?.metrics;
+
+    // Updates feed
+    const kindLabel = { manager: 'MANAGER', market: 'MARKET', sector: 'SECTOR', geography: 'GEOGRAPHY' };
+    const kindColor = { manager: 'pm-k-manager', market: 'pm-k-market', sector: 'pm-k-sector', geography: 'pm-k-geo' };
+    const updateCards = (p.updates || []).map((u) => `
+      <div class="pm-update-card${u.isNew ? ' pm-update-new' : ''}">
+        <div class="pm-update-head">
+          <span class="pm-update-kind ${kindColor[u.kind] || ''}">${kindLabel[u.kind] || u.kind?.toUpperCase()}</span>
+          ${u.isNew ? '<span class="pm-update-new-badge">NEW</span>' : ''}
+          <span class="pm-update-date">${fmtDate(u.date)}</span>
+          <span class="pm-update-source">${escapeHtml(u.source || '')}</span>
+        </div>
+        <div class="pm-update-title">${escapeHtml(u.title)}</div>
+        <div class="pm-update-body">${escapeHtml(u.body)}</div>
+      </div>
+    `).join('');
+
+    // Compute actual liquidity from actualWeights
+    const t1Actual = CMA.filter((c) => c.tier === 1).reduce((s, c) => s + (p.actualWeights[c.id] || 0), 0);
+    const t2Actual = CMA.filter((c) => c.tier === 2).reduce((s, c) => s + (p.actualWeights[c.id] || 0), 0);
+    const t3Actual = CMA.filter((c) => c.tier === 3).reduce((s, c) => s + (p.actualWeights[c.id] || 0), 0);
+    const t1Target = CMA.filter((c) => c.tier === 1).reduce((s, c) => s + (saaW[c.id] || 0), 0);
+    const t2Target = CMA.filter((c) => c.tier === 2).reduce((s, c) => s + (saaW[c.id] || 0), 0);
+    const t3Target = CMA.filter((c) => c.tier === 3).reduce((s, c) => s + (saaW[c.id] || 0), 0);
+
+    artifactBody.innerHTML = `
+      ${itemHeadHtml('Portfolio monitoring', '<button class="save-changes-btn" id="mon-ack" data-action="mon-ack" style="background: transparent; color: var(--ink); border-color: var(--line);">Mark updates read</button>')}
+      <div class="ips-title">${escapeHtml(state.org.name)} · Portfolio monitoring</div>
+      <div class="ips-sub">As of <strong>${fmtDate(p.asOf)}</strong> · Total AUM ${fmtMoney(state.aum)} · Ask the agent for any cut of the data.</div>
+
+      <div class="pm-card pm-metrics" style="grid-template-columns: repeat(4, 1fr);">
+        <div class="pm-metric"><div class="pm-metric-label">Realized vol (T12M)</div><div class="pm-metric-value">${pmFmtPct(rr.vol, 1)}</div><div class="pm-metric-sub">modeled ${pmFmtPct(rr.modeledVol, 1)}</div></div>
+        <div class="pm-metric"><div class="pm-metric-label">Realized Sharpe</div><div class="pm-metric-value">${rr.sharpe.toFixed(2)}</div><div class="pm-metric-sub">${saaMetrics ? `modeled ${saaMetrics.sharpe.toFixed(2)}` : 'JPM 2025 CMAs'}</div></div>
+        <div class="pm-metric"><div class="pm-metric-label">Max drawdown</div><div class="pm-metric-value">${pmFmtPct(rr.maxDD, 1)}</div><div class="pm-metric-sub">peak-to-trough</div></div>
+        <div class="pm-metric"><div class="pm-metric-label">Beta · MSCI ACWI</div><div class="pm-metric-value">${rr.beta.toFixed(2)}</div><div class="pm-metric-sub">trailing 12mo</div></div>
+      </div>
+
+      <div class="pm-card">
+        <div class="pm-card-label">Drift vs SAA targets</div>
+        <table class="pm-table">
+          <thead><tr><th>Asset class</th><th class="num">Target</th><th class="num">Actual</th><th class="num">Drift</th><th>IPS range</th></tr></thead>
+          <tbody>${driftRows}</tbody>
+        </table>
+      </div>
+
+      <div class="pm-card">
+        <div class="pm-card-label">Liquidity profile · actual vs target</div>
+        <table class="pm-table">
+          <thead><tr><th>Tier</th><th class="num">Target</th><th class="num">Actual</th><th class="num">Drift</th></tr></thead>
+          <tbody>
+            <tr><td><span class="pm-tier-badge t1">T1</span> Daily liquid</td><td class="num">${pmFmtPct(t1Target, 1)}</td><td class="num">${pmFmtPct(t1Actual, 1)}</td><td class="num">${((t1Actual - t1Target)*100).toFixed(2)}pp</td></tr>
+            <tr><td><span class="pm-tier-badge t2">T2</span> Monthly–Quarterly</td><td class="num">${pmFmtPct(t2Target, 1)}</td><td class="num">${pmFmtPct(t2Actual, 1)}</td><td class="num">${((t2Actual - t2Target)*100).toFixed(2)}pp</td></tr>
+            <tr><td><span class="pm-tier-badge t3">T3</span> Multi-year illiquid</td><td class="num">${pmFmtPct(t3Target, 1)}</td><td class="num">${pmFmtPct(t3Actual, 1)}</td><td class="num">${((t3Actual - t3Target)*100).toFixed(2)}pp</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="pm-card">
+        <div class="pm-card-label">Performance by asset class · net of fees</div>
+        <table class="pm-table">
+          <thead><tr><th>Asset class</th><th class="num" colspan="2">YTD</th><th class="num" colspan="2">1Y</th><th class="num" colspan="2">3Y</th><th class="num">ITD</th><th>Benchmark</th></tr><tr><th></th><th class="num">Portfolio</th><th class="num">Bench</th><th class="num">Portfolio</th><th class="num">Bench</th><th class="num">Portfolio</th><th class="num">Bench</th><th class="num"></th><th></th></tr></thead>
+          <tbody>${perfRows}</tbody>
+        </table>
+      </div>
+
+      <div class="pm-card">
+        <div class="pm-card-label">Sector exposure · equity sleeve</div>
+        ${exposureBar(p.sectorExposure, sectorPalette)}
+      </div>
+
+      <div class="pm-card">
+        <div class="pm-card-label">Geography exposure</div>
+        ${exposureBar(p.geoExposure, geoPalette)}
+      </div>
+
+      <div class="pm-card">
+        <div class="pm-card-label">Manager-level positions · ${p.managers.length} mandates</div>
+        <table class="pm-table">
+          <thead><tr><th>Manager</th><th>Asset class</th><th>Vehicle</th><th class="num">AUM</th><th class="num">% Total</th><th class="num">YTD</th><th class="num">1Y</th><th>Since</th></tr></thead>
+          <tbody>${mgrRows}</tbody>
+        </table>
+      </div>
+
+      <div class="pm-card">
+        <div class="pm-card-label">Updates feed · ${(p.updates || []).length} items, ${(p.updates || []).filter((u) => u.isNew).length} new</div>
+        <div class="pm-updates">${updateCards || '<div class="pf-empty">No updates yet.</div>'}</div>
+      </div>
+    `;
+    artifactFooter.classList.remove('visible');
+    updateUrl();
+  }
+
+  function markPortfolioUpdatesRead() {
+    if (!state.portfolio || !state.portfolio.updates) return;
+    state.portfolio.updates.forEach((u) => { u.isNew = false; });
+    if (state.clientId && !isSampleId(state.clientId)) saveClient();
+    openMonitoringView();
+    renderClientWorkspace();
   }
 
   function fmtDate(iso) {
@@ -3869,6 +4194,7 @@
     state.facts = {};
     state.boardNotes = [];
     state.decisions = [];
+    state.portfolio = null;
     state.ipsStatus = 'Draft';
     state.phase = 'opening';
     state.pendingFacts = null;
@@ -4643,6 +4969,9 @@
       e.preventDefault();
       const card = btn.closest('.bn-card');
       if (card) card.classList.toggle('bn-expanded');
+    } else if (a === 'mon-ack') {
+      e.preventDefault();
+      markPortfolioUpdatesRead();
     } else if (a === 'pf-edit') {
       e.preventDefault();
       profileEdit[btn.dataset.section] = true;
@@ -4699,6 +5028,7 @@
       else if (wf === 'profile') openClientProfileView();
       else if (wf === 'board-notes') openBoardNotesView();
       else if (wf === 'decisions') openDecisionLogView();
+      else if (wf === 'monitoring') openMonitoringView();
       else if (wf === 'reports') openQuarterlyReportView();
       else if (wf === 'memos') openManagerMemosView();
     } else if (a === 'pm-run') {
@@ -4784,6 +5114,7 @@
     else if (view === 'profile') openClientProfileView();
     else if (view === 'board') openBoardNotesView();
     else if (view === 'decisions') openDecisionLogView();
+    else if (view === 'monitoring') openMonitoringView();
     else if (view === 'reports') openQuarterlyReportView(params.get('report'));
     else if (view === 'memos') { const mid = params.get('memo'); if (mid) openManagerMemoView(mid); else openManagerMemosView(); }
     return true;
