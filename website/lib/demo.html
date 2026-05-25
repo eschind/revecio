@@ -379,6 +379,26 @@
   .pm-tier-badge.t2 { background: rgba(196,131,13,0.15); color: #8a5d0a; }
   .pm-tier-badge.t3 { background: rgba(107,92,138,0.18); color: #4d3f6b; }
 
+  /* Liquidity & spending coverage card */
+  .pm-cov-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px 18px; margin-bottom: 14px; }
+  .pm-cov-cell .pm-cov-label { font-family: 'JetBrains Mono', monospace; font-size: 9.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+  .pm-cov-cell .pm-cov-value { font-family: 'Newsreader', serif; font-size: 20px; color: var(--ink); line-height: 1.1; }
+  .pm-cov-cell .pm-cov-value.warn { color: #b13a3a; }
+  .pm-cov-cell .pm-cov-value.ok { color: var(--accent); }
+  .pm-cov-cell .pm-cov-sub { font-size: 11px; color: var(--muted); margin-top: 3px; }
+  .pm-cov-bars { display: flex; flex-direction: column; gap: 8px; margin: 12px 0 8px; }
+  .pm-cov-bar-row { display: grid; grid-template-columns: 70px 1fr 88px; align-items: center; gap: 10px; font-size: 12px; }
+  .pm-cov-bar-label { color: var(--muted); font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; }
+  .pm-cov-bar-track { display: flex; height: 12px; border-radius: 6px; overflow: hidden; background: var(--line-soft); }
+  .pm-cov-bar-fill { display: block; height: 100%; min-width: 0; }
+  .pm-cov-bar-fill.need { background: #b13a3a; }
+  .pm-cov-bar-fill.t1 { background: var(--accent); }
+  .pm-cov-bar-fill.t2 { background: #c4830d; }
+  .pm-cov-bar-fill.t3 { background: #6b5c8a; }
+  .pm-cov-bar-val { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--ink-2); text-align: right; }
+  .pm-cov-legend { display: flex; flex-wrap: wrap; gap: 12px; font-size: 10.5px; color: var(--ink-2); margin-top: 6px; }
+  .pm-cov-legend i { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 6px; vertical-align: 0; }
+
   .pm-tier-bar { display: flex; height: 8px; border-radius: 4px; overflow: hidden; margin: 4px 0 12px; background: var(--line-soft); }
   .pm-tier-fill { display: block; height: 100%; }
   .pm-tier-fill.t1 { background: var(--accent); }
@@ -1986,6 +2006,20 @@
   const RF = 0.034;            // risk-free for Sharpe (JPM 2025 cash CMA)
   const INFLATION = 0.024;     // 10y headline CPI assumption (JPM 2025)
   const LIQ_FLOOR = 0.50;      // Tier-1 minimum
+  // Liquidity sources: fraction of each tier accessible within 12 months
+  const T2_ACCESS = 0.50;      // ~half of monthly/quarterly redemption can be raised in 12mo
+  const T3_DISTRIB = 0.15;     // mature PE/PC distributes ~15% NAV per year
+  const CALL_RATE = 0.10;      // expected new capital calls ~10% of T3 NAV per year
+
+  function inferSpendingRate(factsSpending) {
+    if (!factsSpending) return 0.045;
+    const m = String(factsSpending).match(/(\d+(?:\.\d+)?)\s*%/);
+    if (m) {
+      const v = parseFloat(m[1]) / 100;
+      if (v > 0.005 && v < 0.20) return v;
+    }
+    return 0.045;
+  }
 
   function portfolioMetrics(weights) {
     const ids = CMA.map((c) => c.id);
@@ -2121,11 +2155,46 @@
       </div>
 
       <div class="pm-card">
-        <div class="pm-card-label">Liquidity profile</div>
-        <div class="pm-tier-bar"><span class="pm-tier-fill t1" data-fill="1"></span><span class="pm-tier-fill t2" data-fill="2"></span><span class="pm-tier-fill t3" data-fill="3"></span></div>
-        <div class="pm-tier-row" data-row="1"><span><span class="swatch" style="background: var(--accent);"></span>Tier 1 · Daily liquid</span><span><span class="pm-tier-val" data-pct="1">—</span><span class="pm-tier-status">floor ${pmFmtPct(LIQ_FLOOR, 0)}</span></span></div>
-        <div class="pm-tier-row" data-row="2"><span><span class="swatch" style="background: #c4830d;"></span>Tier 2 · Monthly–Quarterly</span><span class="pm-tier-val" data-pct="2">—</span></div>
-        <div class="pm-tier-row" data-row="3"><span><span class="swatch" style="background: #6b5c8a;"></span>Tier 3 · Multi-year illiquid</span><span class="pm-tier-val" data-pct="3">—</span></div>
+        <div class="pm-card-label">Liquidity &amp; spending coverage <span style="color: var(--muted); text-transform: none; letter-spacing: 0; font-family: 'Newsreader', serif; font-size: 12px; margin-left: 8px;">— 12-month projection</span></div>
+        <div class="pm-cov-grid">
+          <div class="pm-cov-cell">
+            <div class="pm-cov-label">1y spending need</div>
+            <div class="pm-cov-value" id="pm-cov-need">—</div>
+            <div class="pm-cov-sub" id="pm-cov-need-sub">—</div>
+          </div>
+          <div class="pm-cov-cell">
+            <div class="pm-cov-label">1y liquidity available</div>
+            <div class="pm-cov-value" id="pm-cov-avail">—</div>
+            <div class="pm-cov-sub" id="pm-cov-avail-sub">T1 + T2 redemptions + T3 distributions</div>
+          </div>
+          <div class="pm-cov-cell">
+            <div class="pm-cov-label">Coverage cushion</div>
+            <div class="pm-cov-value" id="pm-cov-cushion">—</div>
+            <div class="pm-cov-sub" id="pm-cov-cushion-sub">multiple of annual spend need</div>
+          </div>
+        </div>
+        <div class="pm-cov-bars">
+          <div class="pm-cov-bar-row">
+            <div class="pm-cov-bar-label">Need</div>
+            <div class="pm-cov-bar-track"><div class="pm-cov-bar-fill need" id="pm-cov-bar-need"></div></div>
+            <div class="pm-cov-bar-val" id="pm-cov-bar-need-val">—</div>
+          </div>
+          <div class="pm-cov-bar-row">
+            <div class="pm-cov-bar-label">Available</div>
+            <div class="pm-cov-bar-track">
+              <div class="pm-cov-bar-fill t1" id="pm-cov-bar-t1" title="Tier 1 · daily liquid"></div>
+              <div class="pm-cov-bar-fill t2" id="pm-cov-bar-t2" title="Tier 2 · 50% accessible in 12mo"></div>
+              <div class="pm-cov-bar-fill t3" id="pm-cov-bar-t3" title="Tier 3 · ~15% NAV distributions"></div>
+            </div>
+            <div class="pm-cov-bar-val" id="pm-cov-bar-avail-val">—</div>
+          </div>
+        </div>
+        <div class="pm-cov-legend">
+          <span><i style="background: var(--accent);"></i>T1 daily-liquid · 100%</span>
+          <span><i style="background: #c4830d;"></i>T2 ≤12mo redemption · ${(T2_ACCESS*100).toFixed(0)}%</span>
+          <span><i style="background: #6b5c8a;"></i>T3 NAV distributions · ${(T3_DISTRIB*100).toFixed(0)}%/yr</span>
+          <span style="margin-left: auto; color: var(--muted);">spend ${pmFmtPct(inferSpendingRate(state.facts?.spending),1)} + calls ${(CALL_RATE*100).toFixed(0)}% of T3</span>
+        </div>
       </div>
 
       <div class="pm-card">
@@ -2191,14 +2260,40 @@
     tot.classList.toggle('ok', totOk);
 
     const t1pct = metrics.tiers[1], t2pct = metrics.tiers[2], t3pct = metrics.tiers[3];
-    artifactBody.querySelector('[data-pct="1"]').textContent = pmFmtPct(t1pct, 1);
-    artifactBody.querySelector('[data-pct="2"]').textContent = pmFmtPct(t2pct, 1);
-    artifactBody.querySelector('[data-pct="3"]').textContent = pmFmtPct(t3pct, 1);
-    artifactBody.querySelector('[data-fill="1"]').style.width = (t1pct * 100).toFixed(1) + '%';
-    artifactBody.querySelector('[data-fill="2"]').style.width = (t2pct * 100).toFixed(1) + '%';
-    artifactBody.querySelector('[data-fill="3"]').style.width = (t3pct * 100).toFixed(1) + '%';
-    const tier1Row = artifactBody.querySelector('.pm-tier-row[data-row="1"]');
-    tier1Row.classList.toggle('warn', t1pct < LIQ_FLOOR - 1e-6);
+
+    // Liquidity & spending coverage (12-month projection)
+    const spendingRate = inferSpendingRate(state.facts?.spending);
+    const callsNeed = t3pct * CALL_RATE;
+    const totalNeed = spendingRate + callsNeed;
+    const t1src = t1pct;
+    const t2src = t2pct * T2_ACCESS;
+    const t3src = t3pct * T3_DISTRIB;
+    const totalAvail = t1src + t2src + t3src;
+    const cushion = totalNeed > 0 ? totalAvail / totalNeed : 0;
+
+    const need = document.getElementById('pm-cov-need');
+    if (need) {
+      need.textContent = pmFmtPct(totalNeed, 1);
+      document.getElementById('pm-cov-need-sub').textContent = `${pmFmtPct(spendingRate, 1)} spending + ${pmFmtPct(callsNeed, 1)} capital calls`;
+      document.getElementById('pm-cov-avail').textContent = pmFmtPct(totalAvail, 1);
+      document.getElementById('pm-cov-avail-sub').textContent = `${pmFmtPct(t1src, 1)} T1 · ${pmFmtPct(t2src, 1)} T2 · ${pmFmtPct(t3src, 1)} T3`;
+      const cushionEl = document.getElementById('pm-cov-cushion');
+      cushionEl.textContent = cushion >= 99 ? '∞' : `${cushion.toFixed(1)}×`;
+      cushionEl.classList.toggle('warn', cushion < 1.5);
+      cushionEl.classList.toggle('ok', cushion >= 3);
+      document.getElementById('pm-cov-cushion-sub').textContent = cushion < 1.5
+        ? 'below comfort threshold — review allocation or spending'
+        : cushion < 3 ? 'thin — manageable but watch capital calls' : 'multiple of annual spend need';
+
+      // Bars: scale to max(need, avail) so both fit
+      const scale = Math.max(totalNeed, totalAvail) * 1.05 + 1e-6;
+      document.getElementById('pm-cov-bar-need').style.width = ((totalNeed / scale) * 100).toFixed(2) + '%';
+      document.getElementById('pm-cov-bar-t1').style.width = ((t1src / scale) * 100).toFixed(2) + '%';
+      document.getElementById('pm-cov-bar-t2').style.width = ((t2src / scale) * 100).toFixed(2) + '%';
+      document.getElementById('pm-cov-bar-t3').style.width = ((t3src / scale) * 100).toFixed(2) + '%';
+      document.getElementById('pm-cov-bar-need-val').textContent = pmFmtPct(totalNeed, 1);
+      document.getElementById('pm-cov-bar-avail-val').textContent = pmFmtPct(totalAvail, 1);
+    }
 
     // Validate inputs against bounds
     artifactBody.querySelectorAll('.pm-w-input').forEach((inp) => {
