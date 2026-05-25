@@ -3246,7 +3246,7 @@
     setTimeout(() => {
       const sec = document.getElementById('sec-7');
       if (sec) {
-        sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        smoothScrollToSection(sec);
         sec.classList.add('section-flash');
         setTimeout(() => sec.classList.remove('section-flash'), 700);
       }
