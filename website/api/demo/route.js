@@ -12,27 +12,35 @@ You receive:
 Classify the message and return ONLY a single JSON object (no markdown, no commentary):
 
 {
-  "intent": "open" | "next" | "previous" | "switch" | "edit" | "switch_and_edit" | "question" | "unclear",
+  "intent": "analyze" | "open" | "next" | "previous" | "switch" | "edit" | "switch_and_edit" | "question" | "unclear",
   "targetModule": "ips" | "portfolio" | "materials" | null,
   "targetSectionNum": <number or null>,
+  "query": "sharpe" | "return" | "vol" | "real_return" | "allocation" | "liquidity" | "metrics" | null,
   "editPrompt": <string or null>,
   "reply": <string or null>
 }
 
 Rules:
-- "open" — user wants to pull up a different vault item. Set targetModule to "ips", "portfolio", or "materials". Examples: "show me the portfolio", "pull up the SAA", "open the IPS", "let's look at the materials", "model the allocation".
-- "next" / "previous" — only when an IPS draft is the current focus and the user wants to advance/retreat through sections. Examples: "next", "move on", "back".
-- "switch" — focus on a different IPS section without editing. Examples: "show me section 4", "go to spending policy".
-- "edit" — change the CURRENT IPS section. editPrompt = concise plain-English instruction restating what to change.
+- "analyze" — a SPECIFIC factual question that can be answered inline from the portfolio data. Do NOT open a module for these. Set "query" to one of:
+  - "sharpe" — "what's our Sharpe?", "Sharpe ratio?"
+  - "return" — "expected return?", "10y return?"
+  - "vol" — "what's the vol?", "annualized risk?"
+  - "real_return" — "real return?", "after inflation?"
+  - "allocation" — "what's the asset mix?", "show the weights", "current allocation table"
+  - "liquidity" — "liquidity coverage?", "spending cushion?", "can we cover capital calls?"
+  - "metrics" — "summarize the portfolio", "give me the key metrics" (returns the headline numbers)
+- "open" — user wants to pull up a vault item to WORK in it, not just ask a factual question. Examples: "open the IPS", "let's model the portfolio", "show me the materials". Set targetModule.
+- "next" / "previous" — only when IPS is in focus and the user wants to advance/retreat through sections.
+- "switch" — focus on a different IPS section without editing.
+- "edit" — change the CURRENT IPS section. editPrompt = neutral instruction.
 - "switch_and_edit" — change a DIFFERENT IPS section. Set targetSectionNum and editPrompt.
-- "question" — clarifying question that doesn't change focus. Set reply to a brief, helpful answer.
-- "unclear" — you can't tell. Set reply to a brief follow-up question.
+- "question" — a question that ISN'T one of the analyze queries above and doesn't change focus. Set reply.
+- "unclear" — you can't tell. Set reply to a follow-up question.
 
 Important:
-- If the user references the portfolio, SAA, allocation, weights, capital market assumptions, or modeling, that's "open" with targetModule="portfolio".
-- If they reference the IPS or a section by number/title from the IPS module while not currently in IPS, that's "open" with targetModule="ips" (plus optionally targetSectionNum).
-- editPrompt should NOT echo the user's exact words verbatim. Restate clearly and neutrally.
-- "ok" or "yes" alone is ambiguous — return "unclear" and ask what they want next.
+- Prefer "analyze" over "open" when the user is asking a specific numeric question. "What's the Sharpe?" is analyze. "Open the SAA" is open.
+- editPrompt should NOT echo verbatim; restate clearly.
+- "ok"/"yes" alone is ambiguous — return "unclear".
 - Never include markdown code fences. Return raw JSON only.`;
 
 function readBody(req) {

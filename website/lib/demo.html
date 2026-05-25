@@ -977,6 +977,12 @@
 
     const intent = route?.intent;
 
+    if (intent === 'analyze') {
+      const html = answerAnalysisQuery(route?.query);
+      await agentReply(html || `<p>${escapeHtml(route?.reply || 'Not sure how to answer that one yet.')}</p>`);
+      return;
+    }
+
     if (intent === 'open') {
       const target = route?.targetModule;
       if (target === 'portfolio') {
@@ -2807,6 +2813,84 @@
       }
     }, 50);
     addAgent(buildAdoptionMessage(state.saa));
+  }
+
+  // Pick the most relevant portfolio for ad-hoc questions:
+  // 1. Adopted SAA, 2. weights currently being modeled, 3. IPS-range midpoints.
+  function activePortfolioForAnswers() {
+    if (state.saa && state.saa.weights) return { weights: state.saa.weights, source: 'adopted SAA' };
+    if (state_pm.weights) return { weights: state_pm.weights, source: 'current model' };
+    return { weights: defaultMidpointWeights(), source: 'IPS midpoints' };
+  }
+
+  function answerAnalysisQuery(query) {
+    if (!state.org.name) {
+      return `<p>Open a client first — then I can answer portfolio questions for them.</p>`;
+    }
+    const { weights, source } = activePortfolioForAnswers();
+    const m = portfolioMetrics(weights);
+    const sourceLine = `<div style="font-size:11px;color:var(--muted);margin-top:6px;font-family:'JetBrains Mono',monospace;letter-spacing:0.04em;">Based on ${source}</div>`;
+    const card = (label, body) => `<div style="background:#fff;border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin:6px 0;"><div style="font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">${label}</div>${body}</div>`;
+
+    if (query === 'sharpe') {
+      return `<p>Sharpe ratio: <strong>${m.sharpe.toFixed(2)}</strong> (rf ${pmFmtPct(RF, 1)}).</p>
+        <p style="font-size:12.5px;color:var(--muted);">For context — diversified institutional allocations under JPM's 2025 CMAs typically run 0.30–0.45; a 60/40 sits around 0.50. The number reflects ${pmFmtPct(m.ret, 1)} expected return over ${pmFmtPct(m.vol, 1)} vol.</p>${sourceLine}`;
+    }
+    if (query === 'return') {
+      return `<p>10-year expected return: <strong>${pmFmtPct(m.ret, 2)}</strong> (arithmetic, annualized).</p>
+        <p style="font-size:12.5px;color:var(--muted);">Real return after ${pmFmtPct(INFLATION,1)} inflation: ${pmFmtPct(m.realRet, 2)}.</p>${sourceLine}`;
+    }
+    if (query === 'vol') {
+      return `<p>Annualized volatility: <strong>${pmFmtPct(m.vol, 2)}</strong>.</p>${sourceLine}`;
+    }
+    if (query === 'real_return') {
+      return `<p>Real return (10y): <strong>${pmFmtPct(m.realRet, 2)}</strong>.</p>
+        <p style="font-size:12.5px;color:var(--muted);">Nominal ${pmFmtPct(m.ret, 2)} minus ${pmFmtPct(INFLATION,1)} CPI assumption. Spending policy is ${pmFmtPct(inferSpendingRate(state.facts?.spending),1)} — buffer of ${pmFmtPct(m.realRet - inferSpendingRate(state.facts?.spending), 2)} above the policy rate.</p>${sourceLine}`;
+    }
+    if (query === 'allocation') {
+      const groups = [
+        { label: 'Public equity',     ids: ['us_eq', 'intl_eq', 'em_eq'] },
+        { label: 'Fixed income',      ids: ['core_fi', 'tips', 'hy'] },
+        { label: 'Alternatives',      ids: ['hf', 'pe', 'pc', 'ra'] },
+        { label: 'Cash',              ids: ['cash'] },
+      ];
+      const detailRows = groups.flatMap((g) => g.ids).map((id) => {
+        const w = weights[id] || 0;
+        if (w < 0.001) return '';
+        return `<tr><td style="padding:3px 8px 3px 0;color:var(--ink-2);">${CMA_BY[id].name}</td><td style="padding:3px 0;text-align:right;font-family:'JetBrains Mono',monospace;color:var(--ink);">${pmFmtPct(w, 1)}</td></tr>`;
+      }).join('');
+      const groupRows = groups.map((g) => {
+        const total = g.ids.reduce((s, id) => s + (weights[id] || 0), 0);
+        return `<tr><td style="padding:3px 8px 3px 0;color:var(--ink-2);font-weight:500;">${g.label}</td><td style="padding:3px 0;text-align:right;font-family:'JetBrains Mono',monospace;font-weight:500;color:var(--ink);">${pmFmtPct(total, 1)}</td></tr>`;
+      }).join('');
+      return `<p>Current asset allocation:</p>
+        ${card('By family', `<table style="width:100%;border-collapse:collapse;font-size:12.5px;">${groupRows}</table>`)}
+        ${card('Detail', `<table style="width:100%;border-collapse:collapse;font-size:12px;">${detailRows}</table>`)}
+        ${sourceLine}`;
+    }
+    if (query === 'liquidity') {
+      const spendingRate = inferSpendingRate(state.facts?.spending);
+      const t1 = m.tiers[1], t2 = m.tiers[2], t3 = m.tiers[3];
+      const need = spendingRate + t3 * CALL_RATE;
+      const avail = t1 + t2 * T2_ACCESS + t3 * T3_DISTRIB;
+      const cushion = need > 0 ? avail / need : 0;
+      return `<p>12-month liquidity coverage:</p>
+        ${card('Coverage', `<table style="width:100%;border-collapse:collapse;font-size:12.5px;">
+          <tr><td style="padding:3px 8px 3px 0;color:var(--ink-2);">1y spending need</td><td style="padding:3px 0;text-align:right;font-family:'JetBrains Mono',monospace;color:var(--ink);">${pmFmtPct(need,1)}</td><td style="padding:3px 0 3px 12px;color:var(--muted);font-size:11px;">${pmFmtPct(spendingRate,1)} spend + ${pmFmtPct(t3*CALL_RATE,1)} calls</td></tr>
+          <tr><td style="padding:3px 8px 3px 0;color:var(--ink-2);">1y liquidity sources</td><td style="padding:3px 0;text-align:right;font-family:'JetBrains Mono',monospace;color:var(--ink);">${pmFmtPct(avail,1)}</td><td style="padding:3px 0 3px 12px;color:var(--muted);font-size:11px;">T1 ${pmFmtPct(t1,1)} · T2(${(T2_ACCESS*100).toFixed(0)}%) ${pmFmtPct(t2*T2_ACCESS,1)} · T3(${(T3_DISTRIB*100).toFixed(0)}%) ${pmFmtPct(t3*T3_DISTRIB,1)}</td></tr>
+          <tr><td style="padding:3px 8px 3px 0;color:var(--ink-2);font-weight:500;">Coverage cushion</td><td style="padding:3px 0;text-align:right;font-family:'JetBrains Mono',monospace;font-weight:500;color:var(--ink);">${cushion.toFixed(1)}×</td><td style="padding:3px 0 3px 12px;color:var(--muted);font-size:11px;">multiple of annual need</td></tr>
+        </table>`)}
+        ${sourceLine}`;
+    }
+    if (query === 'metrics') {
+      return `<p>Headline portfolio metrics:</p>
+        ${card('10y · JPM 2025 LTCMAs', `<table style="width:100%;border-collapse:collapse;font-size:12.5px;">
+          <tr><td style="padding:2px 0;color:var(--ink-2);">Expected return</td><td style="padding:2px 0;text-align:right;font-family:'JetBrains Mono',monospace;color:var(--ink);">${pmFmtPct(m.ret,2)}</td><td style="padding:2px 0 2px 16px;color:var(--ink-2);">Sharpe (rf ${pmFmtPct(RF,1)})</td><td style="padding:2px 0;text-align:right;font-family:'JetBrains Mono',monospace;color:var(--ink);">${m.sharpe.toFixed(2)}</td></tr>
+          <tr><td style="padding:2px 0;color:var(--ink-2);">Annualized vol</td><td style="padding:2px 0;text-align:right;font-family:'JetBrains Mono',monospace;color:var(--ink);">${pmFmtPct(m.vol,2)}</td><td style="padding:2px 0 2px 16px;color:var(--ink-2);">Real return (CPI ${pmFmtPct(INFLATION,1)})</td><td style="padding:2px 0;text-align:right;font-family:'JetBrains Mono',monospace;color:var(--ink);">${pmFmtPct(m.realRet,2)}</td></tr>
+        </table>`)}
+        ${sourceLine}`;
+    }
+    return null;
   }
 
   function buildAdoptionMessage(saa) {
