@@ -33,18 +33,12 @@
     overflow: hidden;
   }
 
-  .app { display: grid; grid-template-rows: 52px 1fr; height: 100vh; }
+  .app { display: grid; grid-template-rows: 1fr; height: 100vh; }
 
-  /* Topbar */
-  .topbar {
-    background: var(--dark-bg); color: var(--dark-ink);
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 0 18px 0 20px;
-    border-bottom: 1px solid #000;
-  }
-  .topbar .left { display: flex; align-items: center; gap: 14px; }
-  .tb-logo { width: 22px; height: 22px; border-radius: 5px; background: var(--dark-ink); color: var(--dark-bg); display: inline-flex; align-items: center; justify-content: center; font-family: 'Newsreader', serif; font-size: 14px; line-height: 1; font-weight: 500; text-decoration: none; cursor: pointer; transition: transform 0.15s ease; }
+  /* Brand mark in sidebar */
+  .tb-logo { width: 26px; height: 26px; border-radius: 6px; background: var(--ink); color: var(--bg-1); display: inline-flex; align-items: center; justify-content: center; font-family: 'Newsreader', serif; font-size: 16px; line-height: 1; font-weight: 500; text-decoration: none; cursor: pointer; transition: transform 0.15s ease; }
   .tb-logo:hover { transform: scale(1.08); }
+  .sidebar-logo { margin: 2px 4px 6px; }
 
   /* Layout */
   .layout { display: grid; grid-template-columns: 232px 1fr 0; min-height: 0; overflow: hidden; transition: grid-template-columns 0.3s ease; }
@@ -359,14 +353,9 @@
 </head>
 <body>
 <div class="app">
-  <header class="topbar">
-    <div class="left">
-      <a class="tb-logo" href="/" title="Reve — home" aria-label="Reve — home">R</a>
-    </div>
-  </header>
-
   <div class="layout" id="layout">
     <aside class="sidebar">
+      <a class="tb-logo sidebar-logo" href="/" title="Reve — home" aria-label="Reve — home">R</a>
       <div class="nav-group">
         <div class="nav-label">Workspace</div>
         <div class="nav-item active" id="nav-new-client" data-action="new-client" title="Start a new onboarding">
@@ -405,7 +394,6 @@
         </div>
       </div>
 
-      <div style="margin-top: auto; padding: 12px 10px; font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--muted); letter-spacing: 0.06em;">DEMO · v0.1</div>
     </aside>
 
     <main class="conv">
