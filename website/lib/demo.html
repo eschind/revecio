@@ -430,6 +430,8 @@
   .save-changes-btn { appearance: none; cursor: pointer; font: inherit; font-size: 11.5px; padding: 4px 12px; border-radius: 999px; background: var(--accent); border: 1px solid var(--accent); color: var(--dark-ink); transition: opacity 0.15s; }
   .save-changes-btn:hover { background: var(--accent-2); border-color: var(--accent-2); }
   .save-changes-btn:disabled { background: transparent; color: var(--muted); border-color: var(--line); cursor: default; }
+  .item-close-btn { appearance: none; cursor: pointer; background: transparent; border: 1px solid var(--line); color: var(--muted); border-radius: 6px; width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center; padding: 0; flex-shrink: 0; }
+  .item-close-btn:hover { color: var(--ink); border-color: var(--ink); background: var(--bg-2); }
 </style>
 </head>
 <body>
@@ -1776,7 +1778,7 @@
 
   function itemHeadHtml(label, rightHtml = '') {
     if (!layout.classList.contains('client-open')) return '';
-    return `<div class="item-head"><button class="back-to-vault" data-action="back-to-vault" title="Back to vault"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>Vault</button><span style="color: var(--muted); font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;">${escapeHtml(label)}</span><span style="flex: 1;"></span>${rightHtml}</div>`;
+    return `<div class="item-head"><button class="back-to-vault" data-action="back-to-vault" title="Back to vault (Esc)"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>Vault</button><span style="color: var(--muted); font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;">${escapeHtml(label)}</span><span style="flex: 1;"></span>${rightHtml}<button class="item-close-btn" data-action="back-to-vault" title="Close (Esc)" aria-label="Close"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>`;
   }
   function enterItemView() {
     if (layout.classList.contains('client-open')) layout.classList.add('expanded');
@@ -2434,6 +2436,17 @@
     pop.classList.remove('open');
     const btn = artifactBody.querySelector('[data-action="pm-toggle-method"]');
     if (btn) { btn.classList.remove('active'); btn.setAttribute('aria-expanded', 'false'); }
+  });
+
+  // Esc closes the expanded item view back to the vault
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    if (!layout.classList.contains('client-open') || !layout.classList.contains('expanded')) return;
+    // Don't intercept when typing into an input/textarea/contentEditable
+    const t = e.target;
+    if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+    e.preventDefault();
+    backToVault();
   });
 
   // ============ Init ============
