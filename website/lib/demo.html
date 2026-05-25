@@ -380,6 +380,75 @@
   .artifact-body .ips-title { font-family: 'Newsreader', serif; font-size: 24px; font-weight: 400; margin-bottom: 4px; letter-spacing: -0.01em; }
   .artifact-body .ips-sub { font-size: 12px; color: var(--muted); margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--line-soft); }
 
+  /* ============ Quarterly report ============ */
+  :root { --qr-pos: #1f7050; --qr-neg: #b4453a; }
+  .qr-cover { background: var(--ink); color: var(--dark-ink); border-radius: 12px; padding: 28px 30px; margin-bottom: 28px; }
+  .qr-cover .qr-kicker { font-family: 'JetBrains Mono', monospace; font-size: 10.5px; letter-spacing: 0.16em; text-transform: uppercase; color: rgba(244,241,234,0.6); }
+  .qr-cover .qr-cover-title { font-family: 'Newsreader', serif; font-size: 30px; line-height: 1.12; margin: 10px 0 4px; letter-spacing: -0.01em; }
+  .qr-cover .qr-cover-sub { font-size: 13.5px; color: rgba(244,241,234,0.78); line-height: 1.5; max-width: 64ch; }
+  .qr-cover-facts { display: flex; flex-wrap: wrap; gap: 0 36px; margin-top: 20px; padding-top: 18px; border-top: 1px solid rgba(244,241,234,0.16); }
+  .qr-cover-facts .qf { padding: 2px 0; }
+  .qr-cover-facts .qf-label { font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(244,241,234,0.55); }
+  .qr-cover-facts .qf-value { font-size: 15px; margin-top: 3px; }
+
+  .qr-section { margin: 0 0 30px; scroll-margin-top: 16px; }
+  .qr-section > h3 { font-family: 'Newsreader', serif; font-weight: 400; font-size: 21px; letter-spacing: -0.01em; color: var(--ink); margin: 0 0 4px; display: flex; align-items: baseline; gap: 10px; }
+  .qr-section > h3 .qr-sec-num { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--accent); }
+  .qr-section .qr-sec-lead { font-size: 13px; color: var(--muted); margin: 0 0 14px; line-height: 1.5; }
+  .qr-section h4 { font-family: 'Newsreader', serif; font-weight: 500; font-size: 15px; color: var(--ink); margin: 18px 0 6px; }
+  .qr-section p { font-size: 13.5px; line-height: 1.66; color: var(--ink-2); margin: 8px 0; }
+  .qr-section ul { font-size: 13.5px; line-height: 1.6; color: var(--ink-2); padding-left: 20px; margin: 8px 0; }
+  .qr-section li { margin: 4px 0; }
+  .qr-section strong { color: var(--ink); font-weight: 600; }
+
+  /* KPI strip */
+  .qr-kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 16px 0 4px; }
+  .qr-kpi { background: var(--panel); border: 1px solid var(--line); border-radius: 9px; padding: 12px 14px; }
+  .qr-kpi .k-label { font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+  .qr-kpi .k-value { font-size: 22px; font-family: 'Newsreader', serif; color: var(--ink); margin-top: 5px; line-height: 1; }
+  .qr-kpi .k-sub { font-size: 11px; color: var(--muted); margin-top: 5px; }
+
+  /* Exhibit wrapper */
+  .qr-exhibit { margin: 16px 0 8px; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--panel); }
+  .qr-exhibit-head { padding: 10px 14px; border-bottom: 1px solid var(--line-soft); background: var(--bg-2); }
+  .qr-exhibit-head .qx-label { font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+  .qr-exhibit-head .qx-title { font-size: 13.5px; color: var(--ink); font-weight: 500; margin-top: 2px; }
+  .qr-table { width: 100%; border-collapse: collapse; }
+  .qr-table th { font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); font-weight: 500; text-align: right; padding: 9px 12px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  .qr-table th:first-child { text-align: left; }
+  .qr-table td { font-size: 12.5px; color: var(--ink-2); padding: 8px 12px; border-bottom: 1px solid var(--line-soft); text-align: right; font-family: 'JetBrains Mono', monospace; white-space: nowrap; }
+  .qr-table td:first-child { text-align: left; font-family: inherit; color: var(--ink); white-space: normal; }
+  .qr-table tbody tr:last-child td { border-bottom: 0; }
+  .qr-table tr.qr-total td { border-top: 2px solid var(--line); border-bottom: 0; font-weight: 600; color: var(--ink); background: var(--bg-2); }
+  .qr-table tr.qr-group td { background: var(--bg-2); font-family: 'JetBrains Mono', monospace; font-size: 9.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); text-align: left; padding: 6px 12px; }
+  .qr-table .qr-sub td:first-child { padding-left: 22px; color: var(--ink-2); font-size: 12px; }
+  .qr-pos { color: var(--qr-pos); }
+  .qr-neg { color: var(--qr-neg); }
+  .qr-muted { color: var(--muted); }
+  .qr-tag { font-family: 'JetBrains Mono', monospace; font-size: 8.5px; letter-spacing: 0.06em; text-transform: uppercase; padding: 2px 6px; border-radius: 4px; }
+  .qr-tag.t-watch { background: rgba(180,69,58,0.12); color: var(--qr-neg); }
+  .qr-tag.t-term { background: var(--line); color: var(--muted); text-decoration: line-through; }
+  .qr-tag.t-new { background: rgba(31,112,80,0.14); color: var(--accent); }
+  .qr-exhibit-note { font-size: 11px; color: var(--muted); padding: 8px 14px; border-top: 1px solid var(--line-soft); background: var(--bg-2); line-height: 1.5; }
+
+  /* Horizontal allocation/return bars */
+  .qr-bar-row { display: grid; grid-template-columns: 150px 1fr 56px; align-items: center; gap: 10px; padding: 5px 0; }
+  .qr-bar-row .qb-label { font-size: 12px; color: var(--ink-2); }
+  .qr-bar-track { background: var(--bg-2); border-radius: 4px; height: 16px; position: relative; overflow: hidden; }
+  .qr-bar-fill { position: absolute; top: 0; left: 0; height: 100%; background: var(--accent); border-radius: 4px; }
+  .qr-bar-target { position: absolute; top: -2px; height: 20px; width: 2px; background: var(--ink); }
+  .qr-bar-row .qb-val { font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: var(--ink); text-align: right; }
+
+  /* Callout / commentary block */
+  .qr-callout { border-left: 3px solid var(--accent); background: var(--bg-2); border-radius: 0 8px 8px 0; padding: 12px 16px; margin: 14px 0; }
+  .qr-callout .qc-label { font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); margin-bottom: 5px; }
+  .qr-callout p { margin: 4px 0; font-size: 13px; }
+  .qr-toc { display: flex; flex-wrap: wrap; gap: 6px 8px; margin: 0 0 28px; padding-bottom: 20px; border-bottom: 1px solid var(--line-soft); }
+  .qr-toc a { font-size: 11.5px; color: var(--ink-2); text-decoration: none; border: 1px solid var(--line); border-radius: 999px; padding: 4px 11px; transition: border-color 0.15s, color 0.15s; }
+  .qr-toc a:hover { color: var(--ink); border-color: var(--ink); }
+  .qr-disclosures { font-size: 11px; color: var(--muted); line-height: 1.6; margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--line-soft); }
+  @media (max-width: 760px) { .qr-kpis { grid-template-columns: repeat(2, 1fr); } .qr-bar-row { grid-template-columns: 110px 1fr 48px; } }
+
   .draft-streaming { opacity: 0.35; }
   .draft-cursor { display: inline-block; width: 6px; height: 14px; background: var(--accent); margin-left: 2px; animation: blink 1s infinite; vertical-align: -2px; }
   @keyframes blink { 50% { opacity: 0.2; } }
@@ -1746,6 +1815,9 @@
       card.dataset.currentName = name;
       card.dataset.currentType = type;
       card.innerHTML = factsCardReview({ name, type });
+    } else if (a === 'qr-jump') {
+      const target = artifactBody.querySelector(`#${btn.dataset.target}`);
+      if (target) smoothScrollToSection(target);
     } else if (a === 'view-ips-section') {
       const num = Number(btn.dataset.num);
       const idx = IPS_SECTIONS.findIndex((s) => s.num === num);
@@ -2270,7 +2342,7 @@
       {
         label: 'Documents',
         items: [
-          item({ id: 'reports', label: 'Quarterly reports', icon: svg('<path d="M3 3v18h18"/><polyline points="7 14 11 10 15 14 21 8"/>'), disabled: true, status: 'soon' }),
+          item({ id: 'reports', action: 'open-workflow', label: 'Quarterly reports', icon: svg('<path d="M3 3v18h18"/><polyline points="7 14 11 10 15 14 21 8"/>'), status: 'Q1 2026', statusKind: 'ok' }),
           item({ id: 'memos', label: 'Manager memos', icon: svg('<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>'), disabled: true, status: 'soon' }),
         ],
       },
@@ -2564,6 +2636,339 @@
       <div class="ips-title">${escapeHtml(state.org.name)} · Decision log</div>
       <div class="ips-sub">${decisions.length} decisions on record. Newest first.</div>
       ${rows || '<div class="pf-empty">No decisions on record.</div>'}
+    `;
+    artifactFooter.classList.remove('visible');
+    updateUrl();
+  }
+
+  // ============ Quarterly report ============
+  // Authored Q1 2026 report for Dream University. Figures reconcile with the
+  // board meeting notes (Walter Scott +280bp vs ACWI, Acadian termination, the
+  // +3.1% vs +2.8% policy-benchmark quarter, attribution, unfunded commitments).
+  function buildQuarterlyReportHtml() {
+    const sign = (v, d = 1) => `${v >= 0 ? '+' : ''}${v.toFixed(d)}%`;
+    const cls = (v) => (v > 0.0001 ? 'qr-pos' : v < -0.0001 ? 'qr-neg' : 'qr-muted');
+    const exc = (v, d = 1) => `<span class="${cls(v)}">${sign(v, d)}</span>`;
+    const bp = (v) => `<span class="${cls(v)}">${v >= 0 ? '+' : ''}${v} bp</span>`;
+    const usd = (mm) => `$${mm.toFixed(0)}M`;
+
+    const exhibit = (label, title, headCells, bodyRows, note) => `
+      <div class="qr-exhibit">
+        <div class="qr-exhibit-head"><div class="qx-label">${label}</div><div class="qx-title">${title}</div></div>
+        <table class="qr-table"><thead><tr>${headCells.map((h) => `<th>${h}</th>`).join('')}</tr></thead>
+        <tbody>${bodyRows}</tbody></table>
+        ${note ? `<div class="qr-exhibit-note">${note}</div>` : ''}
+      </div>`;
+
+    // ---- Total portfolio performance (net of fees) ----
+    const perfRows = [
+      ['Quarter (Q1 2026)', 3.1, 2.8],
+      ['Trailing 1 year', 11.4, 10.6],
+      ['Trailing 3 years (ann.)', 6.9, 6.5],
+      ['Trailing 5 years (ann.)', 7.6, 7.1],
+      ['Trailing 10 years (ann.)', 7.1, 6.8],
+      ['Since inception (ann.)', 7.3, 7.0],
+    ].map(([p, r, b]) => `<tr><td>${p}</td><td>${sign(r)}</td><td>${sign(b)}</td><td>${bp(Math.round((r - b) * 100))}</td></tr>`).join('');
+
+    // ---- Market / index returns ----
+    const mkt = [
+      ['S&P 500', 4.1, 12.9], ['Nasdaq Composite', 3.2, 14.1], ['Russell 2000 (small cap)', 1.8, 6.4],
+      ['MSCI ACWI (global)', 4.3, 12.4], ['MSCI EAFE (intl developed)', 6.2, 13.8], ['MSCI EM', 2.4, 8.1],
+      ['Bloomberg U.S. Aggregate', 1.6, 4.9], ['Bloomberg U.S. TIPS', 1.9, 5.2], ['ICE BofA U.S. High Yield', 2.1, 8.6],
+    ].map(([n, q, y]) => `<tr><td>${n}</td><td>${sign(q)}</td><td>${sign(y)}</td></tr>`).join('');
+    const macro = [
+      ['10-yr U.S. Treasury yield', '4.18%', '−24 bp', 'Rallied as growth cooled and the Fed eased'],
+      ['Fed funds target', '4.25–4.50%', '−25 bp', 'One cut delivered at the March FOMC'],
+      ['U.S. CPI (YoY)', '2.6%', '−0.3 pt', 'Disinflation continued; services sticky'],
+      ['U.S. dollar (DXY)', '102.1', '−2.4%', 'Weaker dollar lifted unhedged intl returns'],
+      ['WTI crude', '$68/bbl', '−5.1%', 'Ample supply; soft global demand'],
+      ['Gold', '$2,940/oz', '+6.8%', 'Real-rate decline and central-bank buying'],
+      ['VIX (quarter-end)', '15.2', '−1.6 pt', 'Low realized vol; brief Feb risk-off'],
+    ].map(([n, lv, ch, c]) => `<tr><td>${n}</td><td>${lv}</td><td class="qr-muted">${ch}</td><td style="text-align:left;font-family:inherit;white-space:normal;color:var(--ink-2);">${c}</td></tr>`).join('');
+
+    // ---- Asset allocation vs policy ----
+    const allocRows = [
+      ['us_eq', 'U.S. Equity', 22.0, 28.0, '20–35'],
+      ['intl_eq', 'Intl Developed Equity', 12.0, 15.0, '10–20'],
+      ['em_eq', 'Emerging Markets Equity', 6.0, 8.0, '5–12'],
+      ['core_fi', 'Core Fixed Income', 20.0, 27.0, '10–25'],
+      ['tips', 'TIPS', 5.0, '—', '0–7'],
+      ['hy', 'High-Yield Credit', 2.0, '—', '0–7'],
+      ['hf', 'Diversified Hedge Funds', 8.0, '—', '0–10'],
+      ['pe', 'Private Equity', 6.0, '—', '5–15'],
+      ['pc', 'Private Credit', 7.0, '—', '0–10'],
+      ['ra', 'Real Assets', 7.0, '—', '3–10'],
+      ['cash', 'Cash', 5.0, '—', '0–5'],
+    ];
+    // current weights drift slightly from the 7/22/25 SAA targets; show actual vs target
+    const targets = { us_eq: 22, intl_eq: 12, em_eq: 6, core_fi: 20, tips: 5, hy: 2, hf: 8, pe: 6, pc: 7, ra: 7, cash: 5 };
+    const actual = { us_eq: 22.6, intl_eq: 12.4, em_eq: 5.6, core_fi: 19.2, tips: 5.0, hy: 2.0, hf: 8.1, pe: 5.4, pc: 7.2, ra: 7.0, cash: 5.5 };
+    const allocBody = allocRows.map(([id, name]) => {
+      const a = actual[id], t = targets[id];
+      const drift = a - t;
+      return `<tr><td>${name}</td><td>${a.toFixed(1)}%</td><td>${t.toFixed(0)}%</td><td>${exc(drift, 1)}</td><td class="qr-muted">${IPS_RANGE[id] ? `${(IPS_RANGE[id][0]*100).toFixed(0)}–${(IPS_RANGE[id][1]*100).toFixed(0)}%` : '—'}</td></tr>`;
+    }).join('') + `<tr class="qr-total"><td>Total Portfolio</td><td>100.0%</td><td>100%</td><td>—</td><td class="qr-muted">—</td></tr>`;
+
+    // ---- Asset-class performance vs benchmark (Q1) ----
+    const acPerf = [
+      ['U.S. Equity', 'Russell 3000', 4.3, 4.0, 12.6],
+      ['Intl Developed Equity', 'MSCI EAFE', 6.8, 6.2, 14.1],
+      ['Emerging Markets Equity', 'MSCI EM', 1.6, 2.4, 6.9],
+      ['Core Fixed Income', 'Bloomberg U.S. Agg', 1.7, 1.6, 5.1],
+      ['TIPS', 'Bloomberg U.S. TIPS', 1.9, 1.9, 5.2],
+      ['High-Yield Credit', 'ICE BofA U.S. HY', 2.4, 2.1, 9.0],
+      ['Diversified Hedge Funds', 'HFRI FoF Composite', 1.6, 1.5, 6.3],
+      ['Private Equity', 'Cambridge PE (lagged)', 0.2, 1.0, 11.8],
+      ['Private Credit', 'Cliffwater Direct Lending', 2.5, 2.3, 9.7],
+      ['Real Assets', 'Real Assets Blend', 2.0, 1.9, 7.6],
+      ['Cash', 'ICE BofA 3M T-Bill', 1.1, 1.1, 4.6],
+    ].map(([n, b, q, bm, y]) => `<tr><td>${n}<div style="font-size:10.5px;color:var(--muted);font-family:'JetBrains Mono',monospace;">vs ${b}</div></td><td>${sign(q)}</td><td>${sign(bm)}</td><td>${bp(Math.round((q - bm) * 100))}</td><td>${sign(y)}</td></tr>`).join('');
+
+    // ---- Equity sector breakdown (GICS, vs MSCI ACWI) ----
+    const sectors = [
+      ['Information Technology', 24.5, 25.8, 3.2],
+      ['Financials', 17.2, 16.1, 5.8],
+      ['Industrials', 11.4, 10.6, 5.1],
+      ['Health Care', 11.0, 10.4, 2.1],
+      ['Consumer Discretionary', 9.8, 10.2, 3.9],
+      ['Communication Services', 7.1, 7.6, 4.4],
+      ['Consumer Staples', 6.0, 6.2, 1.3],
+      ['Energy', 4.2, 3.8, 6.7],
+      ['Materials', 3.6, 3.5, 4.0],
+      ['Utilities', 2.9, 2.7, 2.5],
+      ['Real Estate', 2.3, 2.1, -0.6],
+    ].map(([n, pw, bw, r]) => `<tr><td>${n}</td><td>${pw.toFixed(1)}%</td><td>${bw.toFixed(1)}%</td><td>${exc(pw - bw, 1)}</td><td>${sign(r)}</td></tr>`).join('');
+
+    // ---- Manager performance, grouped by asset class ----
+    const mgrGroups = [
+      ['U.S. Equity', [
+        ['Granite Ridge U.S. Equity Index', 'Passive · Russell 3000', 110, 4.1, 4.0, ''],
+        ['Cascade Park U.S. Large Growth', 'Active growth', 90, 3.6, 2.9, ''],
+        ['Harbor & Main U.S. Value', 'Active value', 68, 5.2, 5.0, ''],
+      ]],
+      ['International & Global Equity', [
+        ['Walter Scott Global Equity', 'Active global', 96, 7.1, 4.3, ''],
+        ['Kestrel International Developed', 'Active · MSCI EAFE', 50, 6.5, 6.2, ''],
+      ]],
+      ['Emerging Markets Equity', [
+        ['Acadian Emerging Markets Equity', 'Active · terminating', 0, 1.2, 2.4, 'term'],
+        ['iShares MSCI EM (IEMG)', 'Interim index', 73, 2.3, 2.4, 'new'],
+      ]],
+      ['Fixed Income & Credit', [
+        ['Meridian Core Bond', 'Active core · U.S. Agg', 150, 1.8, 1.6, ''],
+        ['Granite Ridge Aggregate Bond Index', 'Passive · U.S. Agg', 94, 1.6, 1.6, ''],
+        ['Granite Ridge TIPS Index', 'Passive · U.S. TIPS', 61, 1.9, 1.9, ''],
+        ['Ashford Lane High Yield', 'Active · ICE BofA HY', 24, 2.4, 2.1, ''],
+      ]],
+      ['Diversified Hedge Funds', [
+        ['Blackwater Multi-Strategy', 'Multi-strat', 58, 2.0, 1.5, ''],
+        ['Tidewater Macro', 'Global macro', 40, 0.9, 1.5, 'watch'],
+      ]],
+      ['Private Equity', [
+        ['Vista Equity Partners VIII', 'Software buyout', 42, 0.2, 1.0, ''],
+        ['Legacy PE Co-Investment Program', 'Diversified buyout/VC', 31, 0.4, 1.0, ''],
+      ]],
+      ['Private Credit', [
+        ['Ares Senior Direct Lending Fund III', 'Senior direct lending', 44, 2.6, 2.3, ''],
+        ['Beacon Hill Private Credit', 'Opportunistic credit', 41, 2.4, 2.3, ''],
+      ]],
+      ['Real Assets', [
+        ['Brightwater Infrastructure', 'Core+ infrastructure', 46, 2.8, 2.2, ''],
+        ['Cardinal Real Estate Partners', 'Value-add real estate', 39, 1.1, 1.6, ''],
+      ]],
+      ['Cash', [
+        ['Northern Trust Government MMF', 'Government money market', 61, 1.1, 1.1, ''],
+      ]],
+    ];
+    const tagHtml = (t) => t === 'term' ? '<span class="qr-tag t-term">Terminating</span>'
+      : t === 'watch' ? '<span class="qr-tag t-watch">Watchlist</span>'
+      : t === 'new' ? '<span class="qr-tag t-new">Interim</span>' : '';
+    const mgrBody = mgrGroups.map(([grp, rows]) => {
+      const header = `<tr class="qr-group"><td colspan="6">${grp}</td></tr>`;
+      const body = rows.map(([name, mandate, mm, q, bm, tag]) => {
+        const excess = Math.round((q - bm) * 100);
+        return `<tr class="qr-sub"><td>${name} ${tagHtml(tag)}<div style="font-size:10.5px;color:var(--muted);">${mandate}</div></td><td>${mm > 0 ? usd(mm) : '—'}</td><td>${sign(q)}</td><td>${sign(bm)}</td><td>${bp(excess)}</td><td class="qr-muted">Q1</td></tr>`;
+      }).join('');
+      return header + body;
+    }).join('');
+
+    // ---- Attribution ----
+    const attrRows = [
+      ['Asset allocation', 12, 'Overweight international developed into a strong quarter; modest cash drag offset'],
+      ['Manager selection', 21, 'Walter Scott (+280 bp vs ACWI) and Meridian Core Bond led; Acadian a detractor'],
+      ['Interaction & other', -3, 'Timing of the EM transition and private-market mark lag'],
+    ].map(([n, v, c]) => `<tr><td>${n}</td><td>${bp(v)}</td><td style="text-align:left;font-family:inherit;white-space:normal;color:var(--ink-2);">${c}</td></tr>`).join('')
+      + `<tr class="qr-total"><td>Total excess vs policy benchmark</td><td>${bp(30)}</td><td class="qr-muted" style="text-align:left;">+3.1% portfolio vs +2.8% benchmark</td></tr>`;
+
+    // ---- Liquidity tiers ----
+    const liq = [
+      ['Tier 1 — Daily / immediate', 72, 'Public equity, core bonds, TIPS, HY, cash'],
+      ['Tier 2 — Monthly / quarterly', 15, 'Diversified hedge funds, liquid real assets'],
+      ['Tier 3 — Illiquid (>1 yr)', 13, 'Private equity, private credit, value-add real estate'],
+    ].map(([n, w, c]) => `<tr><td>${n}</td><td>${w}%</td><td style="text-align:left;font-family:inherit;white-space:normal;color:var(--ink-2);">${c}</td></tr>`).join('')
+      + `<tr class="qr-total"><td>Total</td><td>100%</td><td class="qr-muted" style="text-align:left;">Tier-1 floor (IPS §8): 50% — compliant</td></tr>`;
+
+    // ---- Allocation bar visual (actual vs target) ----
+    const barMax = 28;
+    const bars = allocRows.map(([id, name]) => {
+      const a = actual[id], t = targets[id];
+      const w = (a / barMax) * 100, tx = (t / barMax) * 100;
+      return `<div class="qr-bar-row"><div class="qb-label">${name}</div><div class="qr-bar-track"><div class="qr-bar-fill" style="width:${w.toFixed(1)}%;"></div><div class="qr-bar-target" style="left:${tx.toFixed(1)}%;" title="Target ${t}%"></div></div><div class="qb-val">${a.toFixed(1)}%</div></div>`;
+    }).join('');
+
+    const toc = [
+      ['qr-s1', 'Executive summary'], ['qr-s2', 'Market environment'], ['qr-s3', 'Total portfolio'],
+      ['qr-s4', 'Attribution'], ['qr-s5', 'Asset allocation'], ['qr-s6', 'Asset-class returns'],
+      ['qr-s7', 'Equity sectors'], ['qr-s8', 'Manager performance'], ['qr-s9', 'Liquidity & capital'],
+      ['qr-s10', 'Outlook & actions'],
+    ].map(([id, t]) => `<a data-action="qr-jump" data-target="${id}">${t}</a>`).join('');
+
+    return `
+      <div class="qr-cover">
+        <div class="qr-kicker">Quarterly Investment Report · Prepared by Reve (OCIO)</div>
+        <div class="qr-cover-title">Dream University Endowment</div>
+        <div class="qr-cover-sub">First Quarter 2026 — quarter ended March 31, 2026. A review of portfolio performance, positioning, manager results, and the market environment, measured against the policy benchmark and IPS framework adopted July 22, 2025.</div>
+        <div class="qr-cover-facts">
+          <div class="qf"><div class="qf-label">Ending market value</div><div class="qf-value">$1.220B</div></div>
+          <div class="qf"><div class="qf-label">Quarter return (net)</div><div class="qf-value">+3.1%</div></div>
+          <div class="qf"><div class="qf-label">Policy benchmark</div><div class="qf-value">+2.8%</div></div>
+          <div class="qf"><div class="qf-label">Excess</div><div class="qf-value">+30 bp</div></div>
+          <div class="qf"><div class="qf-label">Trailing 1-yr</div><div class="qf-value">+11.4%</div></div>
+        </div>
+      </div>
+
+      <div class="qr-toc">${toc}</div>
+
+      <div class="qr-section" id="qr-s1">
+        <h3><span class="qr-sec-num">01</span> Executive summary</h3>
+        <p class="qr-sec-lead">The portfolio advanced <strong>+3.1%</strong> net of fees in the first quarter, ahead of the policy benchmark's <strong>+2.8%</strong>, extending the trailing-twelve-month lead to <strong>+11.4%</strong> vs +10.6%.</p>
+        <div class="qr-kpis">
+          <div class="qr-kpi"><div class="k-label">Q1 Return (net)</div><div class="k-value">+3.1%</div><div class="k-sub">Benchmark +2.8% · +30 bp</div></div>
+          <div class="qr-kpi"><div class="k-label">Trailing 5-yr (ann.)</div><div class="k-value">+7.6%</div><div class="k-sub">Benchmark +7.1%</div></div>
+          <div class="qr-kpi"><div class="k-label">5-yr Sharpe</div><div class="k-value">0.39</div><div class="k-sub">Std. dev 9.2% · TE 1.4%</div></div>
+          <div class="qr-kpi"><div class="k-label">Spending rate</div><div class="k-value">4.5%</div><div class="k-sub">12-qtr average · IPS band 4–5.5%</div></div>
+        </div>
+        <p>Returns were led by <strong>manager selection</strong> (+21 bp), with Walter Scott Global Equity outpacing the MSCI ACWI by roughly 280 bp and Meridian Core Bond adding value as rates rallied. <strong>Asset allocation</strong> contributed a further +12 bp, helped by a modest overweight to international developed equity into a quarter in which a weaker U.S. dollar lifted unhedged foreign returns. The one notable detractor was emerging-markets equity, where the in-progress termination of Acadian weighed on results.</p>
+        <p>The Investment Committee approved the termination of the Acadian EM mandate effective May 15 and shortlisted three replacement managers; interim exposure is held in a low-cost index vehicle. All asset classes finished the quarter within their IPS policy ranges, Tier-1 liquidity remained well above the 50% floor, and the mission-alignment screens adopted in 2025 operated without exception.</p>
+        <div class="qr-callout">
+          <div class="qc-label">Quarter in one line</div>
+          <p>A risk-on quarter delivered with discipline: benchmark-beating returns from active managers and a tilt to international, no policy-range breaches, and a clean liquidity and compliance picture — even as the EM sleeve was mid-transition.</p>
+        </div>
+      </div>
+
+      <div class="qr-section" id="qr-s2">
+        <h3><span class="qr-sec-num">02</span> Market environment &amp; commentary</h3>
+        <p class="qr-sec-lead">Global equities advanced, bonds rallied as the Fed cut once, and international markets outpaced the U.S. on a weaker dollar.</p>
+        <p>Risk assets extended their advance in the first quarter as disinflation continued and the Federal Reserve delivered a widely anticipated 25 bp cut at its March meeting, taking the funds target to 4.25–4.50%. Headline CPI eased to 2.6% year-over-year. With growth cooling modestly and policy turning more accommodative, the 10-year Treasury yield fell roughly 24 bp to 4.18%, lifting high-quality fixed income.</p>
+        <p>Equity leadership broadened beyond the largest U.S. technology names. International developed markets (MSCI EAFE +6.2%) outperformed the S&amp;P 500 (+4.1%), aided by a 2.4% decline in the U.S. dollar and more attractive starting valuations. Emerging markets (+2.4%) lagged, held back by uneven Chinese activity data. In credit, spreads tightened further and high yield returned +2.1%. Gold (+6.8%) benefited from lower real rates, while crude softened on ample supply. Realized volatility stayed low — the VIX ended near 15 — despite a brief February risk-off episode.</p>
+        ${exhibit('Exhibit 2a · Index returns', 'Major asset-class indices (total return)', ['Index', 'Q1 2026', 'Trailing 1Y'], mkt, 'Source: index providers; total returns in USD. Trailing one-year through March 31, 2026.')}
+        ${exhibit('Exhibit 2b · Macro snapshot', 'Rates, inflation, and cross-asset markers', ['Indicator', 'Level', 'Q1 change', 'Commentary'], macro)}
+        <div class="qr-callout">
+          <div class="qc-label">Positioning read-through</div>
+          <p>The environment rewarded the portfolio's standing tilts — an overweight to international developed equity and a full-duration core bond sleeve. We did not chase the rally; positioning changes this quarter were limited to the planned EM manager transition.</p>
+        </div>
+      </div>
+
+      <div class="qr-section" id="qr-s3">
+        <h3><span class="qr-sec-num">03</span> Total portfolio performance</h3>
+        <p class="qr-sec-lead">Ahead of the policy benchmark across every trailing period shown, with risk metrics inside IPS tolerances.</p>
+        ${exhibit('Exhibit 3a · Performance', 'Total portfolio vs policy benchmark (net of fees)', ['Period', 'Portfolio', 'Benchmark', 'Excess'], perfRows, 'The policy benchmark is the IPS strategic weights applied to each asset class’s index. Returns over one year are annualized.')}
+        <h4>Market value reconciliation</h4>
+        ${exhibit('Exhibit 3b · Market value', 'Quarterly change in market value ($M)', ['Item', 'Amount'], [
+          ['Beginning market value (Dec 31, 2025)', '$1,195M'],
+          ['Net investment gain', '+$37M'],
+          ['Spending distribution', '−$13.8M'],
+          ['Net external flows / fees', '+$1.8M'],
+        ].map(([n, v]) => `<tr><td>${n}</td><td>${v}</td></tr>`).join('') + `<tr class="qr-total"><td>Ending market value (Mar 31, 2026)</td><td>$1,220M</td></tr>`)}
+        <h4>Risk metrics (trailing 5 years)</h4>
+        <div class="qr-kpis">
+          <div class="qr-kpi"><div class="k-label">Std. deviation</div><div class="k-value">9.2%</div><div class="k-sub">Benchmark 9.6%</div></div>
+          <div class="qr-kpi"><div class="k-label">Sharpe ratio</div><div class="k-value">0.39</div><div class="k-sub">RF 3.4%</div></div>
+          <div class="qr-kpi"><div class="k-label">Max drawdown</div><div class="k-value">−4.1%</div><div class="k-sub">Intra-Q1, recovered</div></div>
+          <div class="qr-kpi"><div class="k-label">Tracking error</div><div class="k-value">1.4%</div><div class="k-sub">Info ratio 0.36</div></div>
+        </div>
+      </div>
+
+      <div class="qr-section" id="qr-s4">
+        <h3><span class="qr-sec-num">04</span> Performance attribution</h3>
+        <p class="qr-sec-lead">The +30 bp of excess return split between manager selection and asset allocation.</p>
+        ${exhibit('Exhibit 4 · Attribution', 'Sources of excess return vs policy benchmark (Q1)', ['Source', 'Contribution', 'Drivers'], attrRows)}
+      </div>
+
+      <div class="qr-section" id="qr-s5">
+        <h3><span class="qr-sec-num">05</span> Asset allocation review</h3>
+        <p class="qr-sec-lead">Every asset class finished the quarter inside its IPS policy range; no rebalancing trades were required.</p>
+        ${exhibit('Exhibit 5a · Allocation', 'Actual vs target weights and policy ranges', ['Asset class', 'Actual', 'Target', 'Drift', 'IPS range'], allocBody, 'Targets are the Strategic Asset Allocation adopted July 22, 2025. Drift reflects market movement since the last rebalance; all classes remain within range.')}
+        <h4>Allocation vs target</h4>
+        <div class="qr-exhibit" style="padding:14px 16px;">
+          ${bars}
+          <div style="font-size:10.5px;color:var(--muted);margin-top:10px;font-family:'JetBrains Mono',monospace;">Bars show actual weight; the vertical marker is the SAA target.</div>
+        </div>
+        <p>Public equity drifted modestly above target on strong quarterly returns (actual 40.6% across U.S., international, and EM vs a 40.0% target), while private equity sits slightly below target at 5.4% on delayed Q1 marks for Vista VIII, expected to normalize by Q3. Cash ran a touch rich at 5.5% to pre-fund the spring spending draw and pending capital calls. None of these warranted a trade under the range-based and cash-flow rebalancing triggers in IPS §11.</p>
+      </div>
+
+      <div class="qr-section" id="qr-s6">
+        <h3><span class="qr-sec-num">06</span> Performance by asset class</h3>
+        <p class="qr-sec-lead">Public equity led; private equity trailed on mark lag; the EM sleeve was the lone real detractor.</p>
+        ${exhibit('Exhibit 6 · Asset-class returns', 'Composite returns vs asset-class benchmarks', ['Asset class', 'Q1', 'Benchmark', 'Excess', 'Trailing 1Y'], acPerf, 'Composites are net-of-fee, asset-weighted across underlying managers. Private-market benchmarks are reported on a one-quarter lag, consistent with NAV reporting.')}
+      </div>
+
+      <div class="qr-section" id="qr-s7">
+        <h3><span class="qr-sec-num">07</span> Equity sector breakdown</h3>
+        <p class="qr-sec-lead">Public-equity sleeve positioning vs the MSCI ACWI, with quarterly sector returns.</p>
+        ${exhibit('Exhibit 7 · Sectors', 'Equity sleeve vs MSCI ACWI (GICS sectors)', ['Sector', 'Portfolio', 'Benchmark', 'Over/under', 'Q1 return'], sectors, 'Sector weights are look-through across all public-equity managers. Over/underweights are relative to the MSCI ACWI.')}
+        <p>The equity sleeve carries a slight underweight to Information Technology and overweights to Financials and Industrials — a modest value-and-cyclical tilt that helped in a quarter when Financials (+5.8%) and Industrials (+5.1%) outpaced Tech (+3.2%). Real Estate was the only sector to decline. The look-through reflects the combined positioning of the active and index equity managers and is not separately managed at the sector level.</p>
+      </div>
+
+      <div class="qr-section" id="qr-s8">
+        <h3><span class="qr-sec-num">08</span> Manager performance</h3>
+        <p class="qr-sec-lead">Twenty mandates across the program; net-of-fee Q1 returns against each manager's stated benchmark.</p>
+        ${exhibit('Exhibit 8 · Managers', 'Underlying manager results by asset class', ['Manager / mandate', 'Allocation', 'Q1', 'Benchmark', 'Excess', 'Period'], mgrBody, 'Allocations as of March 31, 2026. Acadian is in transition (effective termination May 15); EM exposure is held in IEMG on an interim basis pending the replacement search.')}
+        <div class="qr-callout">
+          <div class="qc-label">Manager notes</div>
+          <p><strong>Walter Scott Global Equity</strong> (+7.1% vs +4.3% ACWI) was the standout, with stock selection in industrials and health care driving roughly 280 bp of excess. <strong>Acadian EM</strong> is being terminated after three years of benchmark-relative underperformance and a portfolio-manager departure; <strong>Tidewater Macro</strong> remains on the watchlist after a soft quarter and an 18-month review window. Private-equity managers show muted Q1 marks consistent with the usual one-quarter reporting lag.</p>
+        </div>
+      </div>
+
+      <div class="qr-section" id="qr-s9">
+        <h3><span class="qr-sec-num">09</span> Liquidity &amp; capital activity</h3>
+        <p class="qr-sec-lead">Tier-1 liquidity of 72% sits well above the 50% IPS floor; commitments are comfortably funded.</p>
+        ${exhibit('Exhibit 9a · Liquidity tiers', 'Portfolio by liquidity tier', ['Tier', 'Weight', 'Composition'], liq)}
+        ${exhibit('Exhibit 9b · Capital activity', 'Private-market capital flows (Q1 2026, $M)', ['Item', 'Amount'], [
+          ['Capital called (Vista VIII, Ares III)', '−$6.2M'],
+          ['Distributions received', '+$9.4M'],
+          ['Net private-market cash flow', '+$3.2M'],
+          ['Unfunded commitments outstanding', '$52M'],
+        ].map(([n, v]) => `<tr><td>${n}</td><td>${v}</td></tr>`).join(''), 'Unfunded: Vista VIII $24M, Ares III $18M, legacy programs $10M. Projected calls through year-end ~$22M, fully covered by Tier-1 liquidity.')}
+        <p>Quarterly spending of $13.8M was funded from income and Tier-1 holdings without selling growth assets. With $52M of unfunded commitments and roughly $22M of expected calls through year-end against a Tier-1 base of more than $875M, no liquidity stress is evident under either the base case or the IPS stress scenarios.</p>
+      </div>
+
+      <div class="qr-section" id="qr-s10">
+        <h3><span class="qr-sec-num">10</span> Outlook &amp; recommended actions</h3>
+        <p class="qr-sec-lead">Maintain strategic positioning; complete the EM manager transition; prepare the FY27 spending analysis.</p>
+        <ul>
+          <li><strong>Emerging markets manager search.</strong> Bring a single recommendation (Pzena, GMO, or William Blair) to the May 10 special IC meeting; fund from the interim IEMG position to minimize transition cost.</li>
+          <li><strong>Tidewater Macro.</strong> Continue on watchlist; formal go/no-go at the Q2 IC meeting after the 18-month review window closes.</li>
+          <li><strong>FY27 spending.</strong> Prepare the five-year projection requested by the IC, comparing a one-time 4.75% band adjustment against an operating-reserve draw, with corpus-preservation impact under each.</li>
+          <li><strong>Rebalancing.</strong> No trades recommended; monitor public-equity drift and the private-equity NAV catch-up expected in Q3.</li>
+          <li><strong>Private-market pacing.</strong> Maintain the current commitment pace; the program remains on track for its long-term private-markets NAV target.</li>
+        </ul>
+        <p>We expect a more two-sided market in the balance of the year as the disinflation trade matures and policy data-dependence increases. The portfolio's diversification, full-duration core bond sleeve, and disciplined private-markets pacing leave it well positioned to support the spending policy while preserving the real value of the corpus over the long horizon contemplated by the IPS.</p>
+        <div class="qr-disclosures">
+          Prepared by Reve as Outsourced Chief Investment Officer for the Dream University Endowment. Performance is net of investment-management and OCIO fees and is presented on a time-weighted basis. Private-market valuations are reported on a one-quarter lag. Past performance is not indicative of future results. Benchmark and index data are sourced from third-party providers and believed reliable but not guaranteed. This report is for the use of the Investment Committee and Board of Trustees and is not investment advice to any other party. Figures are illustrative and shown for demonstration purposes.
+        </div>
+      </div>
+    `;
+  }
+
+  function openQuarterlyReportView() {
+    if (!state.org.name) return;
+    state.module = 'reports';
+    artifactTitle.textContent = 'Quarterly report';
+    enterItemView();
+    artifactBody.innerHTML = `
+      ${itemHeadHtml('Quarterly report')}
+      ${buildQuarterlyReportHtml()}
     `;
     artifactFooter.classList.remove('visible');
     updateUrl();
@@ -3495,6 +3900,7 @@
       else if (wf === 'profile') openClientProfileView();
       else if (wf === 'board-notes') openBoardNotesView();
       else if (wf === 'decisions') openDecisionLogView();
+      else if (wf === 'reports') openQuarterlyReportView();
     } else if (a === 'pm-run') {
       const desc = document.getElementById('pm-footer-desc');
       if (desc) desc.textContent = 'Running 4,000-sample Monte Carlo optimization…';
@@ -3576,6 +3982,7 @@
     else if (view === 'profile') openClientProfileView();
     else if (view === 'board') openBoardNotesView();
     else if (view === 'decisions') openDecisionLogView();
+    else if (view === 'reports') openQuarterlyReportView();
     return true;
   }
 
