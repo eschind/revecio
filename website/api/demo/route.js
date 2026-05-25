@@ -13,7 +13,7 @@ Classify the message and return ONLY a single JSON object (no markdown, no comme
 
 {
   "intent": "analyze" | "answer_content" | "optimize" | "open" | "next" | "previous" | "switch" | "edit" | "switch_and_edit" | "question" | "unclear",
-  "targetModule": "ips" | "portfolio" | "materials" | null,
+  "targetModule": "ips" | "portfolio" | "materials" | "monitoring" | "board" | "decisions" | "profile" | null,
   "targetSectionNum": <number or null>,
   "query": "sharpe" | "return" | "vol" | "real_return" | "allocation" | "liquidity" | "metrics" | null,
   "editPrompt": <string or null>,
@@ -43,7 +43,14 @@ Rules:
   - "what's the MVO Sharpe?" / "what would the Sharpe be optimized?" / "what would the sharpe be based on mean variance optimization" → optimize, query="sharpe"
   - "what does the optimizer recommend?" / "show me the max-Sharpe portfolio" → optimize, query="allocation"
   - "what if we ran mean-variance optimization on this?" → optimize, query=null
-- "open" — user wants to pull up a vault item to WORK in it, not just ask a factual question. Examples: "open the IPS", "let's model the portfolio", "show me the materials". Set targetModule.
+- "open" — user wants to pull up a vault item to WORK in it, not just ask a factual question. Set targetModule:
+  - "open the IPS" → ips
+  - "let's model the portfolio" / "open the asset allocation" → portfolio
+  - "show me the materials" → materials
+  - "open monitoring" / "show me what's happening in the portfolio" / "any new updates?" / "what are the managers saying?" / "show me drift" / "what's our actual exposure" → monitoring
+  - "show me the board notes" / "what did the IC decide last quarter" → board
+  - "open the decision log" / "what decisions have we made" → decisions
+  - "open the profile" / "show me the client info" → profile
 - "next" / "previous" — only when IPS is in focus and the user wants to advance/retreat through sections.
 - "switch" — focus on a different IPS section without editing.
 - "edit" — change the CURRENT IPS section. editPrompt = neutral instruction.
