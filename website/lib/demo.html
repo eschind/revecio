@@ -1051,13 +1051,33 @@
       return;
     }
 
+    // Safety net: if the LLM didn't classify an obvious analytic question, try regex-matching it.
+    const analyticGuess = guessAnalyticQuery(text);
+    if (analyticGuess) {
+      const html = answerAnalysisQuery(analyticGuess);
+      if (html) { await agentReply(html); return; }
+    }
+
     if (intent === 'question' || intent === 'unclear') {
       await agentReply(`<p>${escapeHtml(route.reply || 'Could you clarify what you\'d like to do?')}</p>`);
       return;
     }
 
     // Fallback for unexpected intent
-    await agentReply(`<p>Could you clarify what you'd like to do — keep moving through the sections, or make a change?</p>`);
+    await agentReply(`<p>Could you clarify what you'd like to do — open something, ask for a metric, or make an edit?</p>`);
+  }
+
+  // Pattern-match common analytic phrases so they get answered even when the router hesitates.
+  function guessAnalyticQuery(text) {
+    const t = (text || '').toLowerCase();
+    if (/\bsharpe\b/.test(t)) return 'sharpe';
+    if (/\b(real return|after inflation|real growth)\b/.test(t)) return 'real_return';
+    if (/\b(expected return|10[\s-]?year return|10y return|annual(ized)? return)\b/.test(t)) return 'return';
+    if (/\b(volatility|annualized risk|portfolio risk|standard deviation|how risky)\b/.test(t)) return 'vol';
+    if (/\b(liquidity|coverage|cushion|capital calls?|spending need|spending coverage)\b/.test(t)) return 'liquidity';
+    if (/\b(asset (mix|allocation)|allocation|weights|holdings|portfolio mix|current mix)\b/.test(t)) return 'allocation';
+    if (/\b(summari[sz]e|headline metrics?|key metrics|all the (numbers|metrics))\b/.test(t)) return 'metrics';
+    return null;
   }
 
   async function advanceReview(delta) {

@@ -21,14 +21,15 @@ Classify the message and return ONLY a single JSON object (no markdown, no comme
 }
 
 Rules:
-- "analyze" — a SPECIFIC factual question that can be answered inline from the portfolio data. Do NOT open a module for these. Set "query" to one of:
-  - "sharpe" — "what's our Sharpe?", "Sharpe ratio?"
-  - "return" — "expected return?", "10y return?"
-  - "vol" — "what's the vol?", "annualized risk?"
-  - "real_return" — "real return?", "after inflation?"
-  - "allocation" — "what's the asset mix?", "show the weights", "current allocation table"
-  - "liquidity" — "liquidity coverage?", "spending cushion?", "can we cover capital calls?"
-  - "metrics" — "summarize the portfolio", "give me the key metrics" (returns the headline numbers)
+- "analyze" — ANY factual question about a portfolio metric. ALWAYS use analyze for these — do NOT use "unclear", "question", or "open" for a specific metric question. Examples and the query value to use:
+  - "what's the Sharpe?" / "Sharpe ratio?" / "what's the sharpe ratio in the asset allocation?" → query="sharpe"
+  - "expected return?" / "10y return?" / "what return are we looking at?" → query="return"
+  - "what's the vol?" / "annualized risk?" / "how risky is it?" → query="vol"
+  - "real return?" / "after inflation?" / "real growth?" → query="real_return"
+  - "what's the asset mix?" / "show the weights" / "current allocation?" / "what are we holding?" → query="allocation"
+  - "liquidity coverage?" / "spending cushion?" / "can we cover capital calls?" / "how much liquidity?" → query="liquidity"
+  - "summarize the portfolio" / "give me the key metrics" / "headline numbers" → query="metrics"
+  If a question mentions a metric word (Sharpe, vol, allocation, weights, return, real return, liquidity, coverage, cushion), it is almost always analyze.
 - "open" — user wants to pull up a vault item to WORK in it, not just ask a factual question. Examples: "open the IPS", "let's model the portfolio", "show me the materials". Set targetModule.
 - "next" / "previous" — only when IPS is in focus and the user wants to advance/retreat through sections.
 - "switch" — focus on a different IPS section without editing.
