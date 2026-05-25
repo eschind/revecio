@@ -6,6 +6,8 @@ import {
   listDocuments,
   getDocumentBySlug,
   isDeckVisible,
+  canEmailAccessDoc,
+  getEmailDocAccess,
 } from '../lib/db.js';
 import {
   buildSessionCookie,
@@ -82,6 +84,12 @@ export default async function handler(req, res) {
         // Document not visible — show 404-ish redirect to list
         return redirect(res, '/investors');
       }
+      // Per-email access check (admin bypasses)
+      const adminEmail = (process.env.ADMIN_EMAIL || '').toLowerCase();
+      if (session.email !== adminEmail) {
+        const allowed = await canEmailAccessDoc(session.email, slug).catch(() => true);
+        if (!allowed) return redirect(res, '/investors');
+      }
       // Log a view event for this specific document
       try {
         await recordVisit({
@@ -107,7 +115,15 @@ export default async function handler(req, res) {
     // No slug — show the list of visible documents (with the deck prepended)
     const docs = await listDocuments({ visibleOnly: true });
     const deckShown = await isDeckVisible().catch(() => true);
-    const allDocs = deckShown ? [deckEntry(), ...docs] : docs;
+    let allDocs = deckShown ? [deckEntry(), ...docs] : docs;
+    // Filter by per-email doc access (admin bypasses)
+    const adminEmail = (process.env.ADMIN_EMAIL || '').toLowerCase();
+    if (session.email !== adminEmail) {
+      const access = await getEmailDocAccess(session.email).catch(() => null);
+      if (Array.isArray(access)) {
+        allDocs = allDocs.filter((d) => access.includes(d.slug));
+      }
+    }
     return sendHtml(res, 200, renderDocumentList({ viewerEmail: session.email, documents: allDocs }));
   } catch (err) {
     console.error('[investors] handler error:', err);

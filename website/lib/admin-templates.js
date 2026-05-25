@@ -214,6 +214,20 @@ ${SHARED_ADMIN_CSS}
 .wl-list li { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 13.5px; }
 .wl-list .wl-email { font-family: 'JetBrains Mono', monospace; font-size: 13px; }
 .wl-list .wl-note { color: var(--muted); font-size: 12.5px; flex: 1; }
+.wl-list li.wl-row { display: block; padding: 0; }
+.wl-list li.wl-row .wl-row-main { display: flex; align-items: center; gap: 12px; padding: 10px 0; }
+.wl-list li.wl-row .wl-row-actions { display: flex; gap: 8px; align-items: center; }
+.wl-access-tag { font-family: 'JetBrains Mono', monospace; font-size: 10.5px; letter-spacing: 0.04em; padding: 3px 8px; border-radius: 4px; }
+.wl-access-tag.all { background: rgba(31,112,80,0.14); color: var(--accent, #1f7050); }
+.wl-access-tag.none { background: rgba(177,58,58,0.14); color: #b13a3a; }
+.wl-access-tag.custom { background: rgba(196,131,13,0.14); color: #8a5d0a; }
+.wl-access-editor { padding: 6px 16px 14px; background: var(--bg); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); margin-bottom: 8px; }
+.wl-access-mode { display: flex; gap: 18px; flex-wrap: wrap; margin: 10px 0 8px; font-size: 13px; color: var(--ink-2, #2b3038); }
+.wl-access-mode label { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+.wl-access-checkboxes { display: flex; flex-wrap: wrap; gap: 6px 10px; padding: 6px 0 12px; }
+.wl-doc-chip { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; background: #fff; border: 1px solid var(--line); border-radius: 999px; font-size: 12.5px; cursor: pointer; }
+.wl-doc-chip input { margin: 0; }
+.wl-access-actions { display: flex; gap: 8px; }
 .wl-empty { color: var(--muted); font-size: 13px; font-style: italic; padding: 8px 0; }
 
 /* activity */
@@ -561,19 +575,65 @@ function renderAdminSettings({ adminEmail, documents, allowedEmails, whitelistEn
       </form>
       <ul class="wl-list">
         ${allowedEmails.length === 0 ? '<li class="wl-empty">No emails added yet.</li>' : ''}
-        ${allowedEmails.map((e) => `
-          <li>
-            <span class="wl-email">${escapeHtml(e.email)}</span>
-            <span class="wl-note">${e.note ? escapeHtml(e.note) : ''}</span>
-            <form method="POST" action="/investors/admin" style="margin:0">
-              <input type="hidden" name="action" value="remove-email" />
-              <input type="hidden" name="email" value="${escapeHtml(e.email)}" />
-              <button class="btn-danger" type="submit">Remove</button>
-            </form>
-          </li>
-        `).join('')}
+        ${allowedEmails.map((e, idx) => {
+          const access = Array.isArray(e.doc_access) ? e.doc_access : null;
+          const hasAll = access == null;
+          const editorId = `wl-access-${idx}`;
+          const checkboxes = documents.map((d) => {
+            const checked = hasAll || access.includes(d.slug);
+            return `<label class="wl-doc-chip"><input type="checkbox" name="slug[]" value="${escapeHtml(d.slug)}" ${checked ? 'checked' : ''}/><span>${escapeHtml(d.title)}</span></label>`;
+          }).join('');
+          const accessSummary = hasAll
+            ? `<span class="wl-access-tag all">All documents</span>`
+            : access.length === 0
+              ? `<span class="wl-access-tag none">No access</span>`
+              : `<span class="wl-access-tag custom">${access.length} of ${documents.length}: ${escapeHtml(access.slice(0, 3).map((s) => {
+                  const d = documents.find((x) => x.slug === s);
+                  return d ? d.title : s;
+                }).join(', '))}${access.length > 3 ? '…' : ''}</span>`;
+          return `
+            <li class="wl-row">
+              <div class="wl-row-main">
+                <span class="wl-email">${escapeHtml(e.email)}</span>
+                <span class="wl-note">${e.note ? escapeHtml(e.note) : ''}</span>
+                ${accessSummary}
+                <div class="wl-row-actions">
+                  <button class="btn btn-sm btn-secondary wl-edit-access-btn" type="button" data-target="${editorId}">Edit access</button>
+                  <form method="POST" action="/investors/admin" style="margin:0">
+                    <input type="hidden" name="action" value="remove-email" />
+                    <input type="hidden" name="email" value="${escapeHtml(e.email)}" />
+                    <button class="btn-danger" type="submit">Remove</button>
+                  </form>
+                </div>
+              </div>
+              <form class="wl-access-editor" id="${editorId}" method="POST" action="/investors/admin" hidden>
+                <input type="hidden" name="action" value="set-email-access" />
+                <input type="hidden" name="email" value="${escapeHtml(e.email)}" />
+                <div class="wl-access-mode">
+                  <label><input type="radio" name="mode" value="all" ${hasAll ? 'checked' : ''}/> All documents (any current or future)</label>
+                  <label><input type="radio" name="mode" value="restricted" ${hasAll ? '' : 'checked'}/> Restricted to:</label>
+                </div>
+                <div class="wl-access-checkboxes">${checkboxes}</div>
+                <div class="wl-access-actions">
+                  <button class="btn btn-sm" type="submit">Save access</button>
+                  <button class="btn btn-sm btn-secondary wl-access-cancel" type="button" data-target="${editorId}">Cancel</button>
+                </div>
+              </form>
+            </li>`;
+        }).join('')}
       </ul>
     </div>
+    <script>
+      // Toggle the access editor panels
+      document.querySelectorAll('.wl-edit-access-btn').forEach((b) => b.addEventListener('click', () => {
+        const t = document.getElementById(b.dataset.target);
+        if (t) t.hidden = !t.hidden;
+      }));
+      document.querySelectorAll('.wl-access-cancel').forEach((b) => b.addEventListener('click', () => {
+        const t = document.getElementById(b.dataset.target);
+        if (t) t.hidden = true;
+      }));
+    </script>
   `;
   return renderShell({ adminEmail, sidebar, content });
 }

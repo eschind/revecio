@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { readSession, clientIp } from '../../lib/session.js';
-import { ensureSchema, recordVisit, isDeckVisible } from '../../lib/db.js';
+import { ensureSchema, recordVisit, isDeckVisible, canEmailAccessDoc } from '../../lib/db.js';
 import { renderGate } from '../../lib/templates.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -24,6 +24,16 @@ export default async function handler(req, res) {
       res.statusCode = 302;
       res.setHeader('Location', '/investors');
       return res.end();
+    }
+    // Per-email access gate (admin bypasses)
+    const adminEmail = (process.env.ADMIN_EMAIL || '').toLowerCase();
+    if (session.email !== adminEmail) {
+      const allowed = await canEmailAccessDoc(session.email, 'deck').catch(() => true);
+      if (!allowed) {
+        res.statusCode = 302;
+        res.setHeader('Location', '/investors');
+        return res.end();
+      }
     }
     await recordVisit({
       email: session.email,

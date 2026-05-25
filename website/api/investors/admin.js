@@ -14,6 +14,7 @@ import {
   setDocumentVisible,
   deleteDocument,
   updateDocument,
+  setEmailDocAccess,
 } from '../../lib/db.js';
 import {
   readAdminSession,
@@ -60,7 +61,17 @@ async function readBody(req) {
         if (ct.includes('application/x-www-form-urlencoded')) {
           const params = new URLSearchParams(raw);
           const obj = {};
-          for (const [k, v] of params) obj[k] = v;
+          for (const [k, v] of params) {
+            if (k.endsWith('[]')) {
+              if (!Array.isArray(obj[k])) obj[k] = [];
+              obj[k].push(v);
+            } else if (k in obj) {
+              if (Array.isArray(obj[k])) obj[k].push(v);
+              else obj[k] = [obj[k], v];
+            } else {
+              obj[k] = v;
+            }
+          }
           return resolve(obj);
         }
         resolve({});
@@ -214,6 +225,24 @@ async function handlePost(req, res, url) {
   if (action === 'remove-email') {
     const email = trim(body.email).toLowerCase();
     if (email) await removeAllowedEmail(email);
+    return redirect(res, '/investors/admin/settings');
+  }
+  if (action === 'set-email-access') {
+    const email = trim(body.email).toLowerCase();
+    if (!email || !isEmail(email)) return redirect(res, '/investors/admin/settings');
+    const mode = String(body.mode || 'all'); // 'all' or 'restricted'
+    if (mode === 'all') {
+      await setEmailDocAccess(email, null);
+    } else {
+      // Accept either a comma-separated string in body.slugs or repeated form fields
+      let slugs = [];
+      if (Array.isArray(body['slug[]'])) slugs = body['slug[]'];
+      else if (typeof body.slugs === 'string') slugs = body.slugs.split(',').map((s) => s.trim()).filter(Boolean);
+      else if (Array.isArray(body.slugs)) slugs = body.slugs;
+      // Filter on visible-only slugs known to us (incl. deck)
+      slugs = slugs.map((s) => String(s).trim()).filter(Boolean);
+      await setEmailDocAccess(email, slugs);
+    }
     return redirect(res, '/investors/admin/settings');
   }
   if (action === 'toggle-whitelist') {
