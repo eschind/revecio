@@ -36,7 +36,7 @@
   .app { display: grid; grid-template-rows: 1fr; height: 100vh; }
 
   /* Brand mark in sidebar */
-  .tb-logo { width: 26px; height: 26px; border-radius: 6px; background: var(--ink); color: var(--bg-1); display: inline-flex; align-items: center; justify-content: center; font-family: 'Newsreader', serif; font-size: 16px; line-height: 1; font-weight: 500; text-decoration: none; cursor: pointer; transition: transform 0.15s ease; }
+  .tb-logo { width: 26px; height: 26px; border-radius: 6px; background: var(--ink); color: var(--dark-ink); display: inline-flex; align-items: center; justify-content: center; font-family: 'Newsreader', serif; font-size: 16px; line-height: 1; font-weight: 500; text-decoration: none; cursor: pointer; transition: transform 0.15s ease; }
   .tb-logo:hover { transform: scale(1.08); }
   .sidebar-logo { margin: 2px 4px 6px; }
 
@@ -355,7 +355,7 @@
 <div class="app">
   <div class="layout" id="layout">
     <aside class="sidebar">
-      <a class="tb-logo sidebar-logo" href="/" title="Reve — home" aria-label="Reve — home">R</a>
+      <a class="tb-logo sidebar-logo" href="/demo" data-action="demo-home" title="Demo — home" aria-label="Demo — home">R</a>
       <div class="nav-group">
         <div class="nav-label">Workspace</div>
         <div class="nav-item active" id="nav-new-client" data-action="new-client" title="Start a new onboarding">
@@ -2140,6 +2140,9 @@
       e.stopPropagation();
       deleteClient(btn.dataset.id);
     } else if (a === 'new-client') {
+      startFresh();
+    } else if (a === 'demo-home') {
+      e.preventDefault();
       startFresh();
     } else if (a === 'open-portfolio') {
       openPortfolioModule();
