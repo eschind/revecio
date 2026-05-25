@@ -1768,6 +1768,7 @@
       <div id="vault-items">${renderClientVault()}</div>
       <div class="vault-hint">Click an item to open it, or just <strong>ask</strong> — "pull up the IPS", "model the portfolio", "what's our liquidity?"</div>
     `;
+    updateUrl();
   }
 
   function renderClientVault() {
@@ -1870,6 +1871,7 @@
       </table>
     `;
     artifactFooter.classList.remove('visible');
+    updateUrl();
   }
 
   function openMaterialsView() {
@@ -1895,6 +1897,7 @@
       </table>
     `;
     artifactFooter.classList.remove('visible');
+    updateUrl();
   }
 
   function ipsSaveBtnHtml() {
@@ -1922,6 +1925,7 @@
     artifactBody.querySelectorAll('.ips-section').forEach((el) => el.classList.add('reviewed'));
     restoreIpsFooter();
     showArtifactFooter();
+    updateUrl();
   }
 
   function backToVault() {
@@ -1980,6 +1984,7 @@
     document.querySelectorAll('.nav-item').forEach((el) => el.classList.remove('active'));
     document.getElementById('nav-new-client').classList.add('active');
     exitClientWorkspace();
+    updateUrl();
     artifactTitle.textContent = IPS_ARTIFACT_TITLE;
     restoreIpsFooter();
     closeArtifact();
@@ -2488,6 +2493,7 @@
     }
     renderPortfolioModule();
     renderClientWorkspace();
+    updateUrl();
     addAgent(`<p>Opened <strong>Portfolio Modeling</strong> for ${escapeHtml(state.org.name)}. Starting from the IPS-range midpoints. You can edit individual weights, run the optimizer, or adopt straight away.</p>`);
   }
 
@@ -2687,6 +2693,33 @@
     backToVault();
   });
 
+  // ============ URL routing ============
+  // Keeps refresh-state by encoding the current client + view into the URL.
+  // Format: /demo?client=<id>&view=<module>. View is omitted for the vault home.
+  function updateUrl() {
+    const params = new URLSearchParams();
+    if (state.clientId) params.set('client', state.clientId);
+    if (state.module && state.module !== 'vault') params.set('view', state.module);
+    const qs = params.toString();
+    const url = qs ? `/demo?${qs}` : '/demo';
+    try { window.history.replaceState(null, '', url); } catch {}
+  }
+  function restoreFromUrl() {
+    let params;
+    try { params = new URLSearchParams(window.location.search); } catch { return false; }
+    const clientId = params.get('client');
+    if (!clientId) return false;
+    const client = listClients().find((c) => c.id === clientId);
+    if (!client) return false;
+    loadClient(clientId);
+    const view = params.get('view');
+    if (view === 'ips') switchToIpsView();
+    else if (view === 'portfolio') openPortfolioModule();
+    else if (view === 'materials') openMaterialsView();
+    else if (view === 'profile') openClientProfileView();
+    return true;
+  }
+
   // ============ Init ============
   state.sectionOverrides = {};
   state.clientId = null;
@@ -2697,8 +2730,11 @@
       if (tBtn) { tBtn.title = 'Expand sidebar'; tBtn.setAttribute('aria-label', 'Expand sidebar'); }
     }
   } catch {}
-  renderActiveClients();
-  startConversation();
+  if (!restoreFromUrl()) {
+    renderActiveClients();
+    startConversation();
+    updateUrl();
+  }
 </script>
 </body>
 </html>
