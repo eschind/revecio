@@ -73,6 +73,9 @@
   .pm-pos { color: var(--accent); font-weight: 500; }
   .pm-neg { color: #b13a3a; font-weight: 500; }
   .pm-bench { color: var(--muted); }
+  .pm-bench-num { color: var(--muted); font-size: 11.5px; }
+  .pm-bench-pos { color: rgba(31,112,80,0.7); }
+  .pm-bench-neg { color: rgba(177,58,58,0.7); }
   .pm-bench-name { font-size: 11px; color: var(--muted); }
   .pm-status-pill { display: inline-block; margin-left: 8px; padding: 1px 6px; border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 0.06em; text-transform: uppercase; background: var(--line); color: var(--muted); }
   .pm-st-ok { background: rgba(31,112,80,0.14); color: var(--accent); }
@@ -2830,15 +2833,16 @@
       return `<tr><td>${c.name}</td><td class="num">${pmFmtPct(t, 1)}</td><td class="num">${pmFmtPct(a, 1)}</td><td class="num pm-drift-${cls || 'ok'}">${sign}${(d*100).toFixed(2)}pp</td><td>${pmFmtPct(IPS_RANGE[c.id][0],0)}–${pmFmtPct(IPS_RANGE[c.id][1],0)}</td></tr>`;
     }).join('');
 
-    // Performance rows
+    // Performance rows: color portfolio returns by sign; benchmark stays muted
+    const signClass = (n) => (n === null || n === undefined || n === 0) ? '' : (n > 0 ? 'pm-pos' : 'pm-neg');
+    const benchClass = (n) => 'pm-bench-num ' + ((n === null || n === undefined || n === 0) ? '' : (n > 0 ? 'pm-bench-pos' : 'pm-bench-neg'));
     const perfRows = CMA.filter((c) => p.performance[c.id]).map((c) => {
       const x = p.performance[c.id];
-      const beat = (a, b) => a > b ? 'pm-pos' : (a < b ? 'pm-neg' : '');
       return `<tr><td>${c.name}</td>
-        <td class="num ${beat(x.ytd, x.benchYtd)}">${pmFmtPct(x.ytd, 1)}</td><td class="num pm-bench">${pmFmtPct(x.benchYtd, 1)}</td>
-        <td class="num ${beat(x.oneY, x.benchOneY)}">${pmFmtPct(x.oneY, 1)}</td><td class="num pm-bench">${pmFmtPct(x.benchOneY, 1)}</td>
-        <td class="num ${beat(x.threeY, x.benchThreeY)}">${pmFmtPct(x.threeY, 1)}</td><td class="num pm-bench">${pmFmtPct(x.benchThreeY, 1)}</td>
-        <td class="num">${pmFmtPct(x.itd, 1)}</td>
+        <td class="num ${signClass(x.ytd)}">${pmFmtPct(x.ytd, 1)}</td><td class="num ${benchClass(x.benchYtd)}">${pmFmtPct(x.benchYtd, 1)}</td>
+        <td class="num ${signClass(x.oneY)}">${pmFmtPct(x.oneY, 1)}</td><td class="num ${benchClass(x.benchOneY)}">${pmFmtPct(x.benchOneY, 1)}</td>
+        <td class="num ${signClass(x.threeY)}">${pmFmtPct(x.threeY, 1)}</td><td class="num ${benchClass(x.benchThreeY)}">${pmFmtPct(x.benchThreeY, 1)}</td>
+        <td class="num ${signClass(x.itd)}">${pmFmtPct(x.itd, 1)}</td>
         <td class="pm-bench-name">${escapeHtml(x.benchName)}</td>
       </tr>`;
     }).join('');
@@ -2857,8 +2861,8 @@
         <td><span class="mat-kind">${m.vehicle.toUpperCase().replace(/\s+/g,'_').slice(0,12)}</span></td>
         <td class="num">${fmtMoney(m.aum)}</td>
         <td class="num">${(aumPct*100).toFixed(1)}%</td>
-        <td class="num">${m.ytd !== null && m.ytd !== undefined ? pmFmtPct(m.ytd, 1) : '—'}</td>
-        <td class="num">${m.oneY !== null && m.oneY !== undefined ? pmFmtPct(m.oneY, 1) : '—'}</td>
+        <td class="num ${signClass(m.ytd)}">${m.ytd !== null && m.ytd !== undefined ? pmFmtPct(m.ytd, 1) : '—'}</td>
+        <td class="num ${signClass(m.oneY)}">${m.oneY !== null && m.oneY !== undefined ? pmFmtPct(m.oneY, 1) : '—'}</td>
         <td>${escapeHtml(m.since || '')}</td>
       </tr>`;
     }).join('');
