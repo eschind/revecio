@@ -1120,6 +1120,96 @@
     return { type, name };
   }
 
+  // ============ Materials knowledge ============
+  // The demo can't parse arbitrary uploads, so the content of known sample
+  // materials is baked in here, keyed by filename. When a recognized file is
+  // uploaded, the agent gains its structured facts (to skip onboarding
+  // questions and populate the profile) and a text excerpt (for grounded Q&A).
+  // Matchers are scoped to the org name so similarly-named files for other
+  // clients are never mis-attributed.
+  const SAMPLE_MATERIALS = [
+    {
+      id: 'nysym-mission', label: 'Mission overview', orgName: 'The New York Symphony', orgType: 'arts',
+      match: (n) => /symphony/i.test(n) && /mission|overview|vision/i.test(n),
+      facts: { mission: 'The New York Symphony enriches and inspires its community through orchestral music — presenting 120+ concerts a season at Hudson Concert Hall and reaching ~92,000 students and community members through education and engagement, including Symphony in the Schools (140 public schools), Young People’s Concerts, and free Concerts in the Parks.' },
+      text: 'The New York Symphony, founded 1921, is a leading orchestra resident at Hudson Concert Hall in Manhattan. Mission: to enrich and inspire the community through the transformative power of orchestral music — on the concert stage, in schools, and across the five boroughs. About 98 musicians; 120+ concerts per season; ~320,000 annual audience. Programs: the classical subscription season, pops/family/chamber series, and national & international touring; education and community engagement including Symphony in the Schools (teaching-artist residencies in 140 public schools), Young People’s Concerts (40,000+ students), free Concerts in the Parks (50,000+ attendees), and fellowship/pipeline programs for musicians from underrepresented backgrounds. Leadership: Sofia Klein (Music Director), Marcus Bell (President & CEO), Eleanor Vance (Chair of the Board), Patricia Nolan (Chief Financial Officer), Robert Kim (Chair, Finance & Investment Committee). The endowment (~$186M) provides roughly one-fifth of annual operating support.',
+    },
+    {
+      id: 'nysym-financials', label: 'FY2024 audited financials', orgName: 'The New York Symphony', orgType: 'arts',
+      match: (n) => /symphony/i.test(n) && /financ|audit/i.test(n),
+      aum: 186000000,
+      facts: { spending: '5.0% of the trailing twelve-quarter (3-year) average market value of the endowment (Finance Committee discretion 4.5%–5.5%); the endowment funds roughly one-fifth of operating support.' },
+      text: 'The New York Symphony audited financial statements, year ended June 30, 2024 (auditor: Brennan & Ross LLP). Statement of Financial Position: total assets $266.0M; investments (endowment and board-designated) $186.0M; property, instruments and equipment, net $52.0M; total liabilities $29.0M; total net assets $237.0M (without donor restrictions $92.0M, including $46.0M board-designated quasi-endowment; with donor restrictions $145.0M). Statement of Activities for FY2024: total operating revenue and support $49.7M (ticket sales, touring and earned revenue $21.3M; contributions and grants $14.8M; special events net $3.0M; endowment appropriated for operations $9.0M; facility rentals and other $1.6M); total operating expenses $47.1M (artistic and concert production $28.4M; education and community $4.6M; marketing and development $8.9M; general and administrative $5.2M); operating surplus $2.6M. Non-operating: net investment return $14.2M and endowment contributions $12.5M; total change in net assets $29.3M. Endowment composition: donor-restricted $128.0M, board-designated quasi-endowment $46.0M, other long-term investments $12.0M, total $186.0M. Spending policy: 5.0% of the trailing 12-quarter average, FY2024 appropriation ~$9.0M, managed under NYPMIFA.',
+    },
+    {
+      id: 'nysym-annual', label: 'FY2024 annual report', orgName: 'The New York Symphony', orgType: 'arts',
+      match: (n) => /symphony/i.test(n) && /annual|report/i.test(n),
+      aum: 186000000,
+      facts: { cashNeeds: 'The Centennial Campaign is in progress ($75M goal; ~$61M raised, of which $40M is designated to grow the endowment), alongside an education-wing capital project. No unusual near-term operating outflows are noted.' },
+      text: 'The New York Symphony FY2024 Annual Report (year ended June 30, 2024). Highlights: ~320,000 total audience; 124 concerts; ~92,000 students and community members served; 86% subscription renewal; first international tour since the pandemic; two world premieres. Education: Symphony in the Schools (140 schools), Young People’s Concerts (40,000+ students), and the new Hudson Fellowship. Financials: operating revenue and support of $49.7M against $47.1M of expenses for a $2.6M operating surplus; the endowment reached a new high of $186M; total net assets $237M. The operating dollar came from earned revenue 43%, contributions and grants 30%, special events 6%, endowment support 18%, and other 3%. The Centennial Campaign has raised $61M toward a $75M goal, with $40M designated to grow the endowment, and the Board is reviewing its investment governance as the endowment grows. Signed by Eleanor Vance (Board Chair), Marcus Bell (President & CEO), and Sofia Klein (Music Director).',
+    },
+    {
+      id: 'nysym-ips', label: 'prior IPS (2021)', orgName: 'The New York Symphony', orgType: 'arts',
+      match: (n) => /symphony/i.test(n) && (/\bips\b/i.test(n) || /investment.?policy/i.test(n)),
+      text: 'The New York Symphony prior Investment Policy Statement, adopted September 2021 (superseding 2016). Objective: a total return sufficient to support the spending policy plus inflation and investment costs while preserving the inflation-adjusted value of the corpus over rolling five-year periods, governed under NYPMIFA. Asset-allocation targets and ranges: Domestic Equity 40% (30–50%), International Equity 20% (10–30%), Fixed Income 30% (20–40%), Alternatives including real assets 7% (0–15%), and Cash 3% (0–10%) — a traditional, equity-oriented allocation with limited use of alternatives. Spending policy: 5.0% of the trailing twelve-quarter average (Finance Committee discretion 4.5–5.5%). Governance: the Board of Directors, a Finance Committee, a non-discretionary external investment consultant, and a custodian. Rebalancing reviewed at least annually. Prohibited without prior approval: direct ownership of commodities or real estate, short selling, leverage, and direct private securities. Donor preferences on mission-aligned or socially responsible investing are considered case-by-case. The policy is reviewed at least every two years.',
+    },
+    {
+      id: 'nysym-minutes', label: 'board minutes (Mar 2025)', orgName: 'The New York Symphony', orgType: 'arts',
+      match: (n) => /symphony/i.test(n) && /board|minutes/i.test(n),
+      text: 'The New York Symphony Board of Directors meeting minutes, March 13, 2025. Present: Eleanor Vance (Chair), Robert Kim (Treasurer and Finance Chair), Marcus Bell (President & CEO), Patricia Nolan (CFO), and 14 of 19 directors; Sofia Klein (Music Director) and a representative of the investment consultant (Hartwell Advisory Group) attended by invitation. CEO report: the 2024–25 season is tracking ahead of budget, with subscription renewals at 86% and single-ticket sales up 9%. Finance: the organization is operating near its balanced ~$48M FY2025 budget; the endowment stood at ~$186M as of February 28, 2025; the portfolio modestly trailed its policy benchmark over the trailing year. Governance: the 2021 IPS is "due for a thorough refresh" (limited alternatives, no explicit liquidity framework, the spending methodology), and the Finance Committee was authorized to evaluate an outsourced CIO (OCIO) model versus the current non-discretionary consultant and report by September 2025. Development: the Centennial Campaign stands at $61M of its $75M goal ($40M to the endowment); the annual gala is projected to net $3.2M. Spending: the FY2026 endowment draw would be ~$9.2M under the 5.0% policy, which the Committee indicated it would likely hold rather than increase.',
+    },
+  ];
+
+  function matchMaterial(name) {
+    return SAMPLE_MATERIALS.find((m) => { try { return m.match(name || ''); } catch (e) { return false; } });
+  }
+
+  // Aggregate structured facts + AUM + a text corpus from the uploaded materials.
+  function gatherMaterialsKnowledge(materials) {
+    const k = { orgName: null, orgType: null, aum: null, facts: {}, factSources: {}, corpus: [], matched: [] };
+    for (const it of (materials || [])) {
+      const rec = matchMaterial(it.name || (it.kind === 'link' ? it.name : ''));
+      if (!rec) continue;
+      k.matched.push(rec.id);
+      if (rec.orgName && !k.orgName) k.orgName = rec.orgName;
+      if (rec.orgType && !k.orgType) k.orgType = rec.orgType;
+      if (rec.aum && !k.aum) k.aum = rec.aum;
+      if (rec.facts) for (const key of Object.keys(rec.facts)) { if (!k.facts[key]) { k.facts[key] = rec.facts[key]; k.factSources[key] = rec.label; } }
+      if (rec.text) k.corpus.push({ source: rec.label, text: rec.text });
+    }
+    return k;
+  }
+
+  function listJoin(arr) {
+    if (arr.length <= 1) return arr.join('');
+    if (arr.length === 2) return `${arr[0]} and ${arr[1]}`;
+    return `${arr.slice(0, -1).join(', ')}, and ${arr[arr.length - 1]}`;
+  }
+
+  // A compact text summary of the client facts on file — used as a fallback
+  // knowledge source so org questions work even without recognized materials.
+  function clientProfileText() {
+    const f = state.facts || {};
+    const parts = [];
+    if (state.org.name) parts.push(`Client: ${state.org.name} (${TYPE_LABEL[state.org.type] || state.org.type || 'institution'}).`);
+    if (state.aum) parts.push(`Endowment / assets under management: ${fmtAum(state.aum)}.`);
+    if (f.mission) parts.push(`Mission / purpose: ${f.mission}`);
+    if (f.spending) parts.push(`Spending policy: ${f.spending}`);
+    if (f.cashNeeds) parts.push(`Near-term cash needs: ${f.cashNeeds}`);
+    if (f.drawdown) parts.push(`Risk tolerance / drawdown: ${f.drawdown}`);
+    if (f.constraints) parts.push(`Constraints / preferences: ${f.constraints}`);
+    return parts.join(' ');
+  }
+
+  // The corpus passed to the router for grounded org/materials Q&A.
+  function buildMaterialsCorpus() {
+    const know = gatherMaterialsKnowledge(state.materials);
+    const corpus = know.corpus.map((c) => ({ source: c.source, text: c.text }));
+    const profile = clientProfileText();
+    if (profile) corpus.push({ source: 'Client profile on file', text: profile });
+    return corpus;
+  }
+
   const QUESTIONS = {
     foundation: [
       { key: 'mission', q: 'To tailor the IPS, can you tell me about the foundation\'s mission and the population it primarily serves?', placeholder: 'e.g. Supporting youth education programs in the greater Boston area.' },
@@ -1263,6 +1353,9 @@
           currentSectionNum: current.num,
           currentSectionTitle: current.title,
           sections: IPS_SECTIONS.map((s) => ({ num: s.num, title: s.title })),
+          // Client materials/profile, so the agent can answer questions about
+          // the organization grounded in the uploaded documents.
+          materials: buildMaterialsCorpus(),
           // Exclude the current message (already pushed into history by addUser)
           history: (state.chatHistory || []).slice(0, -1).slice(-10),
         }),
@@ -1286,6 +1379,14 @@
     if (intent === 'analyze') {
       const html = answerAnalysisQuery(route?.query);
       await agentReply(html || `<p>${escapeHtml(route?.reply || 'Not sure how to answer that one yet.')}</p>`);
+      return;
+    }
+
+    if (intent === 'org_info') {
+      const ans = route?.answer || route?.reply;
+      await agentReply(ans
+        ? `<div class="ips-answer-card"><div class="ips-answer-head">From the client's materials</div>${ans}</div>`
+        : `<p>I don't see that in the materials on file for this client.</p>`);
       return;
     }
 
@@ -1523,8 +1624,31 @@
 
   async function beginInterview() {
     state.phase = 'interviewing';
-    state.questions = QUESTIONS[state.org.type] || QUESTIONS.foundation;
+    const know = gatherMaterialsKnowledge(state.materials);
+    if (know.aum && !state.aum) state.aum = know.aum;
+    const all = QUESTIONS[state.org.type] || QUESTIONS.foundation;
+    // Pre-fill any facts the materials already answer, and ask only the rest.
+    for (const q of all) { if (know.facts[q.key] && !state.facts[q.key]) state.facts[q.key] = know.facts[q.key]; }
+    state.questions = all.filter((q) => !know.facts[q.key]);
     state.qIdx = 0;
+
+    const pulled = [];
+    if (know.facts.mission) pulled.push('the mission');
+    if (know.facts.spending) pulled.push('the spending policy');
+    if (know.facts.cashNeeds) pulled.push('near-term cash needs');
+    if (know.aum) pulled.push(`the AUM (${fmtAum(know.aum)})`);
+
+    if (pulled.length) {
+      const note = `I already pulled ${listJoin(pulled)} from the materials, so I'll skip those.`;
+      if (state.questions.length) {
+        await agentReply(`<p>Great. ${note} I just need a ${state.questions.length === 1 ? 'last detail' : 'couple more things'} the documents don't cover:</p>`);
+        await askNextQuestion();
+      } else {
+        await agentReply(`<p>Great — ${note} That's everything I need to draft the IPS.</p>`);
+        await wrapUpInterview();
+      }
+      return;
+    }
     await agentReply(`<p>Great. Before I draft the IPS, a few clarifying questions — your materials covered some of this, but I want to make sure I have it right.</p>`);
     await askNextQuestion();
   }
