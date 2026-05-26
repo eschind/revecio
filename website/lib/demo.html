@@ -393,6 +393,8 @@
   .modal-actions .primary { background: var(--accent); border-color: var(--accent); color: var(--dark-ink); }
   .modal-actions .primary:hover { background: var(--accent-2); border-color: var(--accent-2); }
   .modal-actions .primary:disabled { opacity: 0.4; cursor: not-allowed; }
+  .modal-actions .danger { background: var(--qr-neg); border-color: var(--qr-neg); color: #fff; }
+  .modal-actions .danger:hover { border-color: var(--qr-neg); filter: brightness(1.06); }
 
   /* Artifact footer (sticky save bar) */
   .artifact-footer { display: none; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 22px; background: var(--panel); border-top: 1px solid var(--line); flex-shrink: 0; }
@@ -943,6 +945,17 @@
       <p class="modal-hint" id="saved-body">The IPS draft has been saved to this client's record. Portfolio Modeling will be the next step — capital market assumptions, scenario analysis, and a draft strategic allocation calibrated to the IPS.</p>
       <div class="modal-actions">
         <button id="saved-ok" class="primary">Got it</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="delete-modal" role="dialog" aria-hidden="true">
+    <div class="modal">
+      <h3>Delete client?</h3>
+      <p class="modal-hint" id="delete-body">This will permanently remove the client and all its data. This can't be undone.</p>
+      <div class="modal-actions">
+        <button id="delete-cancel">Cancel</button>
+        <button class="danger" id="delete-confirm">Delete client</button>
       </div>
     </div>
   </div>
@@ -5019,15 +5032,33 @@
   const _originalRenderSection = renderSection;
   // Note: renderSection is a const? Let's check — it's a function declaration. Replace inline via a wrapper.
 
-  function deleteClient(id) {
-    if (!id || isSampleId(id)) return;
-    const all = listLocalClients();
-    const rec = all.find((c) => c.id === id);
-    if (!rec) return;
-    if (!confirm(`Delete ${rec.name}? This can't be undone.`)) return;
-    writeClients(all.filter((c) => c.id !== id));
+  const deleteModal = document.getElementById('delete-modal');
+  const deleteBody = document.getElementById('delete-body');
+  function closeDeleteModal() {
+    deleteModal.classList.remove('active');
+    deleteModal.setAttribute('aria-hidden', 'true');
+    state.pendingDeleteId = null;
+  }
+  function confirmDeleteClient() {
+    const id = state.pendingDeleteId;
+    closeDeleteModal();
+    if (!id) return;
+    writeClients(listLocalClients().filter((c) => c.id !== id));
     if (state.clientId === id) startFresh();
     else renderActiveClients();
+  }
+  document.getElementById('delete-cancel').addEventListener('click', closeDeleteModal);
+  document.getElementById('delete-confirm').addEventListener('click', confirmDeleteClient);
+  deleteModal.addEventListener('click', (e) => { if (e.target === deleteModal) closeDeleteModal(); });
+
+  function deleteClient(id) {
+    if (!id || isSampleId(id)) return;
+    const rec = listLocalClients().find((c) => c.id === id);
+    if (!rec) return;
+    state.pendingDeleteId = id;
+    deleteBody.innerHTML = `Permanently delete <strong>${escapeHtml(rec.name)}</strong> and all of its data? This can't be undone.`;
+    deleteModal.classList.add('active');
+    deleteModal.setAttribute('aria-hidden', 'false');
   }
 
   function startFresh() {
