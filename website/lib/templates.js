@@ -30,7 +30,7 @@ const BASE_VARS = `
 // ============================================================
 // Gate page
 // ============================================================
-function renderGate({ error, prefillEmail, title = 'Reve CIO - Investors' } = {}) {
+function renderGate({ error, prefillEmail, title = 'Reve CIO - Investors', redirectTo = '' } = {}) {
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -168,6 +168,7 @@ ${FONTS}
     <p class="intro">Please enter the access code shared with you, along with your email.</p>
     ${error ? `<div class="error">${escapeHtml(error)}</div>` : ''}
     <form method="POST" action="/investors" autocomplete="on" novalidate>
+      ${redirectTo ? `<input type="hidden" name="redirect_to" value="${escapeHtml(redirectTo)}" />` : ''}
       <label>
         <span class="field-label">Email</span>
         <input type="email" name="email" required autocomplete="email" autofocus value="${prefillEmail ? escapeHtml(prefillEmail) : ''}" />
