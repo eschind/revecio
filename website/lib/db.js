@@ -50,6 +50,9 @@ async function ensureSchema() {
   // Per-email document access. NULL doc_access means "all documents" (backward compatible).
   // An array of slugs (e.g. ["memo","deck"]) restricts access to those slugs only.
   await db`ALTER TABLE allowed_emails ADD COLUMN IF NOT EXISTS doc_access JSONB`;
+  // Per-email demo access. NULL or TRUE = has access (backward compatible);
+  // FALSE = demo is disabled for this email.
+  await db`ALTER TABLE allowed_emails ADD COLUMN IF NOT EXISTS demo_access BOOLEAN`;
   await db`
     CREATE TABLE IF NOT EXISTS settings (
       key TEXT PRIMARY KEY,
@@ -196,7 +199,7 @@ async function isEmailAllowed(email) {
 }
 async function listAllowedEmails() {
   const db = getSql();
-  return db`SELECT email, note, added_at, doc_access FROM allowed_emails ORDER BY added_at DESC`;
+  return db`SELECT email, note, added_at, doc_access, demo_access FROM allowed_emails ORDER BY added_at DESC`;
 }
 async function addAllowedEmail(email, note) {
   const db = getSql();
@@ -233,6 +236,23 @@ async function canEmailAccessDoc(email, slug) {
   const access = await getEmailDocAccess(email);
   if (access == null) return true;          // null = unrestricted
   return access.includes(String(slug));
+}
+
+// ----- demo access -----
+// Whether an email may access the /demo app. NULL/TRUE = yes (backward
+// compatible); FALSE = explicitly disabled. Internal emails always allowed.
+async function canEmailAccessDemo(email) {
+  const e = normalizeEmail(email);
+  if (INTERNAL_EMAILS.includes(e)) return true;
+  const db = getSql();
+  const rows = await db`SELECT demo_access FROM allowed_emails WHERE email = ${e}`;
+  if (rows.length === 0) return true;       // not on the list → don't block (whitelist may be off)
+  return rows[0].demo_access !== false;
+}
+
+async function setEmailDemoAccess(email, enabled) {
+  const db = getSql();
+  await db`UPDATE allowed_emails SET demo_access = ${Boolean(enabled)} WHERE email = ${normalizeEmail(email)}`;
 }
 
 // ----- settings -----
@@ -289,6 +309,8 @@ export {
   getEmailDocAccess,
   setEmailDocAccess,
   canEmailAccessDoc,
+  canEmailAccessDemo,
+  setEmailDemoAccess,
   // settings
   getSetting,
   setSetting,
