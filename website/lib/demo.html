@@ -650,6 +650,12 @@
   .cc-fund { font-size: 13px; color: var(--ink); font-weight: 500; }
   .cc-kind { font-size: 10.5px; color: var(--muted); font-family: 'JetBrains Mono', monospace; margin-top: 2px; }
   .cc-complete-btn { font-size: 10.5px; padding: 3px 9px; }
+  .cc-queued-pill { display: inline-flex; align-items: center; font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.06em; padding: 3px 9px; border-radius: 999px; background: rgba(31,112,80,0.10); color: var(--accent); border: 1px solid rgba(31,112,80,0.25); white-space: nowrap; }
+  .cc-queued-block { display: inline-flex; flex-direction: column; gap: 6px; align-items: flex-start; padding: 10px 14px; background: rgba(31,112,80,0.06); border: 1px solid rgba(31,112,80,0.18); border-radius: 8px; }
+  .cc-queued-headline { display: inline-flex; align-items: center; font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); }
+  .cc-queued-sub { font-size: 12.5px; color: var(--ink-2); line-height: 1.5; max-width: 60ch; }
+  .cc-queued-override { font-size: 11px; padding: 4px 10px; align-self: flex-start; opacity: 0.75; }
+  .cc-queued-override:hover { opacity: 1; }
   .cc-notice { border: 1px solid var(--line); border-radius: 12px; padding: 22px 24px; background: var(--panel); max-width: 640px; }
   .cc-notice-head { border-bottom: 2px solid var(--ink); padding-bottom: 8px; margin-bottom: 14px; }
   .cc-notice-from { font-family: 'Newsreader', serif; font-size: 18px; color: var(--ink); }
@@ -5326,7 +5332,7 @@
       <td>$${c.amount.toFixed(1)}M</td>
       <td>${fmtDate(c.called)}</td>
       <td>${fmtDate(c.due)}</td>
-      <td style="text-align:right;"><button class="pill-btn accent cc-complete-btn" data-action="cc-complete" data-id="${c.id}">Mark completed</button></td>
+      <td style="text-align:right;"><span class="cc-queued-pill" title="The agent will execute this wire from the Tier-1 cash buffer on the due date."><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;vertical-align:-1px;"><circle cx="12" cy="12" r="9"/><polyline points="9 12 11 14 15 10"/></svg>Wire queued by agent</span></td>
     </tr>`;
     const completedRow = (c) => `<tr class="cc-row" data-action="open-capital-call" data-id="${c.id}">
       <td style="text-align:left;"><div class="cc-fund">${escapeHtml(c.fund)}</div><div class="cc-kind">Call #${c.callNum} · ${escapeHtml(c.kind)}</div></td>
@@ -5364,7 +5370,11 @@
     enterItemView();
     const w = ccWire(c);
     const action = c.status === 'pending'
-      ? `<button class="btn-primary" data-action="cc-complete" data-id="${c.id}">Mark as completed</button>`
+      ? `<div class="cc-queued-block">
+          <div class="cc-queued-headline"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;vertical-align:-2px;"><circle cx="12" cy="12" r="9"/><polyline points="9 12 11 14 15 10"/></svg>Wire queued by agent</div>
+          <div class="cc-queued-sub">The agent will initiate the wire from the Tier-1 cash buffer on or before <strong>${escapeHtml(fmtDate(c.due))}</strong>. No action required.</div>
+          <button class="btn-secondary cc-queued-override" data-action="cc-complete" data-id="${c.id}" title="Mark as executed if this wire has already cleared.">Mark as executed</button>
+        </div>`
       : `<div class="cc-done-badge">✓ Completed</div>`;
     artifactBody.innerHTML = `${itemHeadHtml('Capital call notice')}
       <a class="mm-back" data-action="capital-calls-back"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>All capital calls</a>
