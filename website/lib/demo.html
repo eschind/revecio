@@ -684,6 +684,13 @@
   .qr-period-btn.sm-reset:hover { background: var(--qr-neg); color: var(--bg); border-color: var(--qr-neg); }
   .sm-prompt-hint { font-size: 12.5px; color: var(--muted); line-height: 1.55; margin: 18px 0 4px; padding: 12px 14px; border: 1px dashed var(--line); border-radius: 8px; background: var(--bg-2); }
   .sm-prompt-hint em { color: var(--ink-2); font-style: italic; }
+  .spend-create-actions { display: flex; gap: 10px; justify-content: center; margin-top: 16px; flex-wrap: wrap; }
+  .spend-upload-label { cursor: pointer; display: inline-flex; align-items: center; }
+  .spend-assumptions { display: flex; gap: 18px; flex-wrap: wrap; margin: 4px 0 16px; }
+  .spend-assumptions label { display: flex; flex-direction: column; gap: 5px; font-size: 11px; font-family: 'JetBrains Mono', monospace; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); }
+  .spend-input { font: inherit; font-size: 13px; padding: 6px 9px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); color: var(--ink); text-align: right; width: 110px; }
+  .spend-input:focus { outline: none; border-color: var(--accent); }
+  .qr-table td.num .spend-input { width: 96px; }
 
   /* ============ Empty states, connect prompts, add forms ============ */
   .empty-state { text-align: center; max-width: 460px; margin: 40px auto; padding: 28px 24px; border: 1px dashed var(--line); border-radius: 12px; background: var(--bg-2); }
@@ -2397,6 +2404,14 @@
     } else if (a === 'spend-reset') {
       state.spendOverrides = {};
       openSpendingView();
+    } else if (a === 'spend-new') {
+      state.spendModel = newSpendModel(false);
+      if (state.clientId && !isSampleId(state.clientId)) persistClient();
+      openSpendingView();
+    } else if (a === 'spend-clear') {
+      state.spendModel = null;
+      if (state.clientId && !isSampleId(state.clientId)) persistClient();
+      openSpendingView();
     } else if (a === 'connect-integration') {
       const key = btn.dataset.key;
       state.integrationsRequested = state.integrationsRequested || [];
@@ -2835,6 +2850,7 @@
       ipsStatus: state.ipsStatus || 'Draft',
       boardNotes: state.boardNotes || [],
       decisions: state.decisions || [],
+      spendModel: state.spendModel || null,
       portfolio: state.portfolio || null,
       savedAt: new Date().toISOString(),
     };
@@ -2870,6 +2886,7 @@
     state.boardNotes = client.boardNotes || [];
     state.decisions = client.decisions || [];
     state.portfolio = client.portfolio || null;
+    state.spendModel = client.spendModel || null;
     // Lazily fill in SAA metrics + IPS §7 override if the sample only has weights
     if (state.saa && state.saa.weights && !state.saa.metrics) {
       state.saa.metrics = portfolioMetrics(state.saa.weights);
@@ -5221,6 +5238,146 @@
     return { s, inc, exp, incTotal, expTotal, required, policyDraw, margin, impliedRate, tier1 };
   }
 
+  // ---- Custom (user-built) spending model for non-sample clients ----
+  // Line-item labels by client type; values are entered by the user or
+  // populated from an uploaded spreadsheet (simulated extraction in the demo).
+  const SPEND_TEMPLATES = {
+    endowment: {
+      income: ['Net tuition & fees', 'Government & research grants', 'Gifts & annual giving', 'Auxiliary enterprises', 'Other operating income'],
+      expense: ['Compensation & benefits', 'Financial aid', 'Facilities & operations', 'Research & programs', 'Debt service', 'Administration & other'],
+    },
+    arts: {
+      income: ['Ticket sales & earned revenue', 'Contributions & grants', 'Special events (net)', 'Auxiliary & other'],
+      expense: ['Artistic & production', 'Education & community', 'Marketing & development', 'General & administrative'],
+    },
+    foundation: {
+      income: ['Investment income (non-endowment)', 'Gifts & contributions', 'Other income'],
+      expense: ['Grants & program', 'Operations', 'Administration'],
+    },
+  };
+  // Illustrative values used when "uploading a spreadsheet" ($M). Arts matches
+  // the New York Symphony financials.
+  const SPEND_FILLED = {
+    endowment: { income: [142, 38, 22, 26, 8], expense: [168, 24, 38, 26, 10, 22], endowment: 1220, policyRate: 4.5 },
+    arts: { income: [21.3, 14.8, 3.0, 1.6], expense: [28.4, 4.6, 8.9, 5.2], endowment: 186, policyRate: 5.0 },
+    foundation: { income: [35, 10, 3], expense: [38, 7, 3], endowment: 900, policyRate: 5.0 },
+  };
+
+  function newSpendModel(filled) {
+    const type = state.org.type || 'endowment';
+    const t = SPEND_TEMPLATES[type] || SPEND_TEMPLATES.endowment;
+    const vals = SPEND_FILLED[type] || SPEND_FILLED.endowment;
+    const income = t.income.map((label, i) => ({ label, value: filled ? (vals.income[i] ?? 0) : 0 }));
+    const expense = t.expense.map((label, i) => ({ label, value: filled ? (vals.expense[i] ?? 0) : 0 }));
+    const endowment = state.aum ? Math.round(state.aum / 1e6) : (filled ? vals.endowment : 0);
+    const sr = inferSpendingRate(state.facts?.spending);
+    const policyRate = sr ? +(sr * 100).toFixed(1) : (filled ? vals.policyRate : 4.5);
+    return { income, expense, endowment, policyRate };
+  }
+
+  function computeCustomSpend(model) {
+    const incTotal = model.income.reduce((s, l) => s + (+l.value || 0), 0);
+    const expTotal = model.expense.reduce((s, l) => s + (+l.value || 0), 0);
+    const required = expTotal - incTotal;
+    const endowment = +model.endowment || 0;
+    const policyDraw = ((+model.policyRate || 0) / 100) * endowment;
+    const margin = policyDraw - required;
+    const impliedRate = endowment ? required / endowment : 0;
+    const tier1 = 0.72 * endowment;
+    return { incTotal, expTotal, required, endowment, policyDraw, margin, impliedRate, tier1 };
+  }
+
+  function spendEmptyState(head) {
+    return `${head}${emptyState({
+      title: 'Build a spending & liquidity model',
+      body: 'Project operating income against expenses to see what the portfolio must provide and the margin of safety versus the spending policy.',
+      cta: `<div class="spend-create-actions">
+        <button class="btn add-btn" data-action="spend-new">Enter values</button>
+        <label class="btn add-btn spend-upload-label">Upload a spreadsheet<input type="file" id="spend-upload" accept=".xlsx,.xls,.csv,.numbers" hidden /></label>
+      </div>`,
+    })}`;
+  }
+
+  function spendSummaryHtml(m) {
+    const usd = (v) => `$${v.toFixed(1)}M`;
+    const stress = m.impliedRate > 0.055 || m.margin < 0;
+    const caution = !stress && m.impliedRate > 0.045;
+    const statusCls = stress ? 'sm-stress' : caution ? 'sm-caution' : 'sm-ok';
+    const statusWord = stress ? 'Under pressure' : caution ? 'Tight' : 'Comfortable';
+    return `
+      <div class="qr-kpis">
+        <div class="qr-kpi"><div class="k-label">Required from portfolio</div><div class="k-value">${usd(m.required)}</div><div class="k-sub">${(m.impliedRate * 100).toFixed(2)}% of portfolio</div></div>
+        <div class="qr-kpi"><div class="k-label">Policy distribution</div><div class="k-value">${usd(m.policyDraw)}</div><div class="k-sub">at the rate entered</div></div>
+        <div class="qr-kpi sm-margin ${statusCls}"><div class="k-label">Margin of safety</div><div class="k-value">${m.margin >= 0 ? '+' : ''}${usd(m.margin)}</div><div class="k-sub">${statusWord}</div></div>
+        <div class="qr-kpi"><div class="k-label">Implied draw rate</div><div class="k-value">${(m.impliedRate * 100).toFixed(2)}%</div><div class="k-sub">of portfolio value</div></div>
+      </div>
+      <div class="qr-exhibit">
+        <div class="qr-exhibit-head"><div class="qx-label">From the portfolio</div><div class="qx-title">What the portfolio must provide</div></div>
+        <table class="qr-table"><tbody>
+          <tr><td>Funding gap (expenses − operating income)</td><td>${usd(m.required)}</td></tr>
+          <tr><td>Implied draw rate</td><td>${(m.impliedRate * 100).toFixed(2)}%</td></tr>
+          <tr><td>Spending-policy distribution</td><td>${usd(m.policyDraw)}</td></tr>
+          <tr class="qr-total"><td>Margin of safety</td><td>${m.margin >= 0 ? '+' : ''}${usd(m.margin)}</td></tr>
+          <tr><td>Liquidity to fund the draw (Tier-1 est.)</td><td>${usd(m.tier1)}</td></tr>
+        </tbody></table>
+      </div>
+      <div class="qr-callout ${statusCls}"><div class="qc-label">Margin of safety — ${statusWord}</div>
+        <p>${m.endowment <= 0
+          ? 'Enter the portfolio value and spending rate to compute the margin of safety.'
+          : (stress
+            ? `The required distribution of ${usd(m.required)} is <strong>${(m.impliedRate * 100).toFixed(2)}%</strong> of the portfolio — above a typical 5.5% ceiling and ${usd(Math.abs(m.margin))} beyond the policy distribution. This would draw on corpus.`
+            : caution
+              ? `The required distribution sits at <strong>${(m.impliedRate * 100).toFixed(2)}%</strong> — inside a typical band but with limited cushion (${m.margin >= 0 ? '+' : ''}${usd(m.margin)} vs the policy distribution).`
+              : `The required distribution of ${usd(m.required)} is within the policy distribution, leaving <strong>+${usd(m.margin)}</strong> of headroom (a ${(m.impliedRate * 100).toFixed(2)}% draw).`)}</p>
+      </div>`;
+  }
+
+  function renderCustomSpendModelBody() {
+    const model = state.spendModel;
+    const numInput = (section, i, val) => `<input class="spend-input" type="number" step="0.5" data-spend-section="${section}" data-spend-idx="${i}" value="${val}" />`;
+    const incRows = model.income.map((l, i) => `<tr><td>${escapeHtml(l.label)}</td><td class="num">${numInput('income', i, l.value)}</td></tr>`).join('')
+      + `<tr class="qr-total"><td>Operating income (ex-distribution)</td><td class="num" id="spend-inc-total"></td></tr>`;
+    const expRows = model.expense.map((l, i) => `<tr><td>${escapeHtml(l.label)}</td><td class="num">${numInput('expense', i, l.value)}</td></tr>`).join('')
+      + `<tr class="qr-total"><td>Total operating expenses</td><td class="num" id="spend-exp-total"></td></tr>`;
+    const exhibit = (label, title, rows) => `<div class="qr-exhibit">
+      <div class="qr-exhibit-head"><div class="qx-label">${label}</div><div class="qx-title">${title}</div></div>
+      <table class="qr-table"><thead><tr><th>Line</th><th>$M</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+    return `
+      <div class="spend-assumptions">
+        <label>Portfolio value ($M)<input class="spend-input" type="number" step="1" id="spend-endowment" value="${model.endowment}" /></label>
+        <label>Spending rate (%)<input class="spend-input" type="number" step="0.1" id="spend-policy" value="${model.policyRate}" /></label>
+      </div>
+      ${exhibit('Income', 'Projected operating income', incRows)}
+      ${exhibit('Expenses', 'Projected operating expenses', expRows)}
+      <div id="spend-summary">${spendSummaryHtml(computeCustomSpend(model))}</div>`;
+  }
+
+  // Read the editable inputs back into state.spendModel.
+  function syncSpendModelFromDOM() {
+    if (!state.spendModel) return;
+    document.querySelectorAll('.spend-input[data-spend-section]').forEach((inp) => {
+      const sec = inp.dataset.spendSection, i = +inp.dataset.spendIdx;
+      if (state.spendModel[sec] && state.spendModel[sec][i]) state.spendModel[sec][i].value = +inp.value || 0;
+    });
+    const endow = document.getElementById('spend-endowment');
+    const pol = document.getElementById('spend-policy');
+    if (endow) state.spendModel.endowment = +endow.value || 0;
+    if (pol) state.spendModel.policyRate = +pol.value || 0;
+  }
+
+  function updateSpendSummary() {
+    if (!state.spendModel) return;
+    syncSpendModelFromDOM();
+    const m = computeCustomSpend(state.spendModel);
+    const usd = (v) => `$${v.toFixed(1)}M`;
+    const sum = document.getElementById('spend-summary');
+    if (sum) sum.innerHTML = spendSummaryHtml(m);
+    const incT = document.getElementById('spend-inc-total');
+    const expT = document.getElementById('spend-exp-total');
+    if (incT) incT.textContent = usd(m.incTotal);
+    if (expT) expT.textContent = usd(m.expTotal);
+  }
+
   function openSpendingView() {
     if (!state.org.name) return;
     state.module = 'spending';
@@ -5232,9 +5389,19 @@
       <div class="ips-title">${escapeHtml(state.org.name)} · Spending &amp; liquidity</div>
       <div class="ips-sub">Projected operating income vs expenses, what the endowment must provide, and the margin of safety against the spending policy.</div>`;
 
-    if (state.org.name !== 'Dream University') {
-      artifactBody.innerHTML = `${head}<div class="placeholder-block"><div class="ph-label">Not yet configured</div><div class="ph-body">A spending &amp; liquidity model isn't set up for this client in the demo yet. It's fully modeled for the Dream University endowment.</div></div>`;
-      artifactFooter.classList.remove('visible'); updateUrl(); return;
+    if (!isSampleDream()) {
+      if (!state.spendModel) {
+        artifactBody.innerHTML = spendEmptyState(head);
+      } else {
+        const headWithReset = `${itemHeadHtml('Spending & liquidity')}
+          <div class="item-title-row"><div class="ips-title">${escapeHtml(state.org.name)} · Spending &amp; liquidity</div><button class="btn btn-sm add-btn" data-action="spend-clear">Start over</button></div>
+          <div class="ips-sub">Projected operating income vs expenses, what the portfolio must provide, and the margin of safety. Edit any figure to update.</div>`;
+        artifactBody.innerHTML = `${headWithReset}${renderCustomSpendModelBody()}`;
+        updateSpendSummary();
+      }
+      artifactFooter.classList.remove('visible');
+      updateUrl();
+      return;
     }
 
     const m = computeSpend(state.spendScenario, state.spendOverrides);
@@ -5457,6 +5624,9 @@
     state.boardNotes = [];
     state.decisions = [];
     state.portfolio = null;
+    state.spendModel = null;
+    state.spendScenario = 'base';
+    state.spendOverrides = {};
     state.ipsStatus = 'Draft';
     state.phase = 'opening';
     state.pendingFacts = null;
@@ -6465,15 +6635,36 @@
 
   // ===== Wire up portfolio events (delegated; bound once) =====
   artifactBody.addEventListener('input', (e) => {
-    if (state.module !== 'portfolio') return;
-    const inp = e.target.closest('.pm-w-input');
-    if (!inp) return;
-    const id = inp.dataset.asset;
-    const v = Number(inp.value) / 100;
-    if (!isFinite(v)) return;
-    state_pm.weights[id] = v;
-    recomputePortfolio();
-    if (state_pm.mvo) drawFrontierChart();
+    if (state.module === 'portfolio') {
+      const inp = e.target.closest('.pm-w-input');
+      if (!inp) return;
+      const id = inp.dataset.asset;
+      const v = Number(inp.value) / 100;
+      if (!isFinite(v)) return;
+      state_pm.weights[id] = v;
+      recomputePortfolio();
+      if (state_pm.mvo) drawFrontierChart();
+      return;
+    }
+    if (state.module === 'spending' && e.target.closest('.spend-input')) {
+      updateSpendSummary();
+    }
+  });
+  // Persist the custom spending model on blur (saved clients only).
+  artifactBody.addEventListener('change', (e) => {
+    if (state.module !== 'spending') return;
+    if (!e.target.closest('.spend-input')) return;
+    if (state.spendModel && state.clientId && !isSampleId(state.clientId)) { syncSpendModelFromDOM(); persistClient(); }
+  });
+  // "Upload a spreadsheet" in the spending model — simulated extraction.
+  artifactBody.addEventListener('change', (e) => {
+    if (e.target.id !== 'spend-upload') return;
+    if (!(e.target.files && e.target.files.length)) return;
+    const fname = e.target.files[0].name;
+    state.spendModel = newSpendModel(true);
+    if (state.clientId && !isSampleId(state.clientId)) persistClient();
+    openSpendingView();
+    addAgent(`<p>Read <strong>${escapeHtml(fname)}</strong> and populated the spending model from the figures in it. Edit any line below to refine the projection.</p>`);
   });
 
   // Save / module action handlers
