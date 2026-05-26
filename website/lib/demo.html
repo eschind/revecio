@@ -2634,7 +2634,7 @@
 <h4>Capital deployment — Ares Senior Direct Lending Fund III</h4>
 <p>Reve presented a $20M commitment opportunity to Ares Senior Direct Lending Fund III. Fund profile: $4.5B target; senior secured loans to middle-market sponsor-backed companies; current asset yield ~10.5%; leverage 0.5×; expected gross IRR 9.5%-11%, net 7.5%-9%. Manager track record: prior two funds delivered net IRR of 8.4% and 9.1% respectively, both top-quartile per Cambridge data.</p>
 <p>Operational due diligence: Reve reviewed compliance, valuation policy, audit firm (Deloitte), custody arrangement, side-letter terms. No material concerns. Fee terms: 1.0% management on committed capital during investment period (4 years), 0.75% on invested thereafter; 10% incentive over 5% preferred return; European-style waterfall.</p>
-<p>The commitment fits within the 0-10% private credit range (current 7% allocation). Pacing-model impact: would bring committed capital on the private credit sleeve to ~$95M; expected NAV stays within range through FY28 under normal pacing.</p>
+<p>The commitment fits within the 0-15% private credit range (current 7% allocation). Pacing-model impact: would bring committed capital on the private credit sleeve to ~$95M; expected NAV stays within range through FY28 under normal pacing.</p>
 <p><strong>Vote.</strong> Motion to commit $20M to Ares Senior Direct Lending Fund III: 7-0 unanimous.</p>
 
 <h4>Manager performance attribution</h4>
@@ -2718,8 +2718,8 @@
 
 <h4>IPS update — discussion and vote</h4>
 <p>The committee considered the draft 2025 Investment Policy Statement prepared by Reve over the prior six months, replacing the 2022 IPS. Material changes from the prior version were presented section by section. Key items debated:</p>
-<p><em>Asset allocation framework.</em> The 2022 IPS used wider policy ranges (typically ±10% around target) that proved unwieldy at the margin — the OCIO had to manage drift across a wide band without clear rebalancing triggers. The 2025 draft narrows most ranges to ±7%, with explicit rebalancing triggers in Section 11. The Chair asked whether this gave the OCIO sufficient flexibility in market dislocations. Reve clarified that Section 11 preserves the "market-driven" trigger for unusual opportunities under explicit IC framework. Adopted as drafted.</p>
-<p><em>Private credit as distinct asset class.</em> Previously, private credit sat within an undifferentiated "Fixed Income — alternative" sleeve. The 2025 draft elevates it to a standalone class with its own 0-10% range, recognizing its growth in the program and its distinct risk profile (credit + illiquidity premium, intermediate liquidity tier). No dissent; adopted.</p>
+<p><em>Asset allocation framework.</em> The 2022 IPS managed drift across wide bands without clear rebalancing triggers, which proved unwieldy at the margin. The 2025 draft tightens the public-market ranges and adds explicit rebalancing triggers in Section 11, while widening the alternatives sleeve — hedge funds and private credit each to 15% — to give the OCIO room to optimize toward the efficient frontier within the Tier-1 liquidity floor. The Chair asked whether this gave the OCIO sufficient flexibility in market dislocations. Reve clarified that Section 11 preserves the "market-driven" trigger for unusual opportunities under explicit IC framework. Adopted as drafted.</p>
+<p><em>Private credit as distinct asset class.</em> Previously, private credit sat within an undifferentiated "Fixed Income — alternative" sleeve. The 2025 draft elevates it to a standalone class with its own 0-15% range, recognizing its growth in the program and its distinct risk profile (credit + illiquidity premium, intermediate liquidity tier). No dissent; adopted.</p>
 <p><em>Tier-1 liquidity floor.</em> The 2025 IPS codifies a 50% minimum allocation to Tier-1 (daily-liquid) assets in Section 8. This formalizes what had been an internal OCIO guideline. Adebayo asked whether the floor was too restrictive given the Yale/Princeton-style allocations many peers are taking; Reve responded with the liquidity coverage analysis showing comfortable cushion at the 50% floor, and noted the Catholic Social Teaching constraints already favor a more public-market-tilted approach. Adopted unanimously.</p>
 <p><em>Mission alignment / ESG.</em> The 2025 draft introduces formal mission-alignment language in Section 13 with implementation deferred to a Q3 2025 framework. The Board Chair emphasized the importance of this for the University's identity and noted the Board's clear expectation that exclusions reflect Catholic Social Teaching. Adopted as drafted with the understanding that a detailed implementation policy will follow.</p>
 <p><strong>Vote.</strong> Motion to adopt the 2025 Investment Policy Statement, replacing the 2022 IPS: 7-0 unanimous, Board Chair concurring.</p>
@@ -2756,7 +2756,7 @@
     ],
     decisions: [
       { date: '2026-04-18', title: 'Terminate Acadian Emerging Markets Equity', body: 'Three-year benchmark-relative underperformance (−110bps ann.) and PM departure in February. Capital to be reallocated to interim EM index until new manager selected by May 10.', author: 'IC', votes: 'Unanimous' },
-      { date: '2026-01-24', title: 'Commit $20M to Ares Senior Direct Lending Fund III', body: 'Vintage diversification within the 0-10% private credit sleeve; expected gross IRR 9.5-11%. Pacing plan maintains 4% NAV target by FY28.', author: 'IC', votes: 'Unanimous' },
+      { date: '2026-01-24', title: 'Commit $20M to Ares Senior Direct Lending Fund III', body: 'Vintage diversification within the 0-15% private credit sleeve; expected gross IRR 9.5-11%. Pacing plan maintains 4% NAV target by FY28.', author: 'IC', votes: 'Unanimous' },
       { date: '2026-01-24', title: 'Reaffirm 4.5% spending policy for FY26', body: 'Trailing 12-quarter average growth and projected operating need ($55M) keep spending within the 4.0-5.5% band.', author: 'IC + Board', votes: 'Unanimous' },
       { date: '2025-10-16', title: 'Commit $30M to Vista Equity Partners VIII', body: 'Mid-large software buyout; long-standing GP relationship; fits within 5-15% PE range. Capital call schedule estimated 2025 Q4 through 2028.', author: 'IC', votes: 'Unanimous' },
       { date: '2025-10-16', title: 'Place Wellington Global Equity on watchlist', body: '18-month underperformance and style drift toward growth bias. Formal review and decision at Q1 2026 IC.', author: 'IC + OCIO', votes: 'Unanimous' },
@@ -5931,18 +5931,21 @@
   ];
   const CMA_BY = Object.fromEntries(CMA.map((c) => [c.id, c]));
 
-  // IPS policy ranges (typical diversified endowment with growth tilt)
+  // IPS policy ranges (alts-forward diversified endowment with growth tilt).
+  // The 2025 IPS eased the public-equity floors and widened the alternatives sleeve
+  // (hedge funds and private credit each to 15%) so the OCIO can optimize further toward
+  // the efficient frontier; the 50% Tier-1 liquidity floor still keeps the book inside it.
   const IPS_RANGE = {
-    us_eq:   [0.20, 0.35],
-    intl_eq: [0.10, 0.20],
-    em_eq:   [0.05, 0.12],
-    core_fi: [0.10, 0.25],
+    us_eq:   [0.17, 0.35],
+    intl_eq: [0.08, 0.20],
+    em_eq:   [0.04, 0.12],
+    core_fi: [0.10, 0.28],
     tips:    [0.00, 0.07],
-    hy:      [0.00, 0.07],
-    hf:      [0.00, 0.10],
+    hy:      [0.00, 0.08],
+    hf:      [0.00, 0.15],
     pe:      [0.05, 0.15],
-    pc:      [0.00, 0.10],
-    ra:      [0.03, 0.10],
+    pc:      [0.00, 0.15],
+    ra:      [0.03, 0.12],
     cash:    [0.00, 0.05],
   };
 
@@ -6253,13 +6256,12 @@
   const CONSERVATIVE_ANCHOR = { us_eq: 0.20, intl_eq: 0.10, em_eq: 0.05, core_fi: 0.25, tips: 0.07, hy: 0.00, hf: 0.10, pe: 0.05, pc: 0.10, ra: 0.03, cash: 0.05 };
   const AGGRESSIVE_ANCHOR   = { us_eq: 0.35, intl_eq: 0.20, em_eq: 0.12, core_fi: 0.10, tips: 0.00, hy: 0.05, hf: 0.00, pe: 0.15, pc: 0.00, ra: 0.03, cash: 0.00 };
   // Dream University's actual book today (pre-SAA): a reasonable but unoptimized legacy mix
-  // carrying ~15% cash against a 5% IPS target and a little light on the efficient
-  // diversifiers (hedge funds, private credit, real assets). The cash overweight and
-  // home-equity tilt park the CURRENT marker just inside the frontier — a short hop below the
-  // policy-optimal SAA (~0.25pp less return), which shows the upside once the excess cash is
-  // put to work. Kept separate from state.saa.weights so the adopted SAA and quarterly
-  // reports stay consistent.
-  const DREAM_CURRENT_HOLDINGS = { us_eq: 0.27, intl_eq: 0.10, em_eq: 0.05, core_fi: 0.20, tips: 0.03, hy: 0.02, hf: 0.05, pe: 0.05, pc: 0.03, ra: 0.05, cash: 0.15 };
+  // carrying ~10% cash (double the 5% IPS target) and light on the efficient diversifiers
+  // (hedge funds, private credit, real assets). It sits ~0.5pp directly below the recommended
+  // SAA — same risk, less return — showing the upside of redeploying the excess cash and
+  // building out alternatives. Kept separate from state.saa.weights so the adopted SAA and
+  // quarterly reports stay consistent.
+  const DREAM_CURRENT_HOLDINGS = { us_eq: 0.25, intl_eq: 0.11, em_eq: 0.06, core_fi: 0.17, tips: 0.03, hy: 0.02, hf: 0.07, pe: 0.06, pc: 0.06, ra: 0.07, cash: 0.10 };
   function lerpPortfolio(a, b, t) {
     const out = {};
     for (const k of Object.keys(a)) out[k] = a[k] + t * (b[k] - a[k]);
@@ -6684,7 +6686,7 @@
         <circle cx="${mx}" cy="${my}" r="9" fill="#c4830d" stroke="#1f7050" stroke-width="2"/>
         <circle cx="${mx}" cy="${my}" r="4" fill="#1f7050"/>
         <text x="${mx}" y="${(parseFloat(my) - 16).toFixed(1)}" font-family="JetBrains Mono, monospace" font-size="10.5" fill="#1f7050" text-anchor="middle" font-weight="500">CURRENT</text>
-        <text x="${mx}" y="${(parseFloat(my) + 22).toFixed(1)}" font-family="JetBrains Mono, monospace" font-size="10.5" fill="#c4830d" text-anchor="middle" font-weight="500">= POLICY SAA</text>
+        <text x="${mx}" y="${(parseFloat(my) + 22).toFixed(1)}" font-family="JetBrains Mono, monospace" font-size="10.5" fill="#c4830d" text-anchor="middle" font-weight="500">= RECOMMENDED SAA</text>
       </g>`;
       optPt = '';
     } else {
@@ -6702,7 +6704,7 @@
       </g>`;
       optPt = `<g>
         <circle cx="${optX.toFixed(1)}" cy="${optY.toFixed(1)}" r="7" fill="#c4830d" stroke="#fff" stroke-width="2.5"/>
-        <text x="${oLabX}" y="${oLabY}" font-family="JetBrains Mono, monospace" font-size="10.5" fill="#c4830d" text-anchor="middle" font-weight="500" dominant-baseline="middle">POLICY SAA</text>
+        <text x="${oLabX}" y="${oLabY}" font-family="JetBrains Mono, monospace" font-size="10.5" fill="#c4830d" text-anchor="middle" font-weight="500" dominant-baseline="middle">RECOMMENDED SAA</text>
       </g>`;
     }
 
@@ -6768,10 +6770,10 @@
     updateUrl();
     const orgName = escapeHtml(state.org.name);
     const startedMsg = (isSampleDream() && state.saa)
-      ? `Opened <strong>Portfolio Modeling</strong> for ${orgName}. The curve is the <strong>efficient frontier</strong> — the best return for each level of risk across the whole opportunity set — and the dashed line is the <strong>Capital Market Line</strong> (constant Sharpe, tangent to the frontier at the max-Sharpe point). The <strong>CURRENT</strong> marker is the endowment's legacy book: a ~15% cash balance (vs a 5% IPS target) and home-equity tilt leave it just inside the frontier. The <strong>POLICY SAA</strong> marker is the best portfolio achievable within the IPS ranges and Tier-1 floor — a short hop up from CURRENT, showing the return available for the same risk once the excess cash is put to work. Both sit inside the theoretical frontier because diversification limits and the liquidity floor cost some efficiency. Edit weights, set to midpoints, re-run the optimizer, or adopt.`
+      ? `Opened <strong>Portfolio Modeling</strong> for ${orgName}. The curve is the <strong>efficient frontier</strong> — the best return for each level of risk across the whole opportunity set — and the dashed line is the <strong>Capital Market Line</strong> (constant Sharpe, tangent to the frontier at the max-Sharpe point). The <strong>CURRENT</strong> marker is the endowment's legacy book: ~10% cash (double the 5% IPS target) and a light alternatives sleeve leave it sitting below the recommended allocation. The <strong>RECOMMENDED SAA</strong> marker is the highest-Sharpe portfolio achievable within the IPS ranges and the Tier-1 floor — directly above CURRENT, so you can lift expected return ~0.5pp at the same risk by redeploying the excess cash and building out alternatives. It sits a hair inside the frontier on purpose: the frontier's max-Sharpe region concentrates in less-liquid alternatives (hedge funds + private credit), which the IPS <strong>50% Tier-1 liquidity floor</strong> and diversification limits deliberately cap — so the achievable SAA can approach the frontier but not reach it. Edit weights, set to midpoints, re-run the optimizer, or adopt.`
       : state.saa
-      ? `Opened <strong>Portfolio Modeling</strong> for ${orgName} — the curve is the efficient frontier and the dashed line is the Capital Market Line. Your adopted SAA is marked along with the policy-optimal portfolio for reference. Edit weights, set to midpoints, re-run the optimizer, or re-adopt.`
-      : `Opened <strong>Portfolio Modeling</strong> for ${orgName}. The curve is the efficient frontier (full opportunity set) and the dashed line is the Capital Market Line. I've set the allocation to the policy-optimal portfolio — the highest-Sharpe mix within the IPS ranges and the Tier-1 floor, which sits just inside the frontier. Set it to the IPS midpoints, edit weights, re-run, or adopt.`;
+      ? `Opened <strong>Portfolio Modeling</strong> for ${orgName} — the curve is the efficient frontier and the dashed line is the Capital Market Line. Your adopted SAA is marked along with the recommended (highest-Sharpe within-policy) portfolio for reference; it sits a hair inside the frontier because the IPS liquidity floor and diversification limits cap the less-liquid alternatives that define the frontier's peak. Edit weights, set to midpoints, re-run the optimizer, or re-adopt.`
+      : `Opened <strong>Portfolio Modeling</strong> for ${orgName}. The curve is the efficient frontier (full opportunity set) and the dashed line is the Capital Market Line. I've set the allocation to the recommended portfolio — the highest-Sharpe mix within the IPS ranges and the Tier-1 floor. It sits just inside the frontier by design: the frontier's peak concentrates in less-liquid alternatives that the IPS liquidity floor caps. Set it to the IPS midpoints, edit weights, re-run, or adopt.`;
     addAgent(`<p>${startedMsg}</p>`);
   }
 
