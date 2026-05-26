@@ -1473,6 +1473,14 @@
       return;
     }
 
+    // Draft is ready; waiting for the user to start (or skip) the walkthrough.
+    if (state.phase === 'review-pending') {
+      if (!text.trim()) return;
+      if (/\b(skip|no|later|myself|on my own)\b/i.test(text)) await skipReview();
+      else await beginSectionReview();
+      return;
+    }
+
     // Interviewing — record answer to current question
     if (state.phase === 'interviewing') {
       const q = state.questions[state.qIdx];
@@ -1888,17 +1896,27 @@
     openArtifact();
     await streamIps();
     await think(400);
-    await beginSectionReview();
+    state.phase = 'review-pending';
+    composerInput.placeholder = 'Start the review, or ask a question…';
+    await agentReply(`<p>The IPS draft is ready in the artifact panel — all ${IPS_SECTIONS.length} sections. Want me to walk through it section by section, explaining what I wrote and why so you can adjust anything? Or skip the walkthrough and review it on your own.</p><div class="walkthrough-actions"><button class="pill-btn accent" data-action="start-review">Walk me through it</button><button class="pill-btn ghost" data-action="skip-review">Skip — I'll review it myself</button></div>`);
   }
 
   // ============ Section-by-section review ============
   async function beginSectionReview() {
+    if (state.phase === 'reviewing-sections') return;
     state.phase = 'reviewing-sections';
     state.reviewIdx = 0;
     composerInput.placeholder = 'Say "next" or describe a change…';
-    await agentReply(`<p>The draft is ready. I'll walk through it section by section — what I wrote and why — so you can adjust anything that doesn't fit. <strong>Click Next</strong> to advance, <strong>describe a change</strong> for me to apply, or <strong>edit any section directly</strong> using the Edit button on the right.</p><p>I'll skip Section 7 (Strategic Asset Allocation) — that goes through the Portfolio Modeling module next.</p>`);
+    await agentReply(`<p>Great — I'll walk through it section by section, explaining what I wrote and why so you can adjust anything that doesn't fit. <strong>Click Next</strong> to advance, <strong>describe a change</strong> for me to apply, or <strong>edit any section directly</strong> using the Edit button on the right.</p><p>I'll skip Section 7 (Strategic Asset Allocation) — that goes through the Portfolio Modeling module next.</p>`);
     await think(500);
     await reviewCurrentSection();
+  }
+
+  // User chose to skip the guided walkthrough.
+  async function skipReview() {
+    state.phase = 'reviewing-done';
+    composerInput.placeholder = 'Ask for changes, or move to portfolio modeling…';
+    await agentReply(`<p>No problem — the full draft is in the artifact panel. Edit any section with its <strong>Edit</strong> button, or ask me to change anything. When you're ready, the next step is <strong>Portfolio Modeling</strong> for the Strategic Asset Allocation (Section 7).</p>`);
   }
 
   async function reviewCurrentSection() {
@@ -6714,6 +6732,12 @@
       e.preventDefault();
       const card = btn.closest('.bn-card');
       if (card) card.classList.toggle('bn-expanded');
+    } else if (a === 'start-review') {
+      e.preventDefault();
+      beginSectionReview();
+    } else if (a === 'skip-review') {
+      e.preventDefault();
+      skipReview();
     } else if (a === 'mon-ack') {
       e.preventDefault();
       markPortfolioUpdatesRead();
