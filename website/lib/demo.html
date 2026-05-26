@@ -5475,6 +5475,130 @@
     },
   };
 
+  // Project quarterly income / expense / portfolio-need / policy-distribution / margin
+  // for the next `quarters` quarters. Modest annual growth on each side.
+  function buildSpendProjection(s, m, quarters = 12) {
+    const incomeGrowth = 0.030;
+    const expenseGrowth = 0.035;
+    const endowmentGrowth = 0.070;
+    let annualIncome = m.incTotal;
+    let annualExpense = m.expTotal;
+    let endowment = s.endowment;
+    let trailingAvg = s.trailingAvg;
+    const out = [];
+    for (let q = 0; q < quarters; q++) {
+      // Advance to next fiscal year at the start of each new FY
+      if (q > 0 && q % 4 === 0) {
+        annualIncome *= (1 + incomeGrowth);
+        annualExpense *= (1 + expenseGrowth);
+        endowment *= (1 + endowmentGrowth);
+        trailingAvg = trailingAvg * 0.75 + endowment * 0.25;
+      }
+      const qIncome = annualIncome / 4;
+      const qExpense = annualExpense / 4;
+      const qGap = qExpense - qIncome;
+      const qPolicy = (s.policyRate * trailingAvg) / 4;
+      const qMargin = qPolicy - qGap;
+      const fy = 27 + Math.floor(q / 4);
+      const qIdx = (q % 4) + 1;
+      out.push({ label: `Q${qIdx} '${fy}`, income: qIncome, expense: qExpense, gap: qGap, policy: qPolicy, margin: qMargin });
+    }
+    return out;
+  }
+
+  function renderSpendProjectionChart(projection) {
+    if (!projection || projection.length < 2) return '';
+    const W = 680, H = 340, ML = 60, MR = 80, MT = 24, MB = 56;
+    const n = projection.length;
+    const groupW = (W - ML - MR) / n;
+    const barW = Math.min(20, groupW * 0.35);
+    // Y axis: $M per quarter — needs to cover income, expense, policy
+    const allVals = projection.flatMap((p) => [p.income, p.expense, p.policy]);
+    const yMin = 0;
+    const yMax = Math.max(...allVals) * 1.12;
+    const sy = (v) => H - MB - (v / yMax) * (H - MT - MB);
+    const xCenter = (i) => ML + groupW * (i + 0.5);
+
+    let grid = '', axes = '';
+    const yTicks = 5;
+    for (let i = 0; i <= yTicks; i++) {
+      const v = (yMax / yTicks) * i;
+      const y = sy(v);
+      grid += `<line x1="${ML}" y1="${y}" x2="${W - MR}" y2="${y}" stroke="#ece8dc" stroke-width="1"/>`;
+      axes += `<text x="${ML - 10}" y="${y + 3}" font-family="JetBrains Mono, monospace" font-size="10.5" fill="#7c7468" text-anchor="end">$${v.toFixed(0)}M</text>`;
+    }
+    // X labels — show every quarter for 12, otherwise every other
+    projection.forEach((p, i) => {
+      if (n > 12 && i % 2 !== 0) return;
+      const x = xCenter(i);
+      axes += `<text x="${x}" y="${H - MB + 18}" font-family="JetBrains Mono, monospace" font-size="9.5" fill="#7c7468" text-anchor="middle">${escapeHtml(p.label)}</text>`;
+    });
+    axes += `<line x1="${ML}" y1="${H - MB}" x2="${W - MR}" y2="${H - MB}" stroke="#c5bfae" stroke-width="1"/>`;
+    axes += `<line x1="${ML}" y1="${MT}" x2="${ML}" y2="${H - MB}" stroke="#c5bfae" stroke-width="1"/>`;
+    axes += `<text x="18" y="${(H + MT - MB) / 2}" font-family="JetBrains Mono, monospace" font-size="10.5" fill="#7c7468" text-anchor="middle" letter-spacing="0.08em" transform="rotate(-90 18 ${(H + MT - MB) / 2})">PER QUARTER</text>`;
+
+    // Bars: income (left) + expense (right) per group
+    let bars = '';
+    projection.forEach((p, i) => {
+      const cx = xCenter(i);
+      const xIn = cx - barW - 2;
+      const xEx = cx + 2;
+      const incH = (H - MB) - sy(p.income);
+      const expH = (H - MB) - sy(p.expense);
+      bars += `<rect x="${xIn.toFixed(1)}" y="${sy(p.income).toFixed(1)}" width="${barW.toFixed(1)}" height="${incH.toFixed(1)}" fill="#1f7050" rx="2"/>`;
+      bars += `<rect x="${xEx.toFixed(1)}" y="${sy(p.expense).toFixed(1)}" width="${barW.toFixed(1)}" height="${expH.toFixed(1)}" fill="#7c7468" rx="2"/>`;
+    });
+
+    // Policy distribution line — drawn segment-by-segment across each quarter's group
+    const polPath = projection.map((p, i) => {
+      const cx = xCenter(i);
+      const halfW = groupW * 0.42;
+      const y = sy(p.policy).toFixed(1);
+      return `M ${(cx - halfW).toFixed(1)} ${y} L ${(cx + halfW).toFixed(1)} ${y}`;
+    }).join(' ');
+    const policyLine = `<path d="${polPath}" stroke="#c4830d" stroke-width="2.5" stroke-linecap="round" fill="none"/>`;
+
+    // Per-quarter margin chips (small text above each group)
+    let chips = '';
+    projection.forEach((p, i) => {
+      const cx = xCenter(i);
+      const top = sy(Math.max(p.expense, p.policy));
+      const color = p.margin >= 0 ? '#1f7050' : '#b13a3a';
+      const sign = p.margin >= 0 ? '+' : '−';
+      chips += `<text x="${cx.toFixed(1)}" y="${(top - 8).toFixed(1)}" font-family="JetBrains Mono, monospace" font-size="9" fill="${color}" text-anchor="middle" font-weight="500">${sign}$${Math.abs(p.margin).toFixed(1)}M</text>`;
+    });
+
+    // Right-side end-of-window summary
+    const endP = projection[projection.length - 1];
+    const startP = projection[0];
+    const totalMargin = projection.reduce((s, q) => s + q.margin, 0);
+    const summary = `
+      <g font-family="JetBrains Mono, monospace" font-size="10.5">
+        <text x="${W - MR + 12}" y="${MT + 8}" fill="#7c7468" letter-spacing="0.06em">OVER ${n}Q</text>
+        <text x="${W - MR + 12}" y="${MT + 26}" fill="${totalMargin >= 0 ? '#1f7050' : '#b13a3a'}" font-weight="500">${totalMargin >= 0 ? '+' : '−'}$${Math.abs(totalMargin).toFixed(1)}M</text>
+        <text x="${W - MR + 12}" y="${MT + 42}" fill="#7c7468" font-size="9.5">cumulative</text>
+        <text x="${W - MR + 12}" y="${MT + 56}" fill="#7c7468" font-size="9.5">margin</text>
+      </g>`;
+
+    return `<div class="qr-exhibit">
+      <div class="qr-exhibit-head"><div class="qx-label">Projection</div><div class="qx-title">Income vs expenses · ${n} quarters · margin of safety</div></div>
+      <svg width="100%" height="${H}" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" style="display:block;">
+        ${grid}
+        ${axes}
+        ${bars}
+        ${policyLine}
+        ${chips}
+        ${summary}
+      </svg>
+      <div class="pm-legend" style="padding-left: 14px;">
+        <span><i style="background:#1f7050;"></i>Operating income</span>
+        <span><i style="background:#7c7468;"></i>Operating expense</span>
+        <span><svg width="22" height="6" style="vertical-align:middle;margin-right:6px;"><line x1="0" y1="3" x2="22" y2="3" stroke="#c4830d" stroke-width="2.5"/></svg>Policy distribution (4.5% smoothed)</span>
+        <span style="margin-left:auto;color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:0.04em;">Income ${(0.030*100).toFixed(1)}%/yr · Expense ${(0.035*100).toFixed(1)}%/yr · Corpus ${(0.070*100).toFixed(1)}%/yr</span>
+      </div>
+    </div>`;
+  }
+
   function computeSpend(scenKey, overrides) {
     const s = SPEND_SCENARIOS[scenKey] || SPEND_SCENARIOS.base;
     const ov = overrides || {};
@@ -5694,6 +5818,8 @@
         <div class="qr-kpi sm-margin ${statusCls}"><div class="k-label">Margin of safety</div><div class="k-value">${m.margin >= 0 ? '+' : ''}${usd(m.margin)}</div><div class="k-sub">${statusWord}</div></div>
         <div class="qr-kpi"><div class="k-label">Implied draw rate</div><div class="k-value">${(m.impliedRate * 100).toFixed(2)}%</div><div class="k-sub">IPS band 4.0–5.5%</div></div>
       </div>
+
+      ${renderSpendProjectionChart(buildSpendProjection(m.s, m, 12))}
 
       ${exhibit('Income', 'Projected operating income', incRows)}
       ${exhibit('Expenses', 'Projected operating expenses', expRows)}
