@@ -669,6 +669,22 @@
   .cc-notice-action .btn-primary { background: var(--accent); color: var(--dark-ink); border: 1px solid var(--accent); border-radius: 999px; padding: 8px 18px; font: inherit; font-size: 13px; cursor: pointer; }
   .cc-done-badge { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--accent); font-weight: 600; }
 
+  /* ============ Spending & liquidity ============ */
+  .qr-kpi.sm-margin { border-width: 1px; }
+  .qr-kpi.sm-margin.sm-ok { border-color: var(--accent); background: rgba(31,112,80,0.05); }
+  .qr-kpi.sm-margin.sm-caution { border-color: #b8862b; background: rgba(184,134,43,0.06); }
+  .qr-kpi.sm-margin.sm-stress { border-color: var(--qr-neg); background: rgba(180,69,58,0.05); }
+  .qr-kpi.sm-margin.sm-ok .k-value { color: var(--accent); }
+  .qr-kpi.sm-margin.sm-caution .k-value { color: #8a6418; }
+  .qr-kpi.sm-margin.sm-stress .k-value { color: var(--qr-neg); }
+  .qr-callout.sm-ok { border-left-color: var(--accent); }
+  .qr-callout.sm-caution { border-left-color: #b8862b; }
+  .qr-callout.sm-stress { border-left-color: var(--qr-neg); }
+  .qr-period-btn.sm-reset { border-color: var(--qr-neg); color: var(--qr-neg); }
+  .qr-period-btn.sm-reset:hover { background: var(--qr-neg); color: var(--bg); border-color: var(--qr-neg); }
+  .sm-prompt-hint { font-size: 12.5px; color: var(--muted); line-height: 1.55; margin: 18px 0 4px; padding: 12px 14px; border: 1px dashed var(--line); border-radius: 8px; background: var(--bg-2); }
+  .sm-prompt-hint em { color: var(--ink-2); font-style: italic; }
+
   .draft-streaming { opacity: 0.35; }
   .draft-cursor { display: inline-block; width: 6px; height: 14px; background: var(--accent); margin-left: 2px; animation: blink 1s infinite; vertical-align: -2px; }
   @keyframes blink { 50% { opacity: 0.2; } }
@@ -1503,6 +1519,16 @@
       return;
     }
 
+    if (intent === 'spend_model') {
+      if (state.org.name !== 'Dream University') {
+        await agentReply(`<p>${escapeHtml(route?.reply || 'The spending model is only configured for Dream University in this demo.')}</p>`);
+        return;
+      }
+      applySpendAdjustments({ scenario: route?.scenario, adjustments: route?.adjustments });
+      await agentReply(`<p>${escapeHtml(route?.reply || 'Updated the spending model with those assumptions.')}</p>`);
+      return;
+    }
+
     if (intent === 'answer_content') {
       const num = Number(route?.targetSectionNum);
       const idx = IPS_SECTIONS.findIndex((s) => s.num === num);
@@ -1548,6 +1574,11 @@
       if (target === 'materials') {
         openMaterialsView();
         await agentReply(`<p>Materials are in the panel — ${(state.materials || []).length} items.</p>`);
+        return;
+      }
+      if (target === 'spending') {
+        openSpendingView();
+        await agentReply(`<p>Pulled up the spending &amp; liquidity model. Ask me to change any assumption or scenario.</p>`);
         return;
       }
       if (target === 'monitoring') {
@@ -2332,6 +2363,12 @@
     } else if (a === 'cc-complete') {
       e.stopPropagation();
       markCapitalCallCompleted(btn.dataset.id);
+    } else if (a === 'spend-scenario') {
+      state.spendScenario = btn.dataset.scen || 'base';
+      openSpendingView();
+    } else if (a === 'spend-reset') {
+      state.spendOverrides = {};
+      openSpendingView();
     } else if (a === 'view-ips-section') {
       const num = Number(btn.dataset.num);
       const idx = IPS_SECTIONS.findIndex((s) => s.num === num);
@@ -2934,6 +2971,7 @@
         label: 'Investment strategy',
         items: [
           item({ id: 'portfolio', action: 'open-workflow', label: 'Asset allocation', icon: svg('<path d="M3 3v18h18"/><path d="M7 14l3-3 3 3 5-6"/>'), status: saaStatus.text, statusKind: saaStatus.kind }),
+          item({ id: 'spending', action: 'open-workflow', label: 'Spending & liquidity', icon: svg('<path d="M12 3v18"/><path d="M5 8l-3 5h6z"/><path d="M19 8l-3 5h6z"/><path d="M5 21h14"/>'), status: state.org.name === 'Dream University' ? 'Modeled' : '—', statusKind: state.org.name === 'Dream University' ? 'ok' : 'muted' }),
           (function () {
             const p = state.portfolio;
             if (!p) return item({ id: 'monitoring', label: 'Portfolio monitoring', icon: svg('<path d="M2 12h4l3 8 4-16 3 8h6"/>'), disabled: true, status: 'soon' });
@@ -4944,6 +4982,169 @@
     else openCapitalCallsView();
   }
 
+  // ============ Spending & liquidity model ============
+  // A forward operating model: projected income vs expenses, what the
+  // endowment must provide, the liquidity to fund it, and the margin of safety
+  // vs the spending policy — across scenarios, adjustable by prompting the AI.
+  // Configured for the Dream University endowment in this demo.
+  const SPEND_LINES = {
+    income: [
+      ['tuition', 'Net tuition & fees'],
+      ['grants', 'Government & research grants'],
+      ['gifts', 'Gifts & annual giving'],
+      ['auxiliary', 'Auxiliary enterprises'],
+      ['otherIncome', 'Other operating income'],
+    ],
+    expense: [
+      ['comp', 'Compensation & benefits'],
+      ['aid', 'Financial aid'],
+      ['facilities', 'Facilities & operations'],
+      ['research', 'Research & academic programs'],
+      ['debt', 'Debt service'],
+      ['otherExpense', 'Administration & other'],
+    ],
+  };
+  // All figures $M, fiscal year FY27. policyRate × trailingAvg = the smoothed
+  // distribution the spending policy supports.
+  const SPEND_SCENARIOS = {
+    base: {
+      label: 'Base', endowment: 1220, trailingAvg: 1200, policyRate: 0.045,
+      income: { tuition: 142, grants: 38, gifts: 22, auxiliary: 26, otherIncome: 8 },
+      expense: { comp: 168, aid: 24, facilities: 38, research: 26, debt: 10, otherExpense: 22 },
+      note: 'Steady enrollment, normal giving, markets broadly in line with the SAA.',
+    },
+    downturn: {
+      label: 'Downturn', endowment: 1037, trailingAvg: 1180, policyRate: 0.045,
+      income: { tuition: 136, grants: 36, gifts: 15, auxiliary: 24, otherIncome: 7 },
+      expense: { comp: 170, aid: 26, facilities: 38, research: 24, debt: 10, otherExpense: 20 },
+      note: 'Equity drawdown (~15%), softer enrollment, donations fall ~30%. Spending smoothing cushions the draw, but the gap widens.',
+    },
+    upside: {
+      label: 'Upside', endowment: 1366, trailingAvg: 1250, policyRate: 0.045,
+      income: { tuition: 148, grants: 40, gifts: 30, auxiliary: 27, otherIncome: 9 },
+      expense: { comp: 172, aid: 24, facilities: 38, research: 27, debt: 10, otherExpense: 21 },
+      note: 'Strong markets, robust giving, enrollment up — room to build reserves or fund initiatives.',
+    },
+  };
+
+  function computeSpend(scenKey, overrides) {
+    const s = SPEND_SCENARIOS[scenKey] || SPEND_SCENARIOS.base;
+    const ov = overrides || {};
+    const inc = {}; let incTotal = 0;
+    for (const [k] of SPEND_LINES.income) { inc[k] = (s.income[k] || 0) * (ov[k] ?? 1); incTotal += inc[k]; }
+    const exp = {}; let expTotal = 0;
+    for (const [k] of SPEND_LINES.expense) { exp[k] = (s.expense[k] || 0) * (ov[k] ?? 1); expTotal += exp[k]; }
+    const required = expTotal - incTotal;          // endowment distribution needed
+    const policyDraw = s.policyRate * s.trailingAvg; // smoothed policy distribution
+    const margin = policyDraw - required;           // margin of safety
+    const impliedRate = s.endowment ? required / s.endowment : 0;
+    const tier1 = 0.72 * s.endowment;               // Tier-1 liquidity available
+    return { s, inc, exp, incTotal, expTotal, required, policyDraw, margin, impliedRate, tier1 };
+  }
+
+  function openSpendingView() {
+    if (!state.org.name) return;
+    state.module = 'spending';
+    state.spendScenario = state.spendScenario || 'base';
+    state.spendOverrides = state.spendOverrides || {};
+    artifactTitle.textContent = 'Spending & liquidity';
+    enterItemView();
+    const head = `${itemHeadHtml('Spending & liquidity')}
+      <div class="ips-title">${escapeHtml(state.org.name)} · Spending &amp; liquidity</div>
+      <div class="ips-sub">Projected operating income vs expenses, what the endowment must provide, and the margin of safety against the spending policy.</div>`;
+
+    if (state.org.name !== 'Dream University') {
+      artifactBody.innerHTML = `${head}<div class="placeholder-block"><div class="ph-label">Not yet configured</div><div class="ph-body">A spending &amp; liquidity model isn't set up for this client in the demo yet. It's fully modeled for the Dream University endowment.</div></div>`;
+      artifactFooter.classList.remove('visible'); updateUrl(); return;
+    }
+
+    const m = computeSpend(state.spendScenario, state.spendOverrides);
+    const usd = (v) => `$${v.toFixed(1)}M`;
+    const hasOv = Object.keys(state.spendOverrides).length > 0;
+
+    const pills = Object.keys(SPEND_SCENARIOS).map((k) =>
+      `<button class="qr-period-btn${k === state.spendScenario ? ' active' : ''}" data-action="spend-scenario" data-scen="${k}">${SPEND_SCENARIOS[k].label}</button>`).join('')
+      + (hasOv ? `<button class="qr-period-btn sm-reset" data-action="spend-reset" title="Clear AI adjustments">Reset adjustments ✕</button>` : '');
+
+    // Margin status
+    const stress = m.impliedRate > 0.055 || m.margin < 0;
+    const caution = !stress && m.impliedRate > 0.045;
+    const statusCls = stress ? 'sm-stress' : caution ? 'sm-caution' : 'sm-ok';
+    const statusWord = stress ? 'Under pressure' : caution ? 'Tight' : 'Comfortable';
+
+    const incRows = SPEND_LINES.income.map(([k, label]) =>
+      `<tr><td>${label}</td><td>${usd(m.inc[k])}</td></tr>`).join('')
+      + `<tr class="qr-total"><td>Operating income (ex-endowment)</td><td>${usd(m.incTotal)}</td></tr>`;
+    const expRows = SPEND_LINES.expense.map(([k, label]) =>
+      `<tr><td>${label}</td><td>${usd(m.exp[k])}</td></tr>`).join('')
+      + `<tr class="qr-total"><td>Total operating expenses</td><td>${usd(m.expTotal)}</td></tr>`;
+
+    const exhibit = (label, title, rows, note) => `
+      <div class="qr-exhibit">
+        <div class="qr-exhibit-head"><div class="qx-label">${label}</div><div class="qx-title">${title}</div></div>
+        <table class="qr-table"><thead><tr><th>Line</th><th>FY27 ($M)</th></tr></thead><tbody>${rows}</tbody></table>
+        ${note ? `<div class="qr-exhibit-note">${note}</div>` : ''}
+      </div>`;
+
+    artifactBody.innerHTML = `${head}
+      <div class="qr-period-bar">${pills}</div>
+      <div class="qr-callout"><div class="qc-label">Scenario</div><p>${SPEND_SCENARIOS[state.spendScenario].note}${hasOv ? ' <strong>Adjusted by your assumptions.</strong>' : ''}</p></div>
+
+      <div class="qr-kpis">
+        <div class="qr-kpi"><div class="k-label">Required from endowment</div><div class="k-value">${usd(m.required)}</div><div class="k-sub">${(m.impliedRate * 100).toFixed(2)}% of endowment</div></div>
+        <div class="qr-kpi"><div class="k-label">Policy distribution</div><div class="k-value">${usd(m.policyDraw)}</div><div class="k-sub">${(m.s.policyRate * 100).toFixed(1)}% of 3-yr avg</div></div>
+        <div class="qr-kpi sm-margin ${statusCls}"><div class="k-label">Margin of safety</div><div class="k-value">${m.margin >= 0 ? '+' : ''}${usd(m.margin)}</div><div class="k-sub">${statusWord}</div></div>
+        <div class="qr-kpi"><div class="k-label">Implied draw rate</div><div class="k-value">${(m.impliedRate * 100).toFixed(2)}%</div><div class="k-sub">IPS band 4.0–5.5%</div></div>
+      </div>
+
+      ${exhibit('Income', 'Projected operating income', incRows)}
+      ${exhibit('Expenses', 'Projected operating expenses', expRows)}
+
+      <div class="qr-exhibit">
+        <div class="qr-exhibit-head"><div class="qx-label">From the portfolio</div><div class="qx-title">What the endowment must provide</div></div>
+        <table class="qr-table"><tbody>
+          <tr><td>Funding gap (expenses − operating income)</td><td>${usd(m.required)}</td></tr>
+          <tr><td>Implied draw rate</td><td>${(m.impliedRate * 100).toFixed(2)}%</td></tr>
+          <tr><td>Spending-policy distribution available</td><td>${usd(m.policyDraw)}</td></tr>
+          <tr class="qr-total"><td>Margin of safety</td><td>${m.margin >= 0 ? '+' : ''}${usd(m.margin)}</td></tr>
+          <tr><td>Liquidity to fund the draw (Tier-1 available)</td><td>${usd(m.tier1)}</td></tr>
+          <tr><td>Draw as a multiple of Tier-1 coverage</td><td>${(m.tier1 / Math.max(m.required, 0.1)).toFixed(0)}×</td></tr>
+        </tbody></table>
+        <div class="qr-exhibit-note">The required distribution is funded from Tier-1 (daily-liquid) assets; investment income and rebalancing flows cover it without selling growth assets in the base case.</div>
+      </div>
+
+      <div class="qr-callout ${statusCls}">
+        <div class="qc-label">Margin of safety — ${statusWord}</div>
+        <p>${stress
+          ? `The required distribution of ${usd(m.required)} is <strong>${(m.impliedRate * 100).toFixed(2)}%</strong> of the endowment — above the 5.5% policy ceiling and ${usd(Math.abs(m.margin))} beyond the smoothed policy distribution. This draws on corpus; the IC would weigh a temporary spending-band adjustment, expense actions, or bridging from reserves.`
+          : caution
+            ? `The required distribution sits at <strong>${(m.impliedRate * 100).toFixed(2)}%</strong> — inside the band but with limited cushion (${m.margin >= 0 ? '+' : ''}${usd(m.margin)} vs the policy distribution). Manageable, worth monitoring.`
+            : `The required distribution of ${usd(m.required)} is comfortably within the policy distribution, leaving <strong>+${usd(m.margin)}</strong> of headroom (a ${(m.impliedRate * 100).toFixed(2)}% draw vs the 4.5% policy). Room to preserve corpus or fund initiatives.`}</p>
+      </div>
+
+      <div class="sm-prompt-hint">Ask the agent to change assumptions — e.g. <em>"what if donations drop 20% and tuition falls 5%?"</em>, <em>"model the downturn scenario"</em>, or <em>"increase financial aid by 10%."</em></div>`;
+    artifactFooter.classList.remove('visible');
+    updateUrl();
+  }
+
+  // Apply AI-proposed assumption changes from the router and re-render.
+  function applySpendAdjustments({ scenario, adjustments } = {}) {
+    state.spendScenario = state.spendScenario || 'base';
+    state.spendOverrides = state.spendOverrides || {};
+    if (scenario && SPEND_SCENARIOS[scenario]) state.spendScenario = scenario;
+    const validKeys = new Set([...SPEND_LINES.income, ...SPEND_LINES.expense].map(([k]) => k));
+    if (Array.isArray(adjustments)) {
+      for (const a of adjustments) {
+        if (!a || !validKeys.has(a.key)) continue;
+        const factor = Number(a.factor);
+        if (isFinite(factor) && factor >= 0) {
+          state.spendOverrides[a.key] = (state.spendOverrides[a.key] ?? 1) * factor;
+        }
+      }
+    }
+    openSpendingView();
+  }
+
   function openMaterialsView() {
     if (!state.org.name) return;
     state.module = 'materials';
@@ -6197,6 +6398,7 @@
       else if (wf === 'comms') openCommunicationsView();
       else if (wf === 'trading') openTradingView();
       else if (wf === 'capital-calls') openCapitalCallsView();
+      else if (wf === 'spending') openSpendingView();
     } else if (a === 'pm-run') {
       const desc = document.getElementById('pm-footer-desc');
       if (desc) desc.textContent = 'Running 4,000-sample Monte Carlo optimization…';
@@ -6294,6 +6496,7 @@
     else if (view === 'comms') { const cid = params.get('comm'); if (cid) openCommunicationView(cid); else openCommunicationsView(); }
     else if (view === 'trading') openTradingView();
     else if (view === 'capital-calls') { const cid = params.get('call'); if (cid) openCapitalCallView(cid); else openCapitalCallsView(); }
+    else if (view === 'spending') openSpendingView();
     return true;
   }
 
