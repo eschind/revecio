@@ -699,9 +699,7 @@
   .connect-card .connect-title { font-family: 'Newsreader', serif; font-size: 19px; color: var(--ink); margin: 6px 0 8px; }
   .connect-card .connect-body { font-size: 13px; color: var(--ink-2); line-height: 1.6; }
   .connect-logos { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; align-items: center; margin: 16px 0 18px; }
-  .connect-logo { display: inline-flex; align-items: center; justify-content: center; height: 34px; padding: 4px 12px; border: 1px solid var(--line); border-radius: 8px; background: #fff; }
-  .connect-logo img { max-height: 22px; max-width: 100px; object-fit: contain; display: block; }
-  .connect-logo-name { font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.02em; color: var(--ink-2); }
+  .connect-logo { display: inline-flex; align-items: center; justify-content: center; height: 36px; padding: 6px 15px; border: 1px solid var(--line); border-radius: 8px; background: #fff; font-weight: 600; font-size: 14px; letter-spacing: -0.01em; }
   .connect-btn { background: var(--accent); color: var(--dark-ink); border: 1px solid var(--accent); border-radius: 999px; padding: 9px 22px; font: inherit; font-size: 13px; cursor: pointer; }
   .connect-btn:hover { filter: brightness(1.06); }
   .connect-card.connected { display: flex; align-items: center; gap: 14px; text-align: left; border-color: var(--accent); background: rgba(31,112,80,0.06); }
@@ -3298,7 +3296,7 @@
       artifactBody.innerHTML = `${itemHeadHtml('Portfolio monitoring')}
         <div class="ips-title">${escapeHtml(state.org.name)} · Portfolio monitoring</div>
         <div class="ips-sub">Live holdings, drift, exposures, and manager news — once a data source is connected.</div>
-        ${connectPrompt({ key: 'monitoring', label: 'Portfolio data', title: 'Connect Addepar', body: 'Sync holdings, performance, and exposures to see live monitoring, drift, and manager news here.', vendors: [{ name: 'Addepar', domain: 'addepar.com' }] })}`;
+        ${connectPrompt({ key: 'monitoring', label: 'Portfolio data', title: 'Connect Addepar', body: 'Sync holdings, performance, and exposures to see live monitoring, drift, and manager news here.', vendors: [{ name: 'Addepar', color: '#1b2a4a' }] })}`;
       artifactFooter.classList.remove('visible');
       updateUrl();
       return;
@@ -4885,7 +4883,7 @@
       <div class="ips-sub">Drift against the adopted Strategic Asset Allocation, with a rebalancing blotter proposed by the trading agent.</div>`;
 
     if (!isSampleDream()) {
-      artifactBody.innerHTML = `${head}${connectPrompt({ key: 'trading', label: 'Custody & trading', title: 'Connect your custodian', body: 'Connect the custodian to pull live positions and route orders. The trading agent will then measure drift against the SAA and propose a rebalance to submit.', vendors: [{ name: 'Fidelity', domain: 'fidelity.com' }, { name: 'Charles Schwab', domain: 'schwab.com' }, { name: 'Pershing', domain: 'pershing.com' }] })}`;
+      artifactBody.innerHTML = `${head}${connectPrompt({ key: 'trading', label: 'Custody & trading', title: 'Connect your custodian', body: 'Connect the custodian to pull live positions and route orders. The trading agent will then measure drift against the SAA and propose a rebalance to submit.', vendors: [{ name: 'Fidelity', color: '#3d8b37' }, { name: 'Charles Schwab', color: '#0b7fc7' }, { name: 'Pershing', color: '#12387a' }] })}`;
       artifactFooter.classList.remove('visible');
       updateUrl();
       return;
@@ -5018,10 +5016,8 @@
 
   // "Connect a data source" prompt for integration-backed sections.
   function vendorLogo(v) {
-    // Prefer the brand logo; fall back to the wordmark if it doesn't load.
-    return `<span class="connect-logo" title="${escapeHtml(v.name)}">`
-      + `<img src="https://logo.clearbit.com/${encodeURIComponent(v.domain)}" alt="${escapeHtml(v.name)}" loading="lazy" onload="this.nextElementSibling.style.display='none'" onerror="this.style.display='none'" />`
-      + `<span class="connect-logo-name">${escapeHtml(v.name)}</span></span>`;
+    // Brand-colored wordmark lockup (no external logo dependency).
+    return `<span class="connect-logo" title="${escapeHtml(v.name)}" style="color:${v.color || 'var(--ink)'}">${escapeHtml(v.name)}</span>`;
   }
   function connectPrompt({ key, label, title, body, vendors }) {
     const requested = (state.integrationsRequested || []).includes(key);
@@ -5079,7 +5075,7 @@
       <div class="ips-sub">Capital-call notices from private-fund managers. Click a call to see the notice and wire instructions.</div>`;
 
     if (!calls.length) {
-      artifactBody.innerHTML = `${head}${connectPrompt({ key: 'capital-calls', label: 'Alternatives data', title: 'Connect an alternatives data feed', body: 'Ingest capital-call and distribution notices from private funds automatically — with amounts, deadlines, and wire instructions.', vendors: [{ name: 'Arch', domain: 'arch.co' }, { name: 'Canoe', domain: 'canoeintelligence.com' }] })}`;
+      artifactBody.innerHTML = `${head}${connectPrompt({ key: 'capital-calls', label: 'Alternatives data', title: 'Connect an alternatives data feed', body: 'Ingest capital-call and distribution notices from private funds automatically — with amounts, deadlines, and wire instructions.', vendors: [{ name: 'Arch', color: '#6b4f8f' }, { name: 'Canoe', color: '#137a6b' }] })}`;
       artifactFooter.classList.remove('visible'); updateUrl(); return;
     }
 
