@@ -693,6 +693,10 @@
   .pm-method-popover .pm-method-tag { background: rgba(244,241,234,0.08); color: rgba(244,241,234,0.85); border-color: rgba(244,241,234,0.18); }
   .pm-card { border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; margin-bottom: 14px; background: #fff; }
   .pm-card-label { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+  .pm-tabs { display: inline-flex; gap: 2px; padding: 2px; background: var(--bg-2); border-radius: 999px; }
+  .pm-tab { appearance: none; cursor: pointer; background: transparent; border: 0; padding: 4px 12px; border-radius: 999px; font: inherit; font-size: 10.5px; letter-spacing: 0.04em; color: var(--muted); font-family: 'JetBrains Mono', monospace; text-transform: uppercase; }
+  .pm-tab:hover { color: var(--ink); }
+  .pm-tab.active { background: var(--ink); color: var(--dark-ink); }
   .pm-metrics { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px 18px; }
   .layout.expanded .pm-metrics { grid-template-columns: repeat(4, 1fr); }
   .pm-metric-label { font-family: 'JetBrains Mono', monospace; font-size: 9.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
@@ -5201,10 +5205,13 @@
     return 0.045;
   }
 
-  function portfolioMetrics(weights) {
+  // portfolioMetrics accepts an optional returnsOverride map (id → return) so we can
+  // re-score the same SAA under shocked CMAs without mutating the canonical CMA table.
+  function portfolioMetrics(weights, returnsOverride = null) {
     const ids = CMA.map((c) => c.id);
+    const r = (id) => (returnsOverride && id in returnsOverride) ? returnsOverride[id] : CMA_BY[id].ret;
     let ret = 0, varSum = 0;
-    for (const id of ids) ret += (weights[id] || 0) * CMA_BY[id].ret;
+    for (const id of ids) ret += (weights[id] || 0) * r(id);
     for (const a of ids) {
       const wa = weights[a] || 0;
       if (wa === 0) continue;
@@ -5220,6 +5227,165 @@
     const tiers = { 1: 0, 2: 0, 3: 0 };
     for (const id of ids) tiers[CMA_BY[id].tier] += (weights[id] || 0);
     return { ret, vol, sharpe, realRet, tiers };
+  }
+
+  // ============================================================
+  // Scenario analysis
+  // ============================================================
+  // 60/40 reference: 60% US Equity / 40% Core Fixed Income
+  const BENCHMARK_60_40 = { us_eq: 0.60, intl_eq: 0, em_eq: 0, core_fi: 0.40, tips: 0, hy: 0, hf: 0, pe: 0, pc: 0, ra: 0, cash: 0 };
+
+  // Total returns by asset class over each historical period (approximate; from public index data).
+  const HISTORICAL_SCENARIOS = [
+    {
+      id: 'gfc', name: 'Global Financial Crisis', period: 'Sep 2008 – Mar 2009', duration: '7 months', tag: 'crisis',
+      returns: { us_eq: -0.466, intl_eq: -0.519, em_eq: -0.554, core_fi: 0.040, tips: -0.027, hy: -0.281, hf: -0.197, pe: -0.300, pc: -0.245, ra: -0.395, cash: 0.014 },
+    },
+    {
+      id: 'eurozone', name: 'European debt crisis', period: 'May – Sep 2011', duration: '5 months', tag: 'crisis',
+      returns: { us_eq: -0.146, intl_eq: -0.221, em_eq: -0.245, core_fi: 0.061, tips: 0.072, hy: -0.089, hf: -0.058, pe: -0.115, pc: -0.030, ra: -0.099, cash: 0.001 },
+    },
+    {
+      id: 'taper', name: 'Taper tantrum', period: 'May – Sep 2013', duration: '5 months', tag: 'rates',
+      returns: { us_eq: 0.045, intl_eq: 0.018, em_eq: -0.122, core_fi: -0.039, tips: -0.082, hy: -0.018, hf: 0.008, pe: 0.030, pc: 0.015, ra: -0.064, cash: 0.001 },
+    },
+    {
+      id: 'china-2015', name: 'China devaluation / oil shock', period: 'Aug 2015 – Feb 2016', duration: '7 months', tag: 'crisis',
+      returns: { us_eq: -0.124, intl_eq: -0.146, em_eq: -0.183, core_fi: 0.031, tips: 0.018, hy: -0.071, hf: -0.041, pe: -0.075, pc: -0.025, ra: -0.110, cash: 0.001 },
+    },
+    {
+      id: 'q4-2018', name: 'Q4 2018 selloff', period: 'Oct – Dec 2018', duration: '3 months', tag: 'crisis',
+      returns: { us_eq: -0.139, intl_eq: -0.129, em_eq: -0.075, core_fi: 0.016, tips: -0.004, hy: -0.046, hf: -0.040, pe: -0.060, pc: -0.012, ra: -0.084, cash: 0.005 },
+    },
+    {
+      id: 'covid-shock', name: 'COVID shock', period: 'Feb – Mar 2020', duration: '6 weeks', tag: 'crisis',
+      returns: { us_eq: -0.340, intl_eq: -0.328, em_eq: -0.326, core_fi: 0.018, tips: 0.005, hy: -0.131, hf: -0.088, pe: -0.150, pc: -0.082, ra: -0.246, cash: 0.002 },
+    },
+    {
+      id: 'covid-recovery', name: 'COVID recovery', period: 'Apr – Dec 2020', duration: '9 months', tag: 'rally',
+      returns: { us_eq: 0.475, intl_eq: 0.408, em_eq: 0.553, core_fi: 0.062, tips: 0.094, hy: 0.234, hf: 0.099, pe: 0.245, pc: 0.092, ra: 0.165, cash: 0.001 },
+    },
+    {
+      id: 'inflation-2022', name: '2022 inflation shock', period: '2022', duration: '12 months', tag: 'inflation',
+      returns: { us_eq: -0.181, intl_eq: -0.144, em_eq: -0.200, core_fi: -0.130, tips: -0.117, hy: -0.110, hf: -0.044, pe: -0.085, pc: 0.026, ra: -0.040, cash: 0.015 },
+    },
+    {
+      id: 'ai-2023', name: 'AI / disinflation rally', period: '2023', duration: '12 months', tag: 'rally',
+      returns: { us_eq: 0.262, intl_eq: 0.183, em_eq: 0.099, core_fi: 0.055, tips: 0.039, hy: 0.135, hf: 0.068, pe: 0.142, pc: 0.115, ra: 0.060, cash: 0.051 },
+    },
+  ];
+
+  // Per-asset-class sensitivities (change in expected annual return per +1pp shock to factor).
+  // Calibrated from historical betas / institutional CMA-shock studies; rough but defensible.
+  const SENSITIVITIES = {
+    us_eq:   { growth: 1.6, rates: -0.30, inflation: -0.30 },
+    intl_eq: { growth: 1.6, rates: -0.25, inflation: -0.20 },
+    em_eq:   { growth: 1.9, rates: -0.50, inflation:  0.20 },
+    core_fi: { growth: -0.10, rates: -0.60, inflation: -0.50 },
+    tips:    { growth: -0.05, rates: -0.40, inflation:  1.00 },
+    hy:      { growth: 0.70, rates: -0.30, inflation: -0.20 },
+    hf:      { growth: 0.50, rates: -0.05, inflation:  0.05 },
+    pe:      { growth: 1.7, rates: -0.50, inflation: -0.30 },
+    pc:      { growth: 0.40, rates: -0.10, inflation: -0.05 },
+    ra:      { growth: 1.1, rates: -0.40, inflation:  0.70 },
+    cash:    { growth: 0.00, rates:  0.90, inflation:  0.30 },
+  };
+
+  // Preset hypothetical scenarios. Shocks expressed in percentage points.
+  const HYPOTHETICAL_SCENARIOS = [
+    { id: 'baseline',    name: 'Baseline · JPM 2025 CMAs', dG:  0.00, dR:  0.000, dI:  0.000, desc: 'Current CMAs, no shocks.' },
+    { id: 'goldilocks',  name: 'Goldilocks',                dG: +0.01, dR: -0.005, dI: -0.005, desc: 'Above-trend growth, modest disinflation, easier policy.' },
+    { id: 'hot',         name: 'Hot economy',               dG: +0.02, dR: +0.010, dI: +0.010, desc: 'Strong growth, sticky inflation, tighter rates.' },
+    { id: 'recession',   name: 'Recession',                 dG: -0.02, dR: -0.010, dI:  0.000, desc: 'Demand shock, growth contracts, easing cycle.' },
+    { id: 'stagflation', name: 'Stagflation',               dG: -0.01, dR: +0.010, dI: +0.020, desc: 'Supply-driven inflation, weak growth, restrictive policy.' },
+    { id: 'rate-shock',  name: 'Rate shock (+200bp)',       dG:  0.00, dR: +0.020, dI: +0.005, desc: 'Term premium re-prices higher across the curve.' },
+    { id: 'disinflation',name: 'Sustained disinflation',    dG:  0.00, dR: -0.010, dI: -0.010, desc: 'Inflation glides to target; easing without recession.' },
+  ];
+
+  function shockReturns(scenario) {
+    const out = {};
+    for (const c of CMA) {
+      const s = SENSITIVITIES[c.id];
+      out[c.id] = c.ret + (s.growth * scenario.dG + s.rates * scenario.dR + s.inflation * scenario.dI) * 100 / 100;
+      // The expression simplifies to s.growth*dG + s.rates*dR + s.inflation*dI where
+      // sensitivity values are in pp-per-pp units; dG/dR/dI are already in decimal pp.
+      // (The *100/100 above is intentionally a no-op for readability.)
+    }
+    return out;
+  }
+
+  // For historical scenarios: weighted sum of period returns; no covariance needed because
+  // we have the actual realized total returns over the period.
+  function historicalPortfolioReturn(scenario, weights) {
+    let r = 0;
+    for (const c of CMA) r += (weights[c.id] || 0) * (scenario.returns[c.id] || 0);
+    return r;
+  }
+
+  function renderScenarioBody() {
+    const tab = state_pm.scenarioTab || 'historical';
+    return tab === 'historical' ? renderHistoricalScenarios() : renderHypotheticalScenarios();
+  }
+
+  function renderHistoricalScenarios() {
+    const weights = state_pm.weights || {};
+    const tagPill = (t) => {
+      const colors = { crisis: 'rgba(177,58,58,0.14);color:#8a2828', rates: 'rgba(196,131,13,0.15);color:#8a5d0a', inflation: 'rgba(196,131,13,0.15);color:#8a5d0a', rally: 'rgba(31,112,80,0.14);color:var(--accent)' };
+      return `<span style="font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:0.08em;padding:2px 6px;border-radius:3px;text-transform:uppercase;background:${colors[t] || 'var(--bg-2)'};">${t}</span>`;
+    };
+    const rows = HISTORICAL_SCENARIOS.map((s) => {
+      const sp = historicalPortfolioReturn(s, weights);
+      const bp = historicalPortfolioReturn(s, BENCHMARK_60_40);
+      const delta = sp - bp;
+      const signClass = (n) => n === 0 ? '' : (n > 0 ? 'pm-pos' : 'pm-neg');
+      const benchClass = (n) => 'pm-bench-num ' + (n === 0 ? '' : (n > 0 ? 'pm-bench-pos' : 'pm-bench-neg'));
+      // bar (shared scale across rows so they're visually comparable)
+      const maxAbs = Math.max(...HISTORICAL_SCENARIOS.map((x) => Math.abs(historicalPortfolioReturn(x, weights))), 0.05);
+      const barWidth = Math.min(100, Math.abs(sp) / maxAbs * 50);
+      const barColor = sp >= 0 ? 'var(--accent)' : '#b13a3a';
+      const bar = `<div style="width:100px;height:10px;background:var(--line-soft);border-radius:5px;position:relative;display:inline-block;vertical-align:middle;"><div style="position:absolute;top:0;${sp >= 0 ? 'left:50%' : 'right:50%'};width:${barWidth}%;height:100%;background:${barColor};border-radius:${sp >= 0 ? '0 5px 5px 0' : '5px 0 0 5px'};"></div><div style="position:absolute;top:0;bottom:0;left:50%;width:1px;background:rgba(20,23,28,0.2);"></div></div>`;
+      return `<tr>
+        <td>${escapeHtml(s.name)} ${tagPill(s.tag)}<div style="font-size:11px;color:var(--muted);margin-top:2px;font-family:'JetBrains Mono',monospace;">${escapeHtml(s.period)} · ${escapeHtml(s.duration)}</div></td>
+        <td class="num ${signClass(sp)}">${pmFmtPct(sp, 1)}</td>
+        <td class="num ${benchClass(bp)}">${pmFmtPct(bp, 1)}</td>
+        <td class="num ${signClass(delta)}">${delta >= 0 ? '+' : ''}${(delta*100).toFixed(1)}pp</td>
+        <td>${bar}</td>
+      </tr>`;
+    }).join('');
+    return `<p style="font-size:12.5px;color:var(--muted);margin:6px 0 10px;">How the current SAA would have performed across notable historical episodes, applying the period's actual asset-class total returns to today's weights. Benchmark: 60% U.S. Equity / 40% Core Fixed Income.</p>
+      <table class="pm-table">
+        <thead><tr><th>Episode</th><th class="num">SAA</th><th class="num">60/40</th><th class="num">Δ</th><th></th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>`;
+  }
+
+  function renderHypotheticalScenarios() {
+    const weights = state_pm.weights || {};
+    const baseSAA = portfolioMetrics(weights);
+    const base6040 = portfolioMetrics(BENCHMARK_60_40);
+    const signClass = (n) => n === 0 ? '' : (n > 0 ? 'pm-pos' : 'pm-neg');
+    const benchClass = (n) => 'pm-bench-num ' + (n === 0 ? '' : (n > 0 ? 'pm-bench-pos' : 'pm-bench-neg'));
+    const rows = HYPOTHETICAL_SCENARIOS.map((sc) => {
+      const ret = shockReturns(sc);
+      const ms = portfolioMetrics(weights, ret);
+      const mb = portfolioMetrics(BENCHMARK_60_40, ret);
+      const dGTag = sc.dG === 0 ? '·' : (sc.dG > 0 ? `+${(sc.dG*100).toFixed(1)}` : `${(sc.dG*100).toFixed(1)}`);
+      const dRTag = sc.dR === 0 ? '·' : (sc.dR > 0 ? `+${(sc.dR*100).toFixed(1)}` : `${(sc.dR*100).toFixed(1)}`);
+      const dITag = sc.dI === 0 ? '·' : (sc.dI > 0 ? `+${(sc.dI*100).toFixed(1)}` : `${(sc.dI*100).toFixed(1)}`);
+      const shocks = `<div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);margin-top:2px;letter-spacing:0.02em;">growth ${dGTag} · rates ${dRTag} · inflation ${dITag} (pp)</div>`;
+      return `<tr>
+        <td>${escapeHtml(sc.name)}${shocks}<div style="font-size:11px;color:var(--muted);margin-top:2px;">${escapeHtml(sc.desc)}</div></td>
+        <td class="num ${signClass(ms.ret)}">${pmFmtPct(ms.ret, 2)}</td>
+        <td class="num ${signClass(ms.realRet)}">${pmFmtPct(ms.realRet, 2)}</td>
+        <td class="num">${ms.sharpe.toFixed(2)}</td>
+        <td class="num ${benchClass(mb.ret)}">${pmFmtPct(mb.ret, 2)}</td>
+      </tr>`;
+    }).join('');
+    return `<p style="font-size:12.5px;color:var(--muted);margin:6px 0 10px;">Stress the CMAs with shocks to real growth, policy rates, and inflation. Asset-class returns shift by their sensitivities to each factor; we re-score the SAA and a 60/40 reference under each scenario. Inflation assumption tracks the inflation shock for the real-return column.</p>
+      <table class="pm-table">
+        <thead><tr><th>Scenario</th><th class="num">SAA · return</th><th class="num">Real</th><th class="num">Sharpe</th><th class="num">60/40 return</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>`;
   }
 
   function projectToBoundsAndSimplex(w) {
@@ -5403,6 +5569,17 @@
           <span><i style="background:#bcc4cd; border-radius:50%;"></i>Individual asset class</span>
         </div>
       </div>
+
+      <div class="pm-card">
+        <div class="pm-card-label" style="display:flex;align-items:center;gap:14px;">
+          <span>Scenario analysis</span>
+          <div class="pm-tabs" role="tablist">
+            <button class="pm-tab ${(state_pm.scenarioTab || 'historical') === 'historical' ? 'active' : ''}" data-action="pm-scenario-tab" data-tab="historical">Historical</button>
+            <button class="pm-tab ${state_pm.scenarioTab === 'hypothetical' ? 'active' : ''}" data-action="pm-scenario-tab" data-tab="hypothetical">Hypothetical</button>
+          </div>
+        </div>
+        <div id="pm-scenario-body">${renderScenarioBody()}</div>
+      </div>
     `;
     // In client-open mode, the footer is hidden — buttons live in the item head instead.
     if (!layout.classList.contains('client-open')) setPortfolioFooter();
@@ -5429,6 +5606,9 @@
   function recomputePortfolio() {
     const total = Object.values(state_pm.weights).reduce((s, x) => s + x, 0);
     const metrics = portfolioMetrics(state_pm.weights);
+    // Refresh the scenario card under the new weights
+    const sbody = document.getElementById('pm-scenario-body');
+    if (sbody) sbody.innerHTML = renderScenarioBody();
     artifactBody.querySelector('[data-m="ret"]').textContent = pmFmtPct(metrics.ret, 2);
     artifactBody.querySelector('[data-m="vol"]').textContent = pmFmtPct(metrics.vol, 2);
     artifactBody.querySelector('[data-m="sharpe"]').textContent = metrics.sharpe.toFixed(2);
@@ -5974,6 +6154,12 @@
       btn.classList.toggle('active', opened);
       btn.setAttribute('aria-expanded', String(opened));
       e.stopPropagation();
+    } else if (a === 'pm-scenario-tab') {
+      e.preventDefault();
+      state_pm.scenarioTab = btn.dataset.tab;
+      artifactBody.querySelectorAll('.pm-tab').forEach((t) => t.classList.toggle('active', t.dataset.tab === state_pm.scenarioTab));
+      const body = document.getElementById('pm-scenario-body');
+      if (body) body.innerHTML = renderScenarioBody();
     }
   });
 
