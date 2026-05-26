@@ -4782,8 +4782,32 @@
     { id: 'cc-legacy-1', fund: 'Legacy PE Co-Investment Program', manager: 'Hudson Lane Capital', kind: 'Private equity — co-investment', callNum: 7, amount: 3.0, called: '2025-10-08', due: '2025-10-22', status: 'completed', pctCommit: 'co-investment capital call', remaining: '$4.0M', purpose: 'Co-investment alongside the lead sponsor in a healthcare-services buyout.' },
   ];
 
+  // Wire instructions on a capital call notice are the FUND's receiving account
+  // (the entity calling capital), keyed by the fund. The LP's reference identifies them.
+  const CC_WIRE_BY_FUND = {
+    'Vista Equity Partners VIII': {
+      bank: 'Goldman Sachs Bank USA',
+      aba: '026009593',
+      acct: '****8740 — Vista Equity Partners Fund VIII, L.P.',
+    },
+    'Ares Senior Direct Lending Fund III': {
+      bank: 'JPMorgan Chase Bank, N.A.',
+      aba: '021000021',
+      acct: '****6233 — Ares Senior Direct Lending Fund III, L.P.',
+    },
+    'Legacy PE Co-Investment Program': {
+      bank: 'Citibank, N.A.',
+      aba: '021000089',
+      acct: '****4116 — Hudson Lane Capital Co-Investment Vehicle, L.P.',
+    },
+  };
   function ccWire(c) {
-    return { bank: 'Northern Trust Company', aba: '071000152', acct: '****4021 — Dream University Endowment', ref: `${c.fund} / Call ${c.callNum}` };
+    const base = CC_WIRE_BY_FUND[c.fund] || {
+      bank: `${c.manager} — designated receiving bank`,
+      aba: '(see notice)',
+      acct: `${c.fund} — partnership account`,
+    };
+    return { ...base, ref: `Dream University LP · ${c.fund} / Call #${c.callNum}` };
   }
   function clientCapitalCalls() {
     if (state.org.name !== 'Dream University') return [];
@@ -4814,24 +4838,33 @@
     const completed = calls.filter((c) => c.status === 'completed');
     const pendingTotal = pending.reduce((s, c) => s + c.amount, 0);
 
-    const row = (c) => `<tr class="cc-row" data-action="open-capital-call" data-id="${c.id}">
+    const pendingRow = (c) => `<tr class="cc-row" data-action="open-capital-call" data-id="${c.id}">
+      <td style="text-align:left;"><div class="cc-fund">${escapeHtml(c.fund)}</div><div class="cc-kind">Call #${c.callNum} · ${escapeHtml(c.kind)}</div></td>
+      <td>$${c.amount.toFixed(1)}M</td>
+      <td>${fmtDate(c.called)}</td>
+      <td>${fmtDate(c.due)}</td>
+      <td style="text-align:right;"><button class="pill-btn accent cc-complete-btn" data-action="cc-complete" data-id="${c.id}">Mark completed</button></td>
+    </tr>`;
+    const completedRow = (c) => `<tr class="cc-row" data-action="open-capital-call" data-id="${c.id}">
       <td style="text-align:left;"><div class="cc-fund">${escapeHtml(c.fund)}</div><div class="cc-kind">Call #${c.callNum} · ${escapeHtml(c.kind)}</div></td>
       <td>$${c.amount.toFixed(1)}M</td>
       <td>${fmtDate(c.called)}</td>
       <td>${fmtDate(c.due)}</td>
       <td style="text-align:left;">${ccStatusTag(c.status)}</td>
-      <td style="text-align:right;">${c.status === 'pending' ? `<button class="pill-btn accent cc-complete-btn" data-action="cc-complete" data-id="${c.id}">Mark completed</button>` : '<span class="qr-muted">—</span>'}</td>
     </tr>`;
 
-    const table = (title, label, rows) => `<div class="qr-exhibit">
-      <div class="qr-exhibit-head"><div class="qx-label">${label}</div><div class="qx-title">${title}</div></div>
-      <table class="qr-table cc-table"><thead><tr><th>Fund / call</th><th>Amount</th><th>Called</th><th>Due</th><th>Status</th><th></th></tr></thead><tbody>${rows}</tbody></table>
-    </div>`;
-
     const pendingBlock = pending.length
-      ? table(`Action needed · ${pending.length} call${pending.length === 1 ? '' : 's'} · $${pendingTotal.toFixed(1)}M`, 'Outstanding', pending.map(row).join(''))
+      ? `<div class="qr-exhibit">
+          <div class="qr-exhibit-head"><div class="qx-label">Outstanding</div><div class="qx-title">Action needed · ${pending.length} call${pending.length === 1 ? '' : 's'} · $${pendingTotal.toFixed(1)}M</div></div>
+          <table class="qr-table cc-table"><thead><tr><th>Fund / call</th><th>Amount</th><th>Called</th><th>Due</th><th></th></tr></thead><tbody>${pending.map(pendingRow).join('')}</tbody></table>
+        </div>`
       : `<div class="qr-callout"><div class="qc-label">All clear</div><p>No outstanding capital calls — all funded.</p></div>`;
-    const completedBlock = completed.length ? table('Completed', 'History', completed.map(row).join('')) : '';
+    const completedBlock = completed.length
+      ? `<div class="qr-exhibit">
+          <div class="qr-exhibit-head"><div class="qx-label">History</div><div class="qx-title">Completed</div></div>
+          <table class="qr-table cc-table"><thead><tr><th>Fund / call</th><th>Amount</th><th>Called</th><th>Due</th><th>Status</th></tr></thead><tbody>${completed.map(completedRow).join('')}</tbody></table>
+        </div>`
+      : '';
 
     artifactBody.innerHTML = `${head}${pendingBlock}${completedBlock}`;
     artifactFooter.classList.remove('visible');
@@ -4861,7 +4894,7 @@
         <div class="cc-notice-status">${ccStatusTag(c.status)}</div>
         <table class="cc-notice-table">
           <tr><td>Fund</td><td>${escapeHtml(c.fund)}</td></tr>
-          <tr><td>Limited Partner</td><td>Dream University Endowment</td></tr>
+          <tr><td>Limited Partner</td><td>${escapeHtml(state.org.name || 'Dream University')} Endowment</td></tr>
           <tr><td>Call amount</td><td><strong>$${c.amount.toFixed(1)}M</strong></td></tr>
           <tr><td>Notice date</td><td>${fmtDate(c.called)}</td></tr>
           <tr><td>Funds due</td><td><strong>${fmtDate(c.due)}</strong></td></tr>
