@@ -6505,10 +6505,12 @@
         <div class="pm-card-label">Risk / return frontier <span style="color: var(--muted); text-transform: none; letter-spacing: 0; font-family: 'Newsreader', serif; font-size: 12px; margin-left: 8px;">— individual assets vs. the IPS-bounded efficient frontier</span></div>
         <div class="pm-chart-wrap"><div class="pm-empty-chart" id="pm-chart-empty">Running 4,000-sample Monte Carlo optimization…</div><svg class="pm-chart" id="pm-chart" style="display: none;" viewBox="0 0 680 460" preserveAspectRatio="xMidYMid meet"></svg></div>
         <div class="pm-legend">
-          <span><i style="background:#7c7468"></i>Efficient frontier (IPS-bounded, liquidity-constrained)</span>
-          <span><i style="background:var(--accent)"></i>Current allocation</span>
-          <span><i style="background:#c4830d"></i>Max-Sharpe optimal</span>
-          <span><i style="background:#bcc4cd; border-radius:50%;"></i>Individual asset class</span>
+          <span><i style="width:16px;height:3px;border-radius:1px;background:#3a3024;"></i>Efficient frontier (within IPS)</span>
+          <span><i style="width:16px;height:2px;border-radius:1px;background:#c2bbab;"></i>Unconstrained frontier</span>
+          <span><i style="width:16px;height:0;border-radius:0;background:none;border-top:1.5px dashed #6b95b0;"></i>Capital Market Line</span>
+          <span><i style="border-radius:50%;background:#c4830d;"></i>Recommended SAA</span>
+          <span><i style="border-radius:50%;background:#1f7050;"></i>Current portfolio</span>
+          <span><i style="border-radius:50%;background:#bcc4cd;"></i>Individual asset class</span>
         </div>
       </div>
 
@@ -6685,35 +6687,12 @@
     const recX = sx(rec.m.vol), recY = sy(rec.m.ret);
     const overlap = Math.hypot(curX - recX, curY - recY) < 16;
 
-    // Legend (bottom-right empty zone) names the series, so the two portfolio markers don't
-    // need crowded inline labels — fixing the earlier label collisions.
-    const legX = 452, legY = 300, legW = 200, legRowH = 18;
-    const legRows = [
-      ['line-bold',  'Efficient frontier (within IPS)'],
-      ['line-faint', 'Unconstrained frontier'],
-      ['line-cml',   'Capital Market Line'],
-      ['dot-amber',  'Recommended SAA'],
-      ['dot-green',  'Current portfolio'],
-    ];
-    const swatch = (kind, x, y) => {
-      if (kind === 'line-bold')  return `<line x1="${x}" y1="${y}" x2="${x+22}" y2="${y}" stroke="#3a3024" stroke-width="2.5"/>`;
-      if (kind === 'line-faint') return `<line x1="${x}" y1="${y}" x2="${x+22}" y2="${y}" stroke="#c2bbab" stroke-width="1.5"/>`;
-      if (kind === 'line-cml')   return `<line x1="${x}" y1="${y}" x2="${x+22}" y2="${y}" stroke="#6b95b0" stroke-width="1.3" stroke-dasharray="4 3"/>`;
-      if (kind === 'dot-amber')  return `<circle cx="${x+11}" cy="${y}" r="5.5" fill="#c4830d" stroke="#fff" stroke-width="1.5"/>`;
-      if (kind === 'dot-green')  return `<circle cx="${x+11}" cy="${y}" r="5.5" fill="#1f7050" stroke="#fff" stroke-width="1.5"/>`;
-      return '';
-    };
-    const legendInner = legRows.map((r, i) => {
-      const ry = legY + 16 + i * legRowH;
-      return `${swatch(r[0], legX + 12, ry)}<text x="${legX + 42}" y="${ry + 3.5}" font-family="Inter, sans-serif" font-size="10.5" fill="#3a3024">${r[1]}</text>`;
-    }).join('');
-    const legend = `<rect x="${legX}" y="${legY}" width="${legW}" height="${legRows.length * legRowH + 14}" rx="7" fill="#fffdf7" stroke="#e2dcce" stroke-width="1"/>${legendInner}`;
-    const inLegend = (x, y) => x >= legX - 2 && x <= legX + legW + 2 && y >= legY - 2 && y <= legY + legRows.length * legRowH + 14;
-
-    // Hide asset labels that collide with the two portfolio markers or sit under the legend.
+    // Series are named by the legend rendered below the chart (.pm-legend), so the two
+    // portfolio markers stay clean dots — no crowded inline labels.
+    // Hide asset labels that collide with the two portfolio markers.
     const HIDE_R = 18;
     const collides = (cx, cy) =>
-      Math.hypot(cx - curX, cy - curY) < HIDE_R || Math.hypot(cx - recX, cy - recY) < HIDE_R || inLegend(cx, cy);
+      Math.hypot(cx - curX, cy - curY) < HIDE_R || Math.hypot(cx - recX, cy - recY) < HIDE_R;
 
     const assetMarkers = assetPoints.map((p) => {
       const cx = sx(p.x), cy = sy(p.y);
@@ -6744,7 +6723,6 @@
       <path d="${ipsPath}" fill="none" stroke="#3a3024" stroke-width="2.5" stroke-linejoin="round"/>
       ${assetMarkers}
       ${markers}
-      ${legend}
     `;
     svg.style.display = 'block';
     if (emp) emp.style.display = 'none';
@@ -6797,7 +6775,7 @@
     updateUrl();
     const orgName = escapeHtml(state.org.name);
     const startedMsg = (isSampleDream() && state.saa)
-      ? `Opened <strong>Portfolio Modeling</strong> for ${orgName}. The chart shows two efficient frontiers: the <strong>bold curve</strong> is the achievable frontier <em>within the IPS</em> (ranges + 50% Tier-1 liquidity floor), and the <strong>faint upper curve</strong> is the unconstrained opportunity set — the gap between them is what the policy constraints cost. The <strong>Recommended SAA</strong> (amber) is the highest-Sharpe portfolio achievable within policy, so it sits exactly <em>on</em> the bold frontier. The <strong>Current portfolio</strong> (green) is the endowment's legacy book — over-concentrated in domestic equity and parking ~20% in cash — which puts it <strong>below and to the right</strong> of the recommendation: more risk for less return. Redeploying the excess cash and building out the alternatives sleeve moves it up-and-left onto the frontier — better on both axes. (See the legend, lower right.) Edit weights, set to midpoints, re-run the optimizer, or adopt.`
+      ? `Opened <strong>Portfolio Modeling</strong> for ${orgName}. The chart shows two efficient frontiers: the <strong>bold curve</strong> is the achievable frontier <em>within the IPS</em> (ranges + 50% Tier-1 liquidity floor), and the <strong>faint upper curve</strong> is the unconstrained opportunity set — the gap between them is what the policy constraints cost. The <strong>Recommended SAA</strong> (amber) is the highest-Sharpe portfolio achievable within policy, so it sits exactly <em>on</em> the bold frontier. The <strong>Current portfolio</strong> (green) is the endowment's legacy book — over-concentrated in domestic equity and parking ~20% in cash — which puts it <strong>below and to the right</strong> of the recommendation: more risk for less return. Redeploying the excess cash and building out the alternatives sleeve moves it up-and-left onto the frontier — better on both axes. (See the legend below the chart.) Edit weights, set to midpoints, re-run the optimizer, or adopt.`
       : state.saa
       ? `Opened <strong>Portfolio Modeling</strong> for ${orgName}. The bold curve is the efficient frontier achievable within the IPS; the faint upper curve is the unconstrained opportunity set, and the dashed line is the Capital Market Line. Your adopted SAA is marked along with the recommended (highest-Sharpe within-policy) portfolio, which sits on the bold frontier. Edit weights, set to midpoints, re-run the optimizer, or re-adopt.`
       : `Opened <strong>Portfolio Modeling</strong> for ${orgName}. The bold curve is the efficient frontier achievable within the IPS (ranges + Tier-1 floor); the faint upper curve is the unconstrained opportunity set. I've set the allocation to the recommended portfolio — the highest-Sharpe mix within policy — which sits on the bold frontier. Set it to the IPS midpoints, edit weights, re-run, or adopt.`;
