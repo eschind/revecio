@@ -105,7 +105,10 @@
     max-width: 50ch;
   }
   ul.dots li::before {
-    content: ""; position: absolute; left: 0; top: 16px;
+    /* Dot sits at the visual center of the first line, independent of font-size:
+       with line-height 1.5, first-line center = 0.75em from the top of the line box,
+       so top = 0.75em − half the dot's height. */
+    content: ""; position: absolute; left: 0; top: calc(0.75em - 4.5px);
     width: 9px; height: 9px; border-radius: 50%; background: var(--accent);
   }
   .slide.dark ul.dots li { color: var(--dark-ink); }
