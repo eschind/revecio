@@ -15,7 +15,7 @@ export default async function handler(req, res) {
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.setHeader('Cache-Control', 'no-store, max-age=0, must-revalidate');
     res.setHeader('X-Robots-Tag', 'noindex, nofollow');
-    return res.end(renderGate());
+    return res.end(renderGate({ title: 'Reve CIO - Demo' }));
   }
   res.statusCode = 200;
   res.setHeader('Content-Type', 'text/html; charset=utf-8');

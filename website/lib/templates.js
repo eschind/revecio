@@ -30,14 +30,17 @@ const BASE_VARS = `
 // ============================================================
 // Gate page
 // ============================================================
-function renderGate({ error, prefillEmail } = {}) {
+function renderGate({ error, prefillEmail, title = 'Reve CIO - Investors' } = {}) {
   return `<!doctype html>
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <meta name="robots" content="noindex, nofollow" />
-<title>Reve — Investor Memo</title>
+<title>${escapeHtml(title)}</title>
+<meta property="og:title" content="${escapeHtml(title)}" />
+<meta property="og:site_name" content="Reve CIO" />
+<meta name="twitter:title" content="${escapeHtml(title)}" />
 ${FONTS}
 <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 <style>
@@ -576,7 +579,10 @@ function renderMemo({
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <meta name="robots" content="noindex, nofollow" />
-<title>Reve — ${escapeHtml(documentTitle)}</title>
+<title>Reve CIO - Investors</title>
+<meta property="og:title" content="Reve CIO - Investors" />
+<meta property="og:site_name" content="Reve CIO" />
+<meta name="twitter:title" content="Reve CIO - Investors" />
 ${FONTS}
 <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 <style>${renderMemoCss()}
@@ -611,7 +617,10 @@ function renderDocumentList({ viewerEmail, documents }) {
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <meta name="robots" content="noindex, nofollow" />
-<title>Reve — Investor Materials</title>
+<title>Reve CIO - Investors</title>
+<meta property="og:title" content="Reve CIO - Investors" />
+<meta property="og:site_name" content="Reve CIO" />
+<meta name="twitter:title" content="Reve CIO - Investors" />
 ${FONTS}
 <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 <style>
