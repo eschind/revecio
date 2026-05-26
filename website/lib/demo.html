@@ -702,6 +702,18 @@
   .empty-state .empty-body { font-size: 13px; color: var(--muted); line-height: 1.6; }
   .empty-state .add-btn, .empty-state .btn { margin-top: 16px; }
   .item-title-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  /* Generic button — matches the existing pill design across the app.
+     Defined before .add-btn so elements carrying both classes (e.g. "btn add-btn")
+     pick up .add-btn's outlined-accent look, not the filled .btn fallback. */
+  .btn { appearance: none; cursor: pointer; background: var(--accent); color: var(--dark-ink); border: 1px solid var(--accent); border-radius: 999px; padding: 7px 16px; font: inherit; font-size: 13px; line-height: 1.2; white-space: nowrap; }
+  .btn:hover { background: var(--accent-2, var(--accent)); border-color: var(--accent-2, var(--accent)); filter: brightness(1.05); }
+  .btn:disabled { opacity: 0.45; cursor: default; filter: none; }
+  .btn.btn-sm { padding: 4px 12px; font-size: 11.5px; }
+  .btn.btn-secondary { background: transparent; color: var(--ink); border-color: var(--line); }
+  .btn.btn-secondary:hover { background: rgba(20,23,28,0.04); border-color: var(--ink); filter: none; }
+  .btn.btn-danger { background: transparent; color: #b13a3a; border-color: rgba(177,58,58,0.4); }
+  .btn.btn-danger:hover { background: rgba(177,58,58,0.08); border-color: #b13a3a; filter: none; }
+
   .add-btn { appearance: none; cursor: pointer; background: transparent; border: 1px solid var(--accent); color: var(--accent); border-radius: 999px; padding: 6px 14px; font: inherit; font-size: 12.5px; }
   .add-btn:hover { background: var(--accent); color: var(--bg); }
 
