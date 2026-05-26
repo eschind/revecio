@@ -6046,18 +6046,20 @@
   // ============ Portfolio Modeling module ============
   // Capital market assumptions: J.P. Morgan 2025 Long-Term Capital Market Assumptions,
   // USD, 10–15 year horizon. Returns are arithmetic; volatilities are annualized.
+  // `inc` = expected annual income yield (dividends / interest / coupon / cash distributions),
+  // used by the liquidity view to show how much of spending is funded WITHOUT selling assets.
   const CMA = [
-    { id: 'us_eq',   name: 'U.S. Equity',                 ret: 0.067, vol: 0.165, tier: 1 },
-    { id: 'intl_eq', name: 'Intl Developed Equity',       ret: 0.090, vol: 0.170, tier: 1 },
-    { id: 'em_eq',   name: 'Emerging Markets Equity',     ret: 0.085, vol: 0.210, tier: 1 },
-    { id: 'core_fi', name: 'Core Fixed Income (U.S. Agg)',ret: 0.046, vol: 0.045, tier: 1 },
-    { id: 'tips',    name: 'TIPS',                        ret: 0.044, vol: 0.055, tier: 1 },
-    { id: 'hy',      name: 'High-Yield Credit',           ret: 0.066, vol: 0.090, tier: 1 },
-    { id: 'hf',      name: 'Diversified Hedge Funds',     ret: 0.060, vol: 0.065, tier: 2 },
-    { id: 'pe',      name: 'Private Equity',              ret: 0.100, vol: 0.220, tier: 3 },
-    { id: 'pc',      name: 'Private Credit',              ret: 0.088, vol: 0.100, tier: 3 },
-    { id: 'ra',      name: 'Real Assets',                 ret: 0.072, vol: 0.115, tier: 2 },
-    { id: 'cash',    name: 'Cash',                        ret: 0.034, vol: 0.005, tier: 1 },
+    { id: 'us_eq',   name: 'U.S. Equity',                 ret: 0.067, vol: 0.165, tier: 1, inc: 0.018 },
+    { id: 'intl_eq', name: 'Intl Developed Equity',       ret: 0.090, vol: 0.170, tier: 1, inc: 0.031 },
+    { id: 'em_eq',   name: 'Emerging Markets Equity',     ret: 0.085, vol: 0.210, tier: 1, inc: 0.027 },
+    { id: 'core_fi', name: 'Core Fixed Income (U.S. Agg)',ret: 0.046, vol: 0.045, tier: 1, inc: 0.043 },
+    { id: 'tips',    name: 'TIPS',                        ret: 0.044, vol: 0.055, tier: 1, inc: 0.022 },
+    { id: 'hy',      name: 'High-Yield Credit',           ret: 0.066, vol: 0.090, tier: 1, inc: 0.070 },
+    { id: 'hf',      name: 'Diversified Hedge Funds',     ret: 0.060, vol: 0.065, tier: 2, inc: 0.010 },
+    { id: 'pe',      name: 'Private Equity',              ret: 0.100, vol: 0.220, tier: 3, inc: 0.000 },
+    { id: 'pc',      name: 'Private Credit',              ret: 0.088, vol: 0.100, tier: 3, inc: 0.085 },
+    { id: 'ra',      name: 'Real Assets',                 ret: 0.072, vol: 0.115, tier: 2, inc: 0.040 },
+    { id: 'cash',    name: 'Cash',                        ret: 0.034, vol: 0.005, tier: 1, inc: 0.034 },
   ];
   const CMA_BY = Object.fromEntries(CMA.map((c) => [c.id, c]));
 
@@ -6526,7 +6528,8 @@
   }
 
   const state_pm = {
-    weights: null,    // current edited weights
+    current: null,    // the client's actual book today — IMMUTABLE (edits/optimizer never touch it)
+    weights: null,    // the editable working/proposed allocation (table, adopt, match-recommended)
     mvo: null,        // last MVO result { cloud, optimal }
   };
 
@@ -6534,14 +6537,15 @@
 
   function renderPortfolioModule() {
     state.module = 'portfolio';
+    // CURRENT = the client's actual book today. IMMUTABLE — edits, the optimizer, and
+    // "match recommended" never change it. Re-derived from fixed inputs each open (idempotent).
+    state_pm.current = (isSampleDream() && state.saa)
+      ? { ...DREAM_CURRENT_HOLDINGS }
+      : (state.saa?.weights ? { ...state.saa.weights } : null);
+    // Editable working/proposed allocation (the table): seeds to the current book if there is
+    // one, else the IPS midpoints. This is what "match recommended" and "adopt" act on.
     if (!state_pm.weights) {
-      // Dream's sample data: seed from its actual cash-heavy holdings so CURRENT sits below
-      // the frontier (the optimizer's MAX-SHARPE marker shows the upside of redeploying cash).
-      if (isSampleDream() && state.saa) {
-        state_pm.weights = { ...DREAM_CURRENT_HOLDINGS };
-      } else {
-        state_pm.weights = state.saa?.weights ? { ...state.saa.weights } : defaultMidpointWeights();
-      }
+      state_pm.weights = state_pm.current ? { ...state_pm.current } : defaultMidpointWeights();
     }
     artifactTitle.textContent = 'Portfolio Model · Strategic Asset Allocation';
     enterItemView();
@@ -6599,14 +6603,14 @@
             <div class="pm-cov-sub" id="pm-cov-need-sub">—</div>
           </div>
           <div class="pm-cov-cell">
-            <div class="pm-cov-label">Cash on hand</div>
+            <div class="pm-cov-label">Income + cash</div>
             <div class="pm-cov-value" id="pm-cov-avail">—</div>
-            <div class="pm-cov-sub" id="pm-cov-avail-sub">available without selling assets</div>
+            <div class="pm-cov-sub" id="pm-cov-avail-sub">—</div>
           </div>
           <div class="pm-cov-cell">
-            <div class="pm-cov-label">Cash coverage</div>
+            <div class="pm-cov-label">Coverage</div>
             <div class="pm-cov-value" id="pm-cov-cushion">—</div>
-            <div class="pm-cov-sub" id="pm-cov-cushion-sub">years of need held in cash</div>
+            <div class="pm-cov-sub" id="pm-cov-cushion-sub">need met without selling assets</div>
           </div>
         </div>
         <div class="pm-cov-bars">
@@ -6616,14 +6620,18 @@
             <div class="pm-cov-bar-val" id="pm-cov-bar-need-val">—</div>
           </div>
           <div class="pm-cov-bar-row">
-            <div class="pm-cov-bar-label">Cash</div>
-            <div class="pm-cov-bar-track"><div class="pm-cov-bar-fill t1" id="pm-cov-bar-cash" title="Cash · immediately available"></div></div>
+            <div class="pm-cov-bar-label">Sources</div>
+            <div class="pm-cov-bar-track">
+              <div class="pm-cov-bar-fill" id="pm-cov-bar-income" style="background:#6b8fb0;" title="Investment income · dividends, interest, distributions"></div>
+              <div class="pm-cov-bar-fill t1" id="pm-cov-bar-cash" title="Cash · immediately available"></div>
+            </div>
             <div class="pm-cov-bar-val" id="pm-cov-bar-cash-val">—</div>
           </div>
         </div>
         <div class="pm-cov-legend">
           <span><i style="background: #b13a3a;"></i>Annual need · spending + capital calls</span>
-          <span><i style="background: var(--accent);"></i>Cash · meets need without forced sales</span>
+          <span><i style="background: #6b8fb0;"></i>Investment income</span>
+          <span><i style="background: var(--accent);"></i>Cash</span>
           <span style="margin-left: auto; color: var(--muted);" id="pm-cov-backstop">backstop —</span>
         </div>
       </div>
@@ -6652,7 +6660,8 @@
           <span><i style="width:16px;height:2px;border-radius:1px;background:#c2bbab;"></i>Unconstrained frontier</span>
           <span><i style="width:16px;height:0;border-radius:0;background:none;border-top:1.5px dashed #6b95b0;"></i>Capital Market Line</span>
           <span><i style="border-radius:50%;background:#c4830d;"></i>Recommended SAA</span>
-          <span><i style="border-radius:50%;background:#1f7050;"></i>Current portfolio</span>
+          <span><i style="border-radius:50%;background:#1f7050;"></i>Current portfolio (fixed)</span>
+          <span><i style="border-radius:50%;background:none;border:2px solid #3a3024;width:8px;height:8px;"></i>Working allocation</span>
           <span><i style="border-radius:50%;background:#bcc4cd;"></i>Individual asset class</span>
         </div>
       </div>
@@ -6672,8 +6681,8 @@
     if (!layout.classList.contains('client-open')) setPortfolioFooter();
     recomputePortfolio();
     // Compute the recommendation (and frontiers) the first time the module is opened.
-    // The CURRENT marker always stays on the working allocation (the client's actual book);
-    // the RECOMMENDED SAA is shown separately, so the two never collapse onto each other.
+    // CURRENT (the immutable book) and RECOMMENDED are fixed markers; the editable working
+    // allocation is separate, so "match recommended" never moves the CURRENT marker.
     if (!state_pm.mvo) {
       setTimeout(() => {
         state_pm.mvo = runMVO();
@@ -6704,16 +6713,18 @@
 
     const t1pct = metrics.tiers[1], t2pct = metrics.tiers[2], t3pct = metrics.tiers[3];
 
-    // Liquidity coverage (12-month). Measure the annual need against CASH — what's available
-    // without selling anything — rather than against everything that could be sold. The
-    // sellable sources (daily-liquid securities, T2 redemptions, T3 distributions) are shown
-    // separately as a backstop, since relying on forced sales (especially in a drawdown) is
-    // not the same as having the cash on hand.
+    // Liquidity coverage (12-month). The annual need is funded first by sources that DON'T
+    // require selling assets: investment income (dividends, interest, coupons, cash
+    // distributions) plus the cash balance. So cash can sit below the full-year need — income
+    // covers most spending. Forced sales (daily-liquid securities, T2 redemptions, T3
+    // distributions) are a separate backstop, not the first line.
     const spendingRate = inferSpendingRate(state.facts?.spending);
     const callsNeed = t3pct * CALL_RATE;
     const totalNeed = spendingRate + callsNeed;
     const cashPct = state_pm.weights.cash || 0;
-    const cushion = totalNeed > 0 ? cashPct / totalNeed : 0;
+    const incomePct = CMA.reduce((s, c) => s + (state_pm.weights[c.id] || 0) * (c.inc || 0), 0);
+    const noSale = incomePct + cashPct;            // funded without selling anything
+    const cushion = totalNeed > 0 ? noSale / totalNeed : 0;
     // Backstop if assets are sold: daily-liquid securities (T1 ex-cash) + T2 + T3 sources.
     const sellSecurities = Math.max(0, t1pct - cashPct);
     const t2src = t2pct * T2_ACCESS;
@@ -6724,23 +6735,26 @@
     if (need) {
       need.textContent = pmFmtPct(totalNeed, 1);
       document.getElementById('pm-cov-need-sub').textContent = `${pmFmtPct(spendingRate, 1)} spending + ${pmFmtPct(callsNeed, 1)} capital calls`;
-      document.getElementById('pm-cov-avail').textContent = pmFmtPct(cashPct, 1);
+      document.getElementById('pm-cov-avail').textContent = pmFmtPct(noSale, 1);
+      document.getElementById('pm-cov-avail-sub').textContent = `${pmFmtPct(incomePct, 1)} income + ${pmFmtPct(cashPct, 1)} cash`;
       const cushionEl = document.getElementById('pm-cov-cushion');
       cushionEl.textContent = cushion >= 99 ? '∞' : `${cushion.toFixed(1)}×`;
-      cushionEl.classList.toggle('warn', cushion < 0.5);
+      cushionEl.classList.toggle('warn', cushion < 0.7);
       cushionEl.classList.toggle('ok', cushion >= 1 && cushion <= 2.5);
-      document.getElementById('pm-cov-cushion-sub').textContent = cushion < 0.5
-        ? 'under ½ year in cash — leans hard on sales & inflows'
-        : cushion < 1 ? 'under one year in cash — topped up by income & distributions'
-        : cushion <= 2 ? 'one to two years of need held in cash'
-        : 'well above need — excess cash is a drag; consider redeploying';
+      const shortfall = totalNeed - noSale;
+      document.getElementById('pm-cov-cushion-sub').textContent = cushion < 0.7
+        ? `income + cash cover only ${pmFmtPct(noSale, 1)} of ${pmFmtPct(totalNeed, 1)} — the rest needs asset sales`
+        : cushion < 1 ? `income covers most spending; the ~${pmFmtPct(Math.max(0, shortfall), 1)} balance comes from distributions & rebalancing — no forced sales`
+        : cushion <= 2.5 ? 'income + cash cover the year with no forced sales'
+        : 'income + cash well above need — excess cash is a drag; consider redeploying';
 
-      // Bars: Need vs Cash, scaled so both fit.
-      const scale = Math.max(totalNeed, cashPct) * 1.05 + 1e-6;
+      // Bars: Need vs sources (income + cash, stacked), scaled so both fit.
+      const scale = Math.max(totalNeed, noSale) * 1.05 + 1e-6;
       document.getElementById('pm-cov-bar-need').style.width = ((totalNeed / scale) * 100).toFixed(2) + '%';
+      document.getElementById('pm-cov-bar-income').style.width = ((incomePct / scale) * 100).toFixed(2) + '%';
       document.getElementById('pm-cov-bar-cash').style.width = ((cashPct / scale) * 100).toFixed(2) + '%';
       document.getElementById('pm-cov-bar-need-val').textContent = pmFmtPct(totalNeed, 1);
-      document.getElementById('pm-cov-bar-cash-val').textContent = pmFmtPct(cashPct, 1);
+      document.getElementById('pm-cov-bar-cash-val').textContent = pmFmtPct(noSale, 1);
       document.getElementById('pm-cov-backstop').textContent =
         `+ ${pmFmtPct(backstop, 1)} sellable backstop (T1 securities ${pmFmtPct(sellSecurities,1)} · T2 ${pmFmtPct(t2src,1)} · T3 ${pmFmtPct(t3src,1)})`;
     }
@@ -6765,7 +6779,8 @@
     const svg = artifactBody.querySelector('#pm-chart');
     const emp = artifactBody.querySelector('#pm-chart-empty');
     if (!svg || !state_pm.mvo) return;
-    const cur = portfolioMetrics(state_pm.weights);
+    const cur = state_pm.current ? portfolioMetrics(state_pm.current) : null; // immutable current book
+    const work = portfolioMetrics(state_pm.weights);                          // editable working allocation
     const oppF = computeOpportunityFrontier(); // theoretical opportunity set (unconstrained, long-only)
     const ipsF = computeIpsFrontier();         // achievable IPS-bounded ("policy") frontier
     const oppEnv = oppF.envelope, ipsEnv = ipsF.envelope;
@@ -6775,8 +6790,10 @@
     // Axis range covers the whole opportunity set: every asset-class point, both frontier
     // lines, the CURRENT / RECOMMENDED markers, and the Capital Market Line's origin at (0, rf).
     const assetPoints = CMA.map((c) => ({ id: c.id, x: c.vol, y: c.ret }));
-    const xs = assetPoints.map((p) => p.x).concat(oppEnv.map((p) => p.vol), cur.vol, rec.m.vol, 0);
-    const ys = assetPoints.map((p) => p.y).concat(oppEnv.map((p) => p.ret), cur.ret, rec.m.ret, RF);
+    const ptsVol = [work.vol, rec.m.vol, 0].concat(cur ? [cur.vol] : []);
+    const ptsRet = [work.ret, rec.m.ret, RF].concat(cur ? [cur.ret] : []);
+    const xs = assetPoints.map((p) => p.x).concat(oppEnv.map((p) => p.vol), ptsVol);
+    const ys = assetPoints.map((p) => p.y).concat(oppEnv.map((p) => p.ret), ptsRet);
     let xMin = Math.min(...xs), xMax = Math.max(...xs);
     let yMin = Math.min(...ys), yMax = Math.max(...ys);
     const xPad = (xMax - xMin) * 0.06 || 0.01;
@@ -6826,16 +6843,19 @@
     const cmlAngle = Math.atan2(sy(RF + slope * cmlEndVol) - sy(RF), sx(cmlEndVol) - sx(0)) * 180 / Math.PI;
     const cmlLabel = `<text x="${cmlLabX.toFixed(1)}" y="${cmlLabY.toFixed(1)}" font-family="JetBrains Mono, monospace" font-size="9.5" fill="#6b95b0" text-anchor="middle" transform="rotate(${cmlAngle.toFixed(1)} ${cmlLabX.toFixed(1)} ${cmlLabY.toFixed(1)})">Capital Market Line</text>`;
 
-    const curX = sx(cur.vol), curY = sy(cur.ret);
     const recX = sx(rec.m.vol), recY = sy(rec.m.ret);
-    const overlap = Math.hypot(curX - recX, curY - recY) < 16;
+    const curX = cur ? sx(cur.vol) : null, curY = cur ? sy(cur.ret) : null;
+    const workX = sx(work.vol), workY = sy(work.ret);
+    // The editable working allocation only gets its own (hollow) marker when the user has moved
+    // it away from BOTH the immutable current book and the recommendation. When it equals one
+    // of them (on open, or right after "match recommended"), it just sits under that marker.
+    const near = (ax, ay, bx, by) => bx != null && Math.hypot(ax - bx, ay - by) < 14;
+    const showWork = !near(workX, workY, recX, recY) && !near(workX, workY, curX, curY);
 
-    // Series are named by the legend rendered below the chart (.pm-legend), so the two
-    // portfolio markers stay clean dots — no crowded inline labels.
-    // Hide asset labels that collide with the two portfolio markers.
+    // Series are named by the legend below the chart; markers stay clean dots (no inline labels).
     const HIDE_R = 18;
-    const collides = (cx, cy) =>
-      Math.hypot(cx - curX, cy - curY) < HIDE_R || Math.hypot(cx - recX, cy - recY) < HIDE_R;
+    const markerPts = [[recX, recY], [workX, workY]].concat(cur ? [[curX, curY]] : []);
+    const collides = (cx, cy) => markerPts.some(([mx, my]) => Math.hypot(cx - mx, cy - my) < HIDE_R);
 
     const assetMarkers = assetPoints.map((p) => {
       const cx = sx(p.x), cy = sy(p.y);
@@ -6847,15 +6867,11 @@
       return `<g>${dot}<text x="${labelX.toFixed(1)}" y="${(cy - 1).toFixed(1)}" font-family="Inter, sans-serif" font-size="9.5" fill="#7c7468" text-anchor="${anchor}" dominant-baseline="middle">${CHART_CODES[p.id] || p.id}</text></g>`;
     }).join('');
 
-    let markers;
-    if (overlap) {
-      // CURRENT sits exactly on the recommendation (e.g. right after running the optimizer).
-      const mx = ((curX + recX) / 2).toFixed(1), my = ((curY + recY) / 2).toFixed(1);
-      markers = `<circle cx="${mx}" cy="${my}" r="8.5" fill="#c4830d" stroke="#1f7050" stroke-width="2"/><circle cx="${mx}" cy="${my}" r="3.5" fill="#1f7050"/>`;
-    } else {
-      markers = `<circle cx="${recX.toFixed(1)}" cy="${recY.toFixed(1)}" r="7" fill="#c4830d" stroke="#fff" stroke-width="2.5"/>`
-              + `<circle cx="${curX.toFixed(1)}" cy="${curY.toFixed(1)}" r="7" fill="#1f7050" stroke="#fff" stroke-width="2.5"/>`;
-    }
+    // RECOMMENDED (amber, on the IPS frontier) and CURRENT (green, immutable book). The working
+    // allocation, when distinct, is a hollow dark ring.
+    let markers = `<circle cx="${recX.toFixed(1)}" cy="${recY.toFixed(1)}" r="7" fill="#c4830d" stroke="#fff" stroke-width="2.5"/>`;
+    if (cur) markers += `<circle cx="${curX.toFixed(1)}" cy="${curY.toFixed(1)}" r="7" fill="#1f7050" stroke="#fff" stroke-width="2.5"/>`;
+    if (showWork) markers += `<circle cx="${workX.toFixed(1)}" cy="${workY.toFixed(1)}" r="6" fill="none" stroke="#3a3024" stroke-width="2"/>`;
 
     svg.innerHTML = `
       ${grid}
