@@ -5703,6 +5703,28 @@
         </table>`)}
         ${sourceLine}`;
     }
+    if (query === 'capital_calls' || query === 'capital_calls_outstanding' || query === 'capital_calls_all') {
+      const all = (typeof clientCapitalCalls === 'function') ? clientCapitalCalls() : [];
+      if (!all.length) return `<p>No private-fund capital calls on record for this client.</p>`;
+      const showAll = query === 'capital_calls_all';
+      const pending = all.filter((c) => c.status === 'pending');
+      const list = showAll ? all : pending;
+      if (!list.length) {
+        return `<p><strong>No outstanding capital calls.</strong> All ${all.length} call${all.length === 1 ? '' : 's'} on record have been funded. <a href="?client=${escapeHtml(state.clientId || '')}&view=capital-calls" data-action="open-workflow" data-workflow="capital-calls" style="color:var(--ink);border-bottom:1px dotted var(--muted);text-decoration:none;cursor:pointer;">See history →</a></p>`;
+      }
+      const pendingTotal = list.reduce((s, c) => s + c.amount, 0);
+      const rows = list.map((c) => `<tr>
+        <td style="padding:5px 8px 5px 0;"><div style="color:var(--ink);">${escapeHtml(c.fund)}</div><div style="font-size:11px;color:var(--muted);">Call #${c.callNum} · ${escapeHtml(c.kind)}</div></td>
+        <td style="padding:5px 0;text-align:right;font-family:'JetBrains Mono',monospace;color:var(--ink);">$${c.amount.toFixed(1)}M</td>
+        <td style="padding:5px 0 5px 12px;font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--muted);">due ${escapeHtml(fmtDate(c.due))}</td>
+      </tr>`).join('');
+      const heading = showAll
+        ? `${all.length} capital call${all.length === 1 ? '' : 's'} on record`
+        : `${pending.length} outstanding capital call${pending.length === 1 ? '' : 's'} · <strong>$${pendingTotal.toFixed(1)}M</strong>`;
+      return `<p>${heading}:</p>
+        ${card('Capital calls', `<table style="width:100%;border-collapse:collapse;font-size:12.5px;">${rows}</table>`)}
+        <p style="font-size:12px;"><a href="?client=${escapeHtml(state.clientId || '')}&view=capital-calls" data-action="open-workflow" data-workflow="capital-calls" style="color:var(--ink);border-bottom:1px dotted var(--muted);text-decoration:none;cursor:pointer;">Open the Capital calls page →</a></p>`;
+    }
     return null;
   }
 
