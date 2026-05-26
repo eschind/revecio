@@ -5369,6 +5369,8 @@
       const ret = shockReturns(sc);
       const ms = portfolioMetrics(weights, ret);
       const mb = portfolioMetrics(BENCHMARK_60_40, ret);
+      const retDelta = ms.ret - mb.ret;
+      const sharpeDelta = ms.sharpe - mb.sharpe;
       const dGTag = sc.dG === 0 ? '·' : (sc.dG > 0 ? `+${(sc.dG*100).toFixed(1)}` : `${(sc.dG*100).toFixed(1)}`);
       const dRTag = sc.dR === 0 ? '·' : (sc.dR > 0 ? `+${(sc.dR*100).toFixed(1)}` : `${(sc.dR*100).toFixed(1)}`);
       const dITag = sc.dI === 0 ? '·' : (sc.dI > 0 ? `+${(sc.dI*100).toFixed(1)}` : `${(sc.dI*100).toFixed(1)}`);
@@ -5376,14 +5378,15 @@
       return `<tr>
         <td>${escapeHtml(sc.name)}${shocks}<div style="font-size:11px;color:var(--muted);margin-top:2px;">${escapeHtml(sc.desc)}</div></td>
         <td class="num ${signClass(ms.ret)}">${pmFmtPct(ms.ret, 2)}</td>
-        <td class="num ${signClass(ms.realRet)}">${pmFmtPct(ms.realRet, 2)}</td>
-        <td class="num">${ms.sharpe.toFixed(2)}</td>
         <td class="num ${benchClass(mb.ret)}">${pmFmtPct(mb.ret, 2)}</td>
+        <td class="num ${signClass(retDelta)}">${retDelta >= 0 ? '+' : ''}${(retDelta*100).toFixed(2)}pp</td>
+        <td class="num ${signClass(ms.realRet)}">${pmFmtPct(ms.realRet, 2)}</td>
+        <td class="num ${signClass(sharpeDelta)}">${ms.sharpe.toFixed(2)} <span style="font-size:10px;color:var(--muted);">vs ${mb.sharpe.toFixed(2)}</span></td>
       </tr>`;
     }).join('');
-    return `<p style="font-size:12.5px;color:var(--muted);margin:6px 0 10px;">Stress the CMAs with shocks to real growth, policy rates, and inflation. Asset-class returns shift by their sensitivities to each factor; we re-score the SAA and a 60/40 reference under each scenario. Inflation assumption tracks the inflation shock for the real-return column.</p>
+    return `<p style="font-size:12.5px;color:var(--muted);margin:6px 0 10px;">Stress the CMAs with shocks to real growth, policy rates, and inflation. Asset-class returns shift by their sensitivities to each factor; we re-score the SAA and a 60/40 reference under each scenario. Δ and Sharpe colors indicate whether the SAA is better (green) or worse (red) than the 60/40 benchmark.</p>
       <table class="pm-table">
-        <thead><tr><th>Scenario</th><th class="num">SAA · return</th><th class="num">Real</th><th class="num">Sharpe</th><th class="num">60/40 return</th></tr></thead>
+        <thead><tr><th>Scenario</th><th class="num">SAA</th><th class="num">60/40</th><th class="num">Δ</th><th class="num">Real</th><th class="num">Sharpe vs 60/40</th></tr></thead>
         <tbody>${rows}</tbody>
       </table>`;
   }
