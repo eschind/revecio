@@ -821,7 +821,8 @@
   .pm-chart-wrap { position: relative; }
   .pm-chart { width: 100%; height: 460px; display: block; }
   .pm-legend { display: flex; gap: 16px; font-size: 11.5px; color: var(--muted); margin-top: 10px; flex-wrap: wrap; }
-  .pm-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
+  .pm-legend span { display: inline-flex; align-items: center; }
+  .pm-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; flex: none; }
   .pm-empty-chart { display: flex; align-items: center; justify-content: center; height: 460px; color: var(--muted); font-size: 13px; font-style: italic; text-align: center; padding: 0 20px; }
 
   .pm-warn { background: rgba(177,58,58,0.07); border: 1px solid rgba(177,58,58,0.25); border-radius: 8px; padding: 8px 12px; font-size: 12.5px; color: #8a2828; margin-bottom: 12px; }
@@ -6364,6 +6365,18 @@
     };
     // Single-asset corners — guarantee the curve reaches the min-vol and max-return ends.
     for (const id of ids) { const w = {}; ids.forEach((x) => (w[x] = 0)); w[id] = 1; consider(w); }
+    // Every two-asset blend, swept finely. This densely captures the diversification benefit
+    // so the hull bows ABOVE the individual asset points — only the maximum-return asset
+    // (private equity) stays on the curve, as the unavoidable top-right endpoint.
+    for (let a = 0; a < ids.length; a++) {
+      for (let b = a + 1; b < ids.length; b++) {
+        for (let t = 1; t < 24; t++) {
+          const w = {}; ids.forEach((x) => (w[x] = 0));
+          w[ids[a]] = t / 24; w[ids[b]] = 1 - t / 24;
+          consider(w);
+        }
+      }
+    }
     // Seeded PRNG so the rendered frontier is identical on every redraw.
     let seed = 20260526;
     const rnd = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
