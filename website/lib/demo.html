@@ -6233,14 +6233,14 @@
   // efficient frontier so its line covers the full vol range, not just the centroid.
   const CONSERVATIVE_ANCHOR = { us_eq: 0.20, intl_eq: 0.10, em_eq: 0.05, core_fi: 0.25, tips: 0.07, hy: 0.00, hf: 0.10, pe: 0.05, pc: 0.10, ra: 0.03, cash: 0.05 };
   const AGGRESSIVE_ANCHOR   = { us_eq: 0.35, intl_eq: 0.20, em_eq: 0.12, core_fi: 0.10, tips: 0.00, hy: 0.05, hf: 0.00, pe: 0.15, pc: 0.00, ra: 0.03, cash: 0.00 };
-  // Dream University's actual book today (pre-SAA): a legacy mix that's over-concentrated
-  // in domestic equity and carrying ~20% cash against a 5% IPS target, while under-using
-  // the efficient diversifiers (hedge funds, private credit, real assets). The cash drag
-  // plus poor diversification parks the CURRENT marker well below the efficient frontier —
-  // the optimizer's MAX-SHARPE point shows the return available for the same risk once the
-  // excess cash is redeployed and the book is diversified. Kept separate from
-  // state.saa.weights so the adopted SAA and quarterly reports stay consistent.
-  const DREAM_CURRENT_HOLDINGS = { us_eq: 0.32, intl_eq: 0.10, em_eq: 0.06, core_fi: 0.16, tips: 0.02, hy: 0.01, hf: 0.03, pe: 0.06, pc: 0.02, ra: 0.02, cash: 0.20 };
+  // Dream University's actual book today (pre-SAA): a reasonable but unoptimized legacy mix
+  // carrying ~15% cash against a 5% IPS target and a little light on the efficient
+  // diversifiers (hedge funds, private credit, real assets). The cash overweight and
+  // home-equity tilt park the CURRENT marker just inside the frontier — a short hop below the
+  // policy-optimal SAA (~0.25pp less return), which shows the upside once the excess cash is
+  // put to work. Kept separate from state.saa.weights so the adopted SAA and quarterly
+  // reports stay consistent.
+  const DREAM_CURRENT_HOLDINGS = { us_eq: 0.27, intl_eq: 0.10, em_eq: 0.05, core_fi: 0.20, tips: 0.03, hy: 0.02, hf: 0.05, pe: 0.05, pc: 0.03, ra: 0.05, cash: 0.15 };
   function lerpPortfolio(a, b, t) {
     const out = {};
     for (const k of Object.keys(a)) out[k] = a[k] + t * (b[k] - a[k]);
@@ -6270,6 +6270,58 @@
       if (!best || m.sharpe > best.m.sharpe) best = { w, m };
     }
     return { cloud, optimal: best };
+  }
+
+  // ── Opportunity-set efficient frontier ────────────────────────────────────────
+  // The full long-only (sum-to-1, no shorting), UN-constrained efficient frontier over the
+  // entire asset universe — no IPS bounds. This is the theoretical opportunity set: it runs
+  // from the minimum-variance mix (near cash) up to the highest-return asset (private equity),
+  // so every individual asset class plots on or inside it and the curve spans the whole chart.
+  // The IPS-feasible portfolios (CURRENT, the policy-optimal SAA) necessarily sit *inside* it,
+  // since diversification limits and the liquidity floor cost some efficiency.
+  // Cached — the CMAs are static, so we compute it once with a seeded sampler for a stable line.
+  let _oppFrontier = null;
+  function computeOpportunityFrontier() {
+    if (_oppFrontier) return _oppFrontier;
+    const ids = CMA.map((c) => c.id);
+    const pts = [];
+    let tangency = null;
+    const consider = (w) => {
+      const m = portfolioMetrics(w);
+      pts.push({ vol: m.vol, ret: m.ret });
+      if (!tangency || m.sharpe > tangency.sharpe) tangency = { vol: m.vol, ret: m.ret, sharpe: m.sharpe };
+    };
+    // Single-asset corners — guarantee the curve reaches the min-vol and max-return ends.
+    for (const id of ids) { const w = {}; ids.forEach((x) => (w[x] = 0)); w[id] = 1; consider(w); }
+    // Seeded PRNG so the rendered frontier is identical on every redraw.
+    let seed = 20260526;
+    const rnd = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
+    for (let i = 0; i < 12000; i++) {
+      const w = {}; let s = 0;
+      if (i % 2 === 0) {
+        // Dirichlet over all assets (well-diversified body of the cloud)
+        for (const id of ids) { const e = -Math.log(rnd() + 1e-9); w[id] = e; s += e; }
+      } else {
+        // Concentrated subsets (reach the high-vol / high-return edge)
+        const k = 1 + Math.floor(rnd() * 4);
+        const pick = [...ids].sort(() => rnd() - 0.5).slice(0, k);
+        ids.forEach((id) => (w[id] = 0));
+        for (const id of pick) { const e = rnd(); w[id] = e; s += e; }
+      }
+      for (const id of ids) w[id] = (w[id] || 0) / s;
+      consider(w);
+    }
+    // Upper envelope over volatility buckets, kept monotonically non-decreasing in return.
+    const vmin = Math.min(...pts.map((p) => p.vol)), vmax = Math.max(...pts.map((p) => p.vol));
+    const B = 90, bucket = new Array(B).fill(null);
+    pts.forEach((p) => {
+      const idx = Math.min(B - 1, Math.max(0, Math.floor((p.vol - vmin) / (vmax - vmin) * B)));
+      if (!bucket[idx] || p.ret > bucket[idx].ret) bucket[idx] = p;
+    });
+    let best = -Infinity; const envelope = [];
+    for (const p of bucket.filter(Boolean)) { if (p.ret >= best) { envelope.push(p); best = p.ret; } }
+    _oppFrontier = { envelope, tangency };
+    return _oppFrontier;
   }
 
   const state_pm = {
@@ -6515,23 +6567,22 @@
     const svg = artifactBody.querySelector('#pm-chart');
     const emp = artifactBody.querySelector('#pm-chart-empty');
     if (!svg || !state_pm.mvo) return;
-    const cloud = state_pm.mvo.cloud;
     const cur = portfolioMetrics(state_pm.weights);
-    const opt = state_pm.mvo.optimal;
-    if (cloud.length === 0) return;
+    const opt = state_pm.mvo.optimal;          // best portfolio WITHIN the IPS bounds (policy-optimal SAA)
+    const oppF = computeOpportunityFrontier(); // theoretical opportunity set (unconstrained, long-only)
+    const env = oppF.envelope;
+    if (env.length === 0) return;
 
-    // Range from the feasible portfolio cloud + the CURRENT/MAX-SHARPE markers only.
-    // Individual asset-class points span a much wider vol band (cash ~0.5% → PE/EM ~22%)
-    // than any IPS-feasible diversified mix (~9–13%); including them squeezed the cloud —
-    // and therefore the frontier — into the middle of the chart. We scale to the cloud so
-    // the efficient frontier spans the full width, and only plot asset dots that fall in range.
+    // Axis range covers the whole opportunity set: every asset-class point, the frontier line,
+    // the CURRENT / policy-optimal markers, and the Capital Market Line's origin at (0, rf).
+    // The frontier therefore spans the full chart and every asset class plots on or inside it.
     const assetPoints = CMA.map((c) => ({ id: c.id, x: c.vol, y: c.ret }));
-    const xs = cloud.map((s) => s.m.vol).concat(cur.vol, opt.m.vol);
-    const ys = cloud.map((s) => s.m.ret).concat(cur.ret, opt.m.ret);
+    const xs = assetPoints.map((p) => p.x).concat(env.map((p) => p.vol), cur.vol, opt.m.vol, 0);
+    const ys = assetPoints.map((p) => p.y).concat(env.map((p) => p.ret), cur.ret, opt.m.ret, RF);
     let xMin = Math.min(...xs), xMax = Math.max(...xs);
     let yMin = Math.min(...ys), yMax = Math.max(...ys);
-    const xPad = (xMax - xMin) * 0.08 || 0.01;
-    const yPad = (yMax - yMin) * 0.10 || 0.005;
+    const xPad = (xMax - xMin) * 0.06 || 0.01;
+    const yPad = (yMax - yMin) * 0.08 || 0.005;
     xMin = Math.max(0, xMin - xPad); xMax += xPad; yMin -= yPad; yMax += yPad;
 
     const W = 680, H = 460, ML = 70, MR = 24, MT = 20, MB = 56;
@@ -6561,60 +6612,67 @@
     axes += `<text x="${(W+ML-MR)/2}" y="${H-10}" font-family="JetBrains Mono, monospace" font-size="11" fill="#7c7468" text-anchor="middle" letter-spacing="0.08em">VOLATILITY (σ)</text>`;
     axes += `<text x="${18}" y="${(H+MT-MB)/2}" font-family="JetBrains Mono, monospace" font-size="11" fill="#7c7468" text-anchor="middle" letter-spacing="0.08em" transform="rotate(-90 18 ${(H+MT-MB)/2})">EXPECTED RETURN (μ)</text>`;
 
-    // Efficient frontier upper-envelope
-    const buckets = 60;
-    const bucketMax = new Array(buckets).fill(null);
-    cloud.forEach((s) => {
-      const idx = Math.min(buckets - 1, Math.max(0, Math.floor((s.m.vol - xMin) / (xMax - xMin) * buckets)));
-      if (!bucketMax[idx] || s.m.ret > bucketMax[idx].m.ret) bucketMax[idx] = s;
-    });
-    const frontier = bucketMax.filter(Boolean);
-    let bestY = -Infinity;
-    const envelope = [];
-    for (const s of frontier) {
-      if (s.m.ret >= bestY) { envelope.push(s); bestY = s.m.ret; }
-    }
-    const frontierPath = envelope.map((s, i) => `${i === 0 ? 'M' : 'L'} ${sx(s.m.vol).toFixed(1)} ${sy(s.m.ret).toFixed(1)}`).join(' ');
+    // Opportunity-set efficient frontier (spans the chart, low-vol → high-return).
+    const frontierPath = env.map((p, i) => `${i === 0 ? 'M' : 'L'} ${sx(p.vol).toFixed(1)} ${sy(p.ret).toFixed(1)}`).join(' ');
+
+    // Capital Market Line: a straight line from the risk-free point (0, rf) with slope equal to
+    // the tangency portfolio's Sharpe ratio. EVERY point on it shares that single, maximal Sharpe
+    // — the curved frontier underneath does not (its Sharpe peaks only at the tangency). Clipped
+    // to the top of the plot.
+    const slope = oppF.tangency.sharpe;
+    const cmlEndVol = Math.min(xMax, (yMax - RF) / slope);
+    const cmlPath = `M ${sx(0).toFixed(1)} ${sy(RF).toFixed(1)} L ${sx(cmlEndVol).toFixed(1)} ${sy(RF + slope * cmlEndVol).toFixed(1)}`;
+    const tanX = sx(oppF.tangency.vol), tanY = sy(oppF.tangency.ret);
+    // CML label near the upper end of the line, rotated to lie along it.
+    const cmlLabVol = cmlEndVol * 0.80;
+    const cmlLabX = sx(cmlLabVol), cmlLabY = sy(RF + slope * cmlLabVol) - 7;
+    const cmlAngle = Math.atan2(sy(RF + slope * cmlEndVol) - sy(RF), sx(cmlEndVol) - sx(0)) * 180 / Math.PI;
+    const cmlLabel = `<text x="${cmlLabX.toFixed(1)}" y="${cmlLabY.toFixed(1)}" font-family="JetBrains Mono, monospace" font-size="9.5" fill="#3a6b8a" text-anchor="middle" transform="rotate(${cmlAngle.toFixed(1)} ${cmlLabX.toFixed(1)} ${cmlLabY.toFixed(1)})">Capital Market Line</text>`;
 
     const curX = sx(cur.vol), curY = sy(cur.ret);
     const optX = sx(opt.m.vol), optY = sy(opt.m.ret);
-    const curOptDist = Math.hypot(curX - optX, curY - optY);
-    const overlap = curOptDist < 14;
+    const overlap = Math.hypot(curX - optX, curY - optY) < 16;
 
-    // Suppress asset labels that would collide with the CURRENT or MAX-SHARPE markers
-    const HIDE_R = 22;
+    // Hide asset labels that collide with the markers or the tangency dot.
+    const HIDE_R = 20;
     const collides = (cx, cy) =>
-      Math.hypot(cx - curX, cy - curY) < HIDE_R || Math.hypot(cx - optX, cy - optY) < HIDE_R;
+      Math.hypot(cx - curX, cy - curY) < HIDE_R || Math.hypot(cx - optX, cy - optY) < HIDE_R ||
+      Math.hypot(cx - tanX, cy - tanY) < HIDE_R;
 
-    // Individual asset class markers — only those whose risk/return falls inside the
-    // cloud-scaled viewport are plotted; labels hide when too close to the major markers
-    const inRange = (p) => p.x >= xMin && p.x <= xMax && p.y >= yMin && p.y <= yMax;
-    const assetMarkers = assetPoints.filter(inRange).map((p) => {
+    // Every asset class plots now — the axes span the full opportunity set.
+    const assetMarkers = assetPoints.map((p) => {
       const cx = sx(p.x), cy = sy(p.y);
       const dot = `<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="3" fill="#bcc4cd" stroke="#7c7468" stroke-width="0.5"/>`;
       if (collides(cx, cy)) return `<g>${dot}</g>`;
-      const labelX = cx + 8 > W - MR - 30 ? cx - 8 : cx + 8;
-      const anchor = cx + 8 > W - MR - 30 ? 'end' : 'start';
-      return `<g>${dot}<text x="${labelX.toFixed(1)}" y="${cy.toFixed(1)}" font-family="Inter, sans-serif" font-size="10" fill="#7c7468" text-anchor="${anchor}" dominant-baseline="middle">${CHART_CODES[p.id] || p.id}</text></g>`;
+      const right = cx > W - MR - 46;
+      const labelX = right ? cx - 7 : cx + 7;
+      const anchor = right ? 'end' : 'start';
+      return `<g>${dot}<text x="${labelX.toFixed(1)}" y="${(cy - 1).toFixed(1)}" font-family="Inter, sans-serif" font-size="9.5" fill="#7c7468" text-anchor="${anchor}" dominant-baseline="middle">${CHART_CODES[p.id] || p.id}</text></g>`;
     }).join('');
+
+    // Tangency portfolio — where the CML touches the frontier; THE single max-Sharpe point.
+    const tanPt = `<g>
+      <circle cx="${tanX.toFixed(1)}" cy="${tanY.toFixed(1)}" r="4.5" fill="#fff" stroke="#3a6b8a" stroke-width="2"/>
+      <text x="${tanX.toFixed(1)}" y="${(tanY + 16).toFixed(1)}" font-family="JetBrains Mono, monospace" font-size="9.5" fill="#3a6b8a" text-anchor="middle">max-Sharpe</text>
+    </g>`;
 
     let curPt, optPt;
     if (overlap) {
-      // Render a single combined marker — the SAA sits on the max-Sharpe point
+      // CURRENT sits exactly on the policy-optimal SAA (e.g. right after running MVO).
       const mx = ((curX + optX) / 2).toFixed(1);
       const my = ((curY + optY) / 2).toFixed(1);
       curPt = `<g>
         <circle cx="${mx}" cy="${my}" r="9" fill="#c4830d" stroke="#1f7050" stroke-width="2"/>
         <circle cx="${mx}" cy="${my}" r="4" fill="#1f7050"/>
         <text x="${mx}" y="${(parseFloat(my) - 16).toFixed(1)}" font-family="JetBrains Mono, monospace" font-size="10.5" fill="#1f7050" text-anchor="middle" font-weight="500">CURRENT</text>
-        <text x="${mx}" y="${(parseFloat(my) + 22).toFixed(1)}" font-family="JetBrains Mono, monospace" font-size="10.5" fill="#c4830d" text-anchor="middle" font-weight="500">= MAX-SHARPE</text>
+        <text x="${mx}" y="${(parseFloat(my) + 22).toFixed(1)}" font-family="JetBrains Mono, monospace" font-size="10.5" fill="#c4830d" text-anchor="middle" font-weight="500">= POLICY SAA</text>
       </g>`;
       optPt = '';
     } else {
-      // Place each label opposite the other along the connector so they don't overlap
+      // Place each label opposite the other along the connector so they don't overlap.
       const dx = curX - optX, dy = curY - optY;
       const len = Math.hypot(dx, dy) || 1;
-      const offset = 20;
+      const offset = 18;
       const cLabX = (curX + (dx / len) * offset).toFixed(1);
       const cLabY = (curY + (dy / len) * offset).toFixed(1);
       const oLabX = (optX - (dx / len) * offset).toFixed(1);
@@ -6625,17 +6683,20 @@
       </g>`;
       optPt = `<g>
         <circle cx="${optX.toFixed(1)}" cy="${optY.toFixed(1)}" r="7" fill="#c4830d" stroke="#fff" stroke-width="2.5"/>
-        <text x="${oLabX}" y="${oLabY}" font-family="JetBrains Mono, monospace" font-size="10.5" fill="#c4830d" text-anchor="middle" font-weight="500" dominant-baseline="middle">MAX-SHARPE</text>
+        <text x="${oLabX}" y="${oLabY}" font-family="JetBrains Mono, monospace" font-size="10.5" fill="#c4830d" text-anchor="middle" font-weight="500" dominant-baseline="middle">POLICY SAA</text>
       </g>`;
     }
 
     svg.innerHTML = `
       ${grid}
       ${axes}
-      <path d="${frontierPath}" fill="none" stroke="#7c7468" stroke-width="2" stroke-linejoin="round"/>
+      <path d="${cmlPath}" fill="none" stroke="#3a6b8a" stroke-width="1.3" stroke-dasharray="5 4" opacity="0.85"/>
+      ${cmlLabel}
+      <path d="${frontierPath}" fill="none" stroke="#3a3024" stroke-width="2.25" stroke-linejoin="round"/>
       ${assetMarkers}
-      ${curPt}
+      ${tanPt}
       ${optPt}
+      ${curPt}
     `;
     svg.style.display = 'block';
     if (emp) emp.style.display = 'none';
@@ -6688,10 +6749,10 @@
     updateUrl();
     const orgName = escapeHtml(state.org.name);
     const startedMsg = (isSampleDream() && state.saa)
-      ? `Opened <strong>Portfolio Modeling</strong> for ${orgName}. The <strong>CURRENT</strong> marker is the endowment's legacy book — over-concentrated in U.S. equity and carrying roughly 20% cash against a 5% IPS target, which leaves it sitting well below the efficient frontier (you're giving up return for liquidity and home bias you don't need). The <strong>MAX-SHARPE</strong> marker on the frontier shows the return available for the same risk once that excess cash is put to work and the book is diversified. Edit weights, set to midpoints, re-run the optimizer, or adopt.`
+      ? `Opened <strong>Portfolio Modeling</strong> for ${orgName}. The curve is the <strong>efficient frontier</strong> — the best return for each level of risk across the whole opportunity set — and the dashed line is the <strong>Capital Market Line</strong> (constant Sharpe, tangent to the frontier at the max-Sharpe point). The <strong>CURRENT</strong> marker is the endowment's legacy book: a ~15% cash balance (vs a 5% IPS target) and home-equity tilt leave it just inside the frontier. The <strong>POLICY SAA</strong> marker is the best portfolio achievable within the IPS ranges and Tier-1 floor — a short hop up from CURRENT, showing the return available for the same risk once the excess cash is put to work. Both sit inside the theoretical frontier because diversification limits and the liquidity floor cost some efficiency. Edit weights, set to midpoints, re-run the optimizer, or adopt.`
       : state.saa
-      ? `Opened <strong>Portfolio Modeling</strong> for ${orgName} — showing the adopted Strategic Asset Allocation, with the optimizer's max-Sharpe portfolio marked on the frontier for reference. Edit weights, set to midpoints, re-run the optimizer, or re-adopt.`
-      : `Opened <strong>Portfolio Modeling</strong> for ${orgName}. I've run mean-variance optimization and set the allocation to the max-Sharpe portfolio within the IPS ranges and the Tier-1 floor. You can set it to the IPS midpoints, edit weights, re-run, or adopt.`;
+      ? `Opened <strong>Portfolio Modeling</strong> for ${orgName} — the curve is the efficient frontier and the dashed line is the Capital Market Line. Your adopted SAA is marked along with the policy-optimal portfolio for reference. Edit weights, set to midpoints, re-run the optimizer, or re-adopt.`
+      : `Opened <strong>Portfolio Modeling</strong> for ${orgName}. The curve is the efficient frontier (full opportunity set) and the dashed line is the Capital Market Line. I've set the allocation to the policy-optimal portfolio — the highest-Sharpe mix within the IPS ranges and the Tier-1 floor, which sits just inside the frontier. Set it to the IPS midpoints, edit weights, re-run, or adopt.`;
     addAgent(`<p>${startedMsg}</p>`);
   }
 
