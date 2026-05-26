@@ -158,18 +158,27 @@ async function handleAccess(req, res) {
   const body = await readBody(req);
   const email = trim(body.email).toLowerCase();
   const password = trim(body.password, 200);
+  // Safe relative-path redirect target. Only allow a same-site path beginning with a
+  // single `/` (not `//`) and free of CR/LF or whitespace — guards against open-redirect.
+  const safeRedirect = (() => {
+    const raw = trim(body.redirect_to, 200);
+    if (!raw) return '';
+    if (!/^\/[^/\s]/.test(raw)) return '';
+    return raw;
+  })();
+  const redirectTo = safeRedirect; // pass through to error re-renders too
 
   if (!email || !password) {
-    return sendHtml(res, 400, renderGate({ error: 'Please enter your email and the access code.', prefillEmail: email }));
+    return sendHtml(res, 400, renderGate({ error: 'Please enter your email and the access code.', prefillEmail: email, redirectTo }));
   }
   if (!isEmail(email)) {
-    return sendHtml(res, 400, renderGate({ error: 'Please enter a valid email address.', prefillEmail: email }));
+    return sendHtml(res, 400, renderGate({ error: 'Please enter a valid email address.', prefillEmail: email, redirectTo }));
   }
   if (!process.env.INVESTOR_PASSWORD) {
-    return sendHtml(res, 500, renderGate({ error: 'Access is temporarily unavailable.', prefillEmail: email }));
+    return sendHtml(res, 500, renderGate({ error: 'Access is temporarily unavailable.', prefillEmail: email, redirectTo }));
   }
   if (password !== process.env.INVESTOR_PASSWORD) {
-    return sendHtml(res, 401, renderGate({ error: 'That access code is not correct.', prefillEmail: email }));
+    return sendHtml(res, 401, renderGate({ error: 'That access code is not correct.', prefillEmail: email, redirectTo }));
   }
 
   try {
@@ -200,6 +209,7 @@ async function handleAccess(req, res) {
     return sendHtml(res, 403, renderGate({
       error: 'That email is not on the access list. Please reach out to eytan@revecio.com if you believe this is in error.',
       prefillEmail: email,
+      redirectTo,
     }));
   }
 
@@ -219,5 +229,5 @@ async function handleAccess(req, res) {
   }
 
   const cookie = buildSessionCookie({ email });
-  return redirect(res, '/investors', { 'Set-Cookie': cookie });
+  return redirect(res, redirectTo || '/investors', { 'Set-Cookie': cookie });
 }
