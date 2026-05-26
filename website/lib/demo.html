@@ -5421,12 +5421,30 @@
     return out;
   }
 
+  // Per-asset risk tilt: positive = risk-on bias (push toward upper bound when sampling
+  // aggressive portfolios), negative = risk-off bias. Lets the sampler reach the
+  // low-vol and high-vol corners of the IPS-feasible space, not just the centroid.
+  const RISK_TILT = {
+    us_eq: 1, intl_eq: 1, em_eq: 1, core_fi: -1, tips: -1, hy: 0.4,
+    hf: 0.1, pe: 1.2, pc: 0.2, ra: 0.7, cash: -1.2,
+  };
   function sampleRandomFeasible() {
     const ids = Object.keys(IPS_RANGE);
+    // Choose a sampling regime:
+    //   ~40% uniform (centroid-ish), ~30% conservative tilt, ~30% aggressive tilt.
+    const roll = Math.random();
+    const tilt = roll < 0.4 ? 0 : (roll < 0.7 ? -1 : +1);
+    const strength = tilt === 0 ? 0 : (0.3 + Math.random() * 0.6); // 0.3–0.9 pull toward the tilted bound
     const w = {};
     for (const id of ids) {
       const [lo, hi] = IPS_RANGE[id];
-      w[id] = lo + Math.random() * (hi - lo);
+      let frac = Math.random();
+      if (tilt !== 0) {
+        const bias = (RISK_TILT[id] || 0) * tilt; // positive = pull toward hi, negative = pull toward lo
+        const target = bias >= 0 ? 1 : 0;
+        frac = frac * (1 - strength * Math.abs(bias)) + target * strength * Math.abs(bias);
+      }
+      w[id] = lo + frac * (hi - lo);
     }
     return projectToBoundsAndSimplex(w);
   }
@@ -5587,11 +5605,13 @@
     // In client-open mode, the footer is hidden — buttons live in the item head instead.
     if (!layout.classList.contains('client-open')) setPortfolioFooter();
     recomputePortfolio();
-    // Auto-run MVO the first time the module is opened
+    // Auto-run MVO the first time the module is opened.
+    // If an SAA is already adopted, keep the current allocation and just compute the
+    // optimal as a reference marker on the chart (don't overwrite the user's weights).
     if (!state_pm.mvo) {
       setTimeout(() => {
         state_pm.mvo = runMVO();
-        if (state_pm.mvo.optimal) {
+        if (state_pm.mvo.optimal && !state.saa) {
           state_pm.weights = { ...state_pm.mvo.optimal.w };
           artifactBody.querySelectorAll('.pm-w-input').forEach((inp) => {
             const id = inp.dataset.asset;
@@ -5736,27 +5756,56 @@
     }
     const frontierPath = envelope.map((s, i) => `${i === 0 ? 'M' : 'L'} ${sx(s.m.vol).toFixed(1)} ${sy(s.m.ret).toFixed(1)}`).join(' ');
 
-    // Individual asset class markers (illustrative — shows where each asset sits in risk/return space)
+    const curX = sx(cur.vol), curY = sy(cur.ret);
+    const optX = sx(opt.m.vol), optY = sy(opt.m.ret);
+    const curOptDist = Math.hypot(curX - optX, curY - optY);
+    const overlap = curOptDist < 14;
+
+    // Suppress asset labels that would collide with the CURRENT or MAX-SHARPE markers
+    const HIDE_R = 22;
+    const collides = (cx, cy) =>
+      Math.hypot(cx - curX, cy - curY) < HIDE_R || Math.hypot(cx - optX, cy - optY) < HIDE_R;
+
+    // Individual asset class markers — labels hide when too close to the major markers
     const assetMarkers = assetPoints.map((p) => {
       const cx = sx(p.x), cy = sy(p.y);
-      // Offset label to the right by default; keep inside chart
+      const dot = `<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="3" fill="#bcc4cd" stroke="#7c7468" stroke-width="0.5"/>`;
+      if (collides(cx, cy)) return `<g>${dot}</g>`;
       const labelX = cx + 8 > W - MR - 30 ? cx - 8 : cx + 8;
       const anchor = cx + 8 > W - MR - 30 ? 'end' : 'start';
-      return `<g><circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="3" fill="#bcc4cd" stroke="#7c7468" stroke-width="0.5"/><text x="${labelX.toFixed(1)}" y="${cy.toFixed(1)}" font-family="Inter, sans-serif" font-size="10" fill="#7c7468" text-anchor="${anchor}" dominant-baseline="middle">${CHART_CODES[p.id] || p.id}</text></g>`;
+      return `<g>${dot}<text x="${labelX.toFixed(1)}" y="${cy.toFixed(1)}" font-family="Inter, sans-serif" font-size="10" fill="#7c7468" text-anchor="${anchor}" dominant-baseline="middle">${CHART_CODES[p.id] || p.id}</text></g>`;
     }).join('');
 
-    const curX = sx(cur.vol).toFixed(1), curY = sy(cur.ret).toFixed(1);
-    const optX = sx(opt.m.vol).toFixed(1), optY = sy(opt.m.ret).toFixed(1);
-    const curLabelDir = cur.ret > opt.m.ret ? -1 : 1;
-    const optLabelDir = -curLabelDir;
-    const curPt = `<g>
-      <circle cx="${curX}" cy="${curY}" r="7" fill="#1f7050" stroke="#fff" stroke-width="2.5"/>
-      <text x="${curX}" y="${(parseFloat(curY) + curLabelDir * 18).toFixed(1)}" font-family="JetBrains Mono, monospace" font-size="10.5" fill="#1f7050" text-anchor="middle" font-weight="500">CURRENT</text>
-    </g>`;
-    const optPt = `<g>
-      <circle cx="${optX}" cy="${optY}" r="7" fill="#c4830d" stroke="#fff" stroke-width="2.5"/>
-      <text x="${optX}" y="${(parseFloat(optY) + optLabelDir * 18).toFixed(1)}" font-family="JetBrains Mono, monospace" font-size="10.5" fill="#c4830d" text-anchor="middle" font-weight="500">MAX-SHARPE</text>
-    </g>`;
+    let curPt, optPt;
+    if (overlap) {
+      // Render a single combined marker — the SAA sits on the max-Sharpe point
+      const mx = ((curX + optX) / 2).toFixed(1);
+      const my = ((curY + optY) / 2).toFixed(1);
+      curPt = `<g>
+        <circle cx="${mx}" cy="${my}" r="9" fill="#c4830d" stroke="#1f7050" stroke-width="2"/>
+        <circle cx="${mx}" cy="${my}" r="4" fill="#1f7050"/>
+        <text x="${mx}" y="${(parseFloat(my) - 16).toFixed(1)}" font-family="JetBrains Mono, monospace" font-size="10.5" fill="#1f7050" text-anchor="middle" font-weight="500">CURRENT</text>
+        <text x="${mx}" y="${(parseFloat(my) + 22).toFixed(1)}" font-family="JetBrains Mono, monospace" font-size="10.5" fill="#c4830d" text-anchor="middle" font-weight="500">= MAX-SHARPE</text>
+      </g>`;
+      optPt = '';
+    } else {
+      // Place each label opposite the other along the connector so they don't overlap
+      const dx = curX - optX, dy = curY - optY;
+      const len = Math.hypot(dx, dy) || 1;
+      const offset = 20;
+      const cLabX = (curX + (dx / len) * offset).toFixed(1);
+      const cLabY = (curY + (dy / len) * offset).toFixed(1);
+      const oLabX = (optX - (dx / len) * offset).toFixed(1);
+      const oLabY = (optY - (dy / len) * offset).toFixed(1);
+      curPt = `<g>
+        <circle cx="${curX.toFixed(1)}" cy="${curY.toFixed(1)}" r="7" fill="#1f7050" stroke="#fff" stroke-width="2.5"/>
+        <text x="${cLabX}" y="${cLabY}" font-family="JetBrains Mono, monospace" font-size="10.5" fill="#1f7050" text-anchor="middle" font-weight="500" dominant-baseline="middle">CURRENT</text>
+      </g>`;
+      optPt = `<g>
+        <circle cx="${optX.toFixed(1)}" cy="${optY.toFixed(1)}" r="7" fill="#c4830d" stroke="#fff" stroke-width="2.5"/>
+        <text x="${oLabX}" y="${oLabY}" font-family="JetBrains Mono, monospace" font-size="10.5" fill="#c4830d" text-anchor="middle" font-weight="500" dominant-baseline="middle">MAX-SHARPE</text>
+      </g>`;
+    }
 
     svg.innerHTML = `
       ${grid}
