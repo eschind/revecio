@@ -6237,6 +6237,14 @@
   // efficient frontier so its line covers the full vol range, not just the centroid.
   const CONSERVATIVE_ANCHOR = { us_eq: 0.20, intl_eq: 0.10, em_eq: 0.05, core_fi: 0.25, tips: 0.07, hy: 0.00, hf: 0.10, pe: 0.05, pc: 0.10, ra: 0.03, cash: 0.05 };
   const AGGRESSIVE_ANCHOR   = { us_eq: 0.35, intl_eq: 0.20, em_eq: 0.12, core_fi: 0.10, tips: 0.00, hy: 0.05, hf: 0.00, pe: 0.15, pc: 0.00, ra: 0.03, cash: 0.00 };
+  // Dream University's actual book today (pre-SAA): a legacy mix that's over-concentrated
+  // in domestic equity and carrying ~20% cash against a 5% IPS target, while under-using
+  // the efficient diversifiers (hedge funds, private credit, real assets). The cash drag
+  // plus poor diversification parks the CURRENT marker well below the efficient frontier —
+  // the optimizer's MAX-SHARPE point shows the return available for the same risk once the
+  // excess cash is redeployed and the book is diversified. Kept separate from
+  // state.saa.weights so the adopted SAA and quarterly reports stay consistent.
+  const DREAM_CURRENT_HOLDINGS = { us_eq: 0.32, intl_eq: 0.10, em_eq: 0.06, core_fi: 0.16, tips: 0.02, hy: 0.01, hf: 0.03, pe: 0.06, pc: 0.02, ra: 0.02, cash: 0.20 };
   function lerpPortfolio(a, b, t) {
     const out = {};
     for (const k of Object.keys(a)) out[k] = a[k] + t * (b[k] - a[k]);
@@ -6278,7 +6286,13 @@
   function renderPortfolioModule() {
     state.module = 'portfolio';
     if (!state_pm.weights) {
-      state_pm.weights = state.saa?.weights ? { ...state.saa.weights } : defaultMidpointWeights();
+      // Dream's sample data: seed from its actual cash-heavy holdings so CURRENT sits below
+      // the frontier (the optimizer's MAX-SHARPE marker shows the upside of redeploying cash).
+      if (isSampleDream() && state.saa) {
+        state_pm.weights = { ...DREAM_CURRENT_HOLDINGS };
+      } else {
+        state_pm.weights = state.saa?.weights ? { ...state.saa.weights } : defaultMidpointWeights();
+      }
     }
     artifactTitle.textContent = 'Portfolio Model · Strategic Asset Allocation';
     enterItemView();
@@ -6510,10 +6524,14 @@
     const opt = state_pm.mvo.optimal;
     if (cloud.length === 0) return;
 
-    // Range from cloud bounds AND individual asset class points (so all fit)
+    // Range from the feasible portfolio cloud + the CURRENT/MAX-SHARPE markers only.
+    // Individual asset-class points span a much wider vol band (cash ~0.5% → PE/EM ~22%)
+    // than any IPS-feasible diversified mix (~9–13%); including them squeezed the cloud —
+    // and therefore the frontier — into the middle of the chart. We scale to the cloud so
+    // the efficient frontier spans the full width, and only plot asset dots that fall in range.
     const assetPoints = CMA.map((c) => ({ id: c.id, x: c.vol, y: c.ret }));
-    const xs = cloud.map((s) => s.m.vol).concat(cur.vol, opt.m.vol, ...assetPoints.map((p) => p.x));
-    const ys = cloud.map((s) => s.m.ret).concat(cur.ret, opt.m.ret, ...assetPoints.map((p) => p.y));
+    const xs = cloud.map((s) => s.m.vol).concat(cur.vol, opt.m.vol);
+    const ys = cloud.map((s) => s.m.ret).concat(cur.ret, opt.m.ret);
     let xMin = Math.min(...xs), xMax = Math.max(...xs);
     let yMin = Math.min(...ys), yMax = Math.max(...ys);
     const xPad = (xMax - xMin) * 0.08 || 0.01;
@@ -6572,8 +6590,10 @@
     const collides = (cx, cy) =>
       Math.hypot(cx - curX, cy - curY) < HIDE_R || Math.hypot(cx - optX, cy - optY) < HIDE_R;
 
-    // Individual asset class markers — labels hide when too close to the major markers
-    const assetMarkers = assetPoints.map((p) => {
+    // Individual asset class markers — only those whose risk/return falls inside the
+    // cloud-scaled viewport are plotted; labels hide when too close to the major markers
+    const inRange = (p) => p.x >= xMin && p.x <= xMax && p.y >= yMin && p.y <= yMax;
+    const assetMarkers = assetPoints.filter(inRange).map((p) => {
       const cx = sx(p.x), cy = sy(p.y);
       const dot = `<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="3" fill="#bcc4cd" stroke="#7c7468" stroke-width="0.5"/>`;
       if (collides(cx, cy)) return `<g>${dot}</g>`;
@@ -6671,7 +6691,9 @@
     renderClientWorkspace();
     updateUrl();
     const orgName = escapeHtml(state.org.name);
-    const startedMsg = state.saa
+    const startedMsg = (isSampleDream() && state.saa)
+      ? `Opened <strong>Portfolio Modeling</strong> for ${orgName}. The <strong>CURRENT</strong> marker is the endowment's legacy book — over-concentrated in U.S. equity and carrying roughly 20% cash against a 5% IPS target, which leaves it sitting well below the efficient frontier (you're giving up return for liquidity and home bias you don't need). The <strong>MAX-SHARPE</strong> marker on the frontier shows the return available for the same risk once that excess cash is put to work and the book is diversified. Edit weights, set to midpoints, re-run the optimizer, or adopt.`
+      : state.saa
       ? `Opened <strong>Portfolio Modeling</strong> for ${orgName} — showing the adopted Strategic Asset Allocation, with the optimizer's max-Sharpe portfolio marked on the frontier for reference. Edit weights, set to midpoints, re-run the optimizer, or re-adopt.`
       : `Opened <strong>Portfolio Modeling</strong> for ${orgName}. I've run mean-variance optimization and set the allocation to the max-Sharpe portfolio within the IPS ranges and the Tier-1 floor. You can set it to the IPS midpoints, edit weights, re-run, or adopt.`;
     addAgent(`<p>${startedMsg}</p>`);
