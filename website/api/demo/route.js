@@ -12,10 +12,12 @@ You receive:
 Classify the message and return ONLY a single JSON object (no markdown, no commentary):
 
 {
-  "intent": "analyze" | "answer_content" | "org_info" | "optimize" | "open" | "next" | "previous" | "switch" | "edit" | "switch_and_edit" | "question" | "unclear",
-  "targetModule": "ips" | "portfolio" | "materials" | "monitoring" | "board" | "decisions" | "profile" | null,
+  "intent": "analyze" | "answer_content" | "org_info" | "spend_model" | "optimize" | "open" | "next" | "previous" | "switch" | "edit" | "switch_and_edit" | "question" | "unclear",
+  "targetModule": "ips" | "portfolio" | "spending" | "materials" | "monitoring" | "board" | "decisions" | "profile" | null,
   "targetSectionNum": <number or null>,
   "query": "sharpe" | "return" | "vol" | "real_return" | "allocation" | "liquidity" | "metrics" | "capital_calls" | "capital_calls_all" | null,
+  "scenario": "base" | "downturn" | "upside" | null,
+  "adjustments": [ { "key": <string>, "factor": <number> } ] | null,
   "editPrompt": <string or null>,
   "answer": <string or null>,
   "reply": <string or null>
@@ -62,6 +64,14 @@ Rules:
   - "show me the board notes" / "what did the IC decide last quarter" → board
   - "open the decision log" / "what decisions have we made" → decisions
   - "open the profile" / "show me the client info" → profile
+  - "open the spending model" / "spending & liquidity" / "the budget model" → spending
+- "spend_model" — user wants to change an assumption or scenario in the spending/liquidity model and see the impact (typically while currentModule is "spending"). Return:
+  - "scenario": one of base/downturn/upside if the user names a scenario (e.g. "model the downturn", "show the upside case"), else null.
+  - "adjustments": an array of { "key", "factor" } where factor is a MULTIPLIER (0.8 = down 20%, 1.1 = up 10%, 1.0 = unchanged). Map the user's words to these line-item keys:
+      INCOME: tuition (net tuition & fees), grants (government & research grants), gifts (gifts/donations/annual giving), auxiliary (housing/dining/auxiliary), otherIncome.
+      EXPENSE: comp (compensation/salaries/benefits), aid (financial aid), facilities (facilities & operations), research (research & academic programs), debt (debt service), otherExpense (administration & other).
+    Examples: "donations drop 20% and tuition falls 5%" → adjustments=[{"key":"gifts","factor":0.8},{"key":"tuition","factor":0.95}]; "increase financial aid by 10%" → [{"key":"aid","factor":1.1}]; "what if research spending doubles" → [{"key":"research","factor":2}].
+  - Set "reply" to a one-to-two-sentence narration of the change and its effect on the margin of safety. If the user only names a scenario with no line change, set adjustments=null.
 - "next" / "previous" — only when IPS is in focus and the user wants to advance/retreat through sections.
 - "switch" — focus on a different IPS section without editing.
 - "edit" — change the CURRENT IPS section. editPrompt = neutral instruction.
