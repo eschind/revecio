@@ -15,6 +15,7 @@ import {
   deleteDocument,
   updateDocument,
   setEmailDocAccess,
+  setEmailDemoAccess,
 } from '../../lib/db.js';
 import {
   readAdminSession,
@@ -95,11 +96,12 @@ function parseSection(url) {
   const u = new URL(url, 'http://x');
   const path = u.pathname.replace(/\/+$/, '');
   // Possibilities (post-rewrite):
-  //   /investors/admin                       → null
-  //   /investors/admin/settings              → settings
-  //   /investors/admin/activity              → activity
-  //   /investors/admin/doc/<slug>            → { section: 'doc', slug }
-  const m = path.match(/^\/(?:api\/)?investors\/admin(?:\/(.+))?$/);
+  //   /admin                       → null
+  //   /admin/settings              → settings
+  //   /admin/activity              → activity
+  //   /admin/doc/<slug>            → { section: 'doc', slug }
+  // Also matches the underlying function path /api/admin if hit directly.
+  const m = path.match(/^\/(?:api\/investors\/admin|admin)(?:\/(.+))?$/);
   if (!m) return { section: null };
   const tail = m[1];
   if (!tail) return { section: null };
@@ -117,7 +119,7 @@ export default async function handler(req, res) {
 
     const url = new URL(req.url, 'http://x');
     if (url.searchParams.get('signout')) {
-      return redirect(res, '/investors/admin', { 'Set-Cookie': clearAdminCookie() });
+      return redirect(res, '/admin', { 'Set-Cookie': clearAdminCookie() });
     }
 
     // Magic-link landing
@@ -127,7 +129,7 @@ export default async function handler(req, res) {
       if (!payload || payload.email !== expectedEmail) {
         return sendHtml(res, 401, renderAdminSignin({ error: 'That sign-in link is invalid or has expired.' }));
       }
-      return redirect(res, '/investors/admin', { 'Set-Cookie': buildAdminCookie({ email: payload.email }) });
+      return redirect(res, '/admin', { 'Set-Cookie': buildAdminCookie({ email: payload.email }) });
     }
 
     if (req.method === 'POST') return handlePost(req, res, url);
@@ -170,7 +172,7 @@ async function renderSection(req, res, adminEmail, url, opts = {}) {
   if (section === 'doc') {
     const documents = await listDocuments();
     const doc = await getDocumentBySlug(slug);
-    if (!doc) return redirect(res, '/investors/admin');
+    if (!doc) return redirect(res, '/admin');
     return sendHtml(res, 200, renderAdminDocEdit({
       adminEmail, documents, doc, savedMessage: opts.savedMessage,
     }));
@@ -179,9 +181,9 @@ async function renderSection(req, res, adminEmail, url, opts = {}) {
   // section === null → default: send to first doc, or settings if none
   const documents = await listDocuments();
   if (documents.length > 0) {
-    return redirect(res, `/investors/admin/doc/${encodeURIComponent(documents[0].slug)}`);
+    return redirect(res, `/admin/doc/${encodeURIComponent(documents[0].slug)}`);
   }
-  return redirect(res, '/investors/admin/settings');
+  return redirect(res, '/admin/settings');
 }
 
 async function handlePost(req, res, url) {
@@ -198,7 +200,7 @@ async function handlePost(req, res, url) {
     if (email === expectedEmail) {
       try {
         const token = buildMagicLinkToken(email);
-        const link = `${originFromReq(req)}/investors/admin?magic=${encodeURIComponent(token)}`;
+        const link = `${originFromReq(req)}/admin?magic=${encodeURIComponent(token)}`;
         await sendMagicLink({ to: email, link });
       } catch (err) {
         console.error('[admin] failed to send magic link:', err?.message);
@@ -220,16 +222,16 @@ async function handlePost(req, res, url) {
     const email = trim(body.email).toLowerCase();
     const note = trim(body.note, 200) || null;
     if (email && isEmail(email)) await addAllowedEmail(email, note);
-    return redirect(res, '/investors/admin/settings');
+    return redirect(res, '/admin/settings');
   }
   if (action === 'remove-email') {
     const email = trim(body.email).toLowerCase();
     if (email) await removeAllowedEmail(email);
-    return redirect(res, '/investors/admin/settings');
+    return redirect(res, '/admin/settings');
   }
   if (action === 'set-email-access') {
     const email = trim(body.email).toLowerCase();
-    if (!email || !isEmail(email)) return redirect(res, '/investors/admin/settings');
+    if (!email || !isEmail(email)) return redirect(res, '/admin/settings');
     const mode = String(body.mode || 'all'); // 'all' or 'restricted'
     if (mode === 'all') {
       await setEmailDocAccess(email, null);
@@ -243,33 +245,39 @@ async function handlePost(req, res, url) {
       slugs = slugs.map((s) => String(s).trim()).filter(Boolean);
       await setEmailDocAccess(email, slugs);
     }
-    return redirect(res, '/investors/admin/settings');
+    return redirect(res, '/admin/settings');
+  }
+  if (action === 'set-email-demo-access') {
+    const email = trim(body.email).toLowerCase();
+    const enabled = String(body.enabled || '').toLowerCase() === 'true';
+    if (email && isEmail(email)) await setEmailDemoAccess(email, enabled);
+    return redirect(res, '/admin/settings');
   }
   if (action === 'toggle-whitelist') {
     const enabled = String(body.enabled || '').toLowerCase() === 'true';
     await setWhitelistEnabled(enabled);
-    return redirect(res, '/investors/admin/settings');
+    return redirect(res, '/admin/settings');
   }
   if (action === 'toggle-doc-visible') {
     const slug = trim(body.slug, 80);
     const visible = String(body.visible || '').toLowerCase() === 'true';
     if (slug === 'deck') await setDeckVisible(visible);
     else if (slug) await setDocumentVisible(slug, visible);
-    return redirect(res, '/investors/admin/settings');
+    return redirect(res, '/admin/settings');
   }
   if (action === 'delete-doc') {
     const slug = trim(body.slug, 80);
     if (slug && slug !== 'deck') await deleteDocument(slug);
-    return redirect(res, '/investors/admin/settings');
+    return redirect(res, '/admin/settings');
   }
   if (action === 'new-doc') {
     const title = trim(body.title, 120);
     if (title) {
       const created = await createNewDocument({ title });
-      return redirect(res, `/investors/admin/doc/${encodeURIComponent(created.slug)}`);
+      return redirect(res, `/admin/doc/${encodeURIComponent(created.slug)}`);
     }
-    return redirect(res, '/investors/admin');
+    return redirect(res, '/admin');
   }
 
-  return redirect(res, '/investors/admin');
+  return redirect(res, '/admin');
 }

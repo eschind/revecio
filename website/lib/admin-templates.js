@@ -64,7 +64,7 @@ ${FONTS}
     <p class="intro">Enter your admin email. We'll send you a one-time sign-in link.</p>
     ${error ? `<div class="message err">${escapeHtml(error)}</div>` : ''}
     ${message ? `<div class="message ok">${escapeHtml(message)}</div>` : ''}
-    <form method="POST" action="/investors/admin" autocomplete="on">
+    <form method="POST" action="/admin" autocomplete="on">
       <input type="hidden" name="action" value="request-link" />
       <label>
         <span class="field-label">Email</span>
@@ -133,7 +133,7 @@ function renderSidebar({ documents, activeSection, activeSlug }) {
     <div class="sidebar-group">
       <div class="sidebar-label">Documents</div>
       ${documents.filter((d) => !d.external).map((d) => `
-        <a href="/investors/admin/doc/${encodeURIComponent(d.slug)}"
+        <a href="/admin/doc/${encodeURIComponent(d.slug)}"
            class="sidebar-link ${activeSection === 'doc' && activeSlug === d.slug ? 'active' : ''}">
           <span>${escapeHtml(d.title)}</span>
           ${!d.visible ? '<span class="hidden-dot" title="Hidden">(hidden)</span>' : ''}
@@ -142,8 +142,8 @@ function renderSidebar({ documents, activeSection, activeSlug }) {
     </div>
     <div class="sidebar-group">
       <div class="sidebar-label">Manage</div>
-      <a href="/investors/admin/settings" class="sidebar-link ${activeSection === 'settings' ? 'active' : ''}">Settings</a>
-      <a href="/investors/admin/activity" class="sidebar-link ${activeSection === 'activity' ? 'active' : ''}">Activity</a>
+      <a href="/admin/settings" class="sidebar-link ${activeSection === 'settings' ? 'active' : ''}">Settings</a>
+      <a href="/admin/activity" class="sidebar-link ${activeSection === 'activity' ? 'active' : ''}">Activity</a>
     </div>
   </aside>`;
 }
@@ -256,7 +256,7 @@ ${SHARED_ADMIN_CSS}
     <div class="tb-right">
       <span class="tb-status" id="save-status"></span>
       <a class="tb-btn" href="/investors" target="_blank">View /investors →</a>
-      <a class="tb-btn" href="/investors/admin?signout=1">Sign out</a>
+      <a class="tb-btn" href="/admin?signout=1">Sign out</a>
     </div>
   </div>
   <div class="layout">
@@ -492,7 +492,7 @@ function renderAdminDocEdit({ adminEmail, documents, doc, savedMessage }) {
 
       <div style="display:flex; gap:12px; margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--line);">
         <a class="btn btn-secondary btn-sm" href="/investors/${encodeURIComponent(doc.slug)}" target="_blank">View live</a>
-        <form method="POST" action="/investors/admin" onsubmit="return confirm('Delete this document permanently?');" style="margin:0">
+        <form method="POST" action="/admin" onsubmit="return confirm('Delete this document permanently?');" style="margin:0">
           <input type="hidden" name="action" value="delete-doc" />
           <input type="hidden" name="slug" value="${escapeHtml(doc.slug)}" />
           <button class="btn-danger btn-sm" type="submit">Delete document</button>
@@ -532,7 +532,7 @@ function renderAdminSettings({ adminEmail, documents, allowedEmails, whitelistEn
             </div>
             <div class="actions">
               <span class="toggle-pill ${d.visible ? 'on' : 'off'}">${d.visible ? 'VISIBLE' : 'HIDDEN'}</span>
-              <form method="POST" action="/investors/admin" style="margin:0">
+              <form method="POST" action="/admin" style="margin:0">
                 <input type="hidden" name="action" value="toggle-doc-visible" />
                 <input type="hidden" name="slug" value="${escapeHtml(d.slug)}" />
                 <input type="hidden" name="visible" value="${d.visible ? 'false' : 'true'}" />
@@ -540,7 +540,7 @@ function renderAdminSettings({ adminEmail, documents, allowedEmails, whitelistEn
               </form>
               ${d.external
                 ? `<a class="btn btn-secondary btn-sm" href="/investors/${escapeHtml(d.slug)}" target="_blank" rel="noopener">View</a>`
-                : `<a class="btn btn-secondary btn-sm" href="/investors/admin/doc/${encodeURIComponent(d.slug)}">Edit</a>`}
+                : `<a class="btn btn-secondary btn-sm" href="/admin/doc/${encodeURIComponent(d.slug)}">Edit</a>`}
             </div>
           </div>
         `).join('')
@@ -559,7 +559,7 @@ function renderAdminSettings({ adminEmail, documents, allowedEmails, whitelistEn
         <span class="wl-toggle-explanation">${whitelistEnabled
           ? 'Only listed emails (plus your admin email) can sign in.'
           : 'Anyone with the access code can sign in — the list below is paused.'}</span>
-        <form method="POST" action="/investors/admin" style="margin:0">
+        <form method="POST" action="/admin" style="margin:0">
           <input type="hidden" name="action" value="toggle-whitelist" />
           <input type="hidden" name="enabled" value="${whitelistEnabled ? 'false' : 'true'}" />
           <button class="btn btn-sm" type="submit">${whitelistEnabled ? 'Disable' : 'Enable'}</button>
@@ -567,7 +567,7 @@ function renderAdminSettings({ adminEmail, documents, allowedEmails, whitelistEn
       </div>
 
       <p class="desc">Manage the list of emails allowed at /investors. Your admin email always has access regardless.</p>
-      <form class="wl-add-form" method="POST" action="/investors/admin">
+      <form class="wl-add-form" method="POST" action="/admin">
         <input type="hidden" name="action" value="add-email" />
         <input type="email" name="email" required placeholder="investor@example.com" autocomplete="off" />
         <input type="text" name="note" placeholder="Note (optional)" autocomplete="off" />
@@ -579,6 +579,8 @@ function renderAdminSettings({ adminEmail, documents, allowedEmails, whitelistEn
           const access = Array.isArray(e.doc_access) ? e.doc_access : null;
           const hasAll = access == null;
           const editorId = `wl-access-${idx}`;
+          const demoOn = e.demo_access !== false;
+          const demoTag = `<span class="wl-access-tag ${demoOn ? 'all' : 'none'}">Demo: ${demoOn ? 'on' : 'off'}</span>`;
           const checkboxes = documents.map((d) => {
             const checked = hasAll || access.includes(d.slug);
             return `<label class="wl-doc-chip"><input type="checkbox" name="slug[]" value="${escapeHtml(d.slug)}" ${checked ? 'checked' : ''}/><span>${escapeHtml(d.title)}</span></label>`;
@@ -597,16 +599,23 @@ function renderAdminSettings({ adminEmail, documents, allowedEmails, whitelistEn
                 <span class="wl-email">${escapeHtml(e.email)}</span>
                 <span class="wl-note">${e.note ? escapeHtml(e.note) : ''}</span>
                 ${accessSummary}
+                ${demoTag}
                 <div class="wl-row-actions">
                   <button class="btn btn-sm btn-secondary wl-edit-access-btn" type="button" data-target="${editorId}">Edit access</button>
-                  <form method="POST" action="/investors/admin" style="margin:0">
+                  <form method="POST" action="/admin" style="margin:0">
+                    <input type="hidden" name="action" value="set-email-demo-access" />
+                    <input type="hidden" name="email" value="${escapeHtml(e.email)}" />
+                    <input type="hidden" name="enabled" value="${demoOn ? 'false' : 'true'}" />
+                    <button class="btn btn-sm btn-secondary" type="submit">${demoOn ? 'Disable demo' : 'Enable demo'}</button>
+                  </form>
+                  <form method="POST" action="/admin" style="margin:0">
                     <input type="hidden" name="action" value="remove-email" />
                     <input type="hidden" name="email" value="${escapeHtml(e.email)}" />
                     <button class="btn-danger" type="submit">Remove</button>
                   </form>
                 </div>
               </div>
-              <form class="wl-access-editor" id="${editorId}" method="POST" action="/investors/admin" hidden>
+              <form class="wl-access-editor" id="${editorId}" method="POST" action="/admin" hidden>
                 <input type="hidden" name="action" value="set-email-access" />
                 <input type="hidden" name="email" value="${escapeHtml(e.email)}" />
                 <div class="wl-access-mode">
