@@ -6468,19 +6468,19 @@
         <div class="pm-card-label">Liquidity &amp; spending coverage <span style="color: var(--muted); text-transform: none; letter-spacing: 0; font-family: 'Newsreader', serif; font-size: 12px; margin-left: 8px;">— 12-month projection</span></div>
         <div class="pm-cov-grid">
           <div class="pm-cov-cell">
-            <div class="pm-cov-label">1y spending need</div>
+            <div class="pm-cov-label">1y liquidity need</div>
             <div class="pm-cov-value" id="pm-cov-need">—</div>
             <div class="pm-cov-sub" id="pm-cov-need-sub">—</div>
           </div>
           <div class="pm-cov-cell">
-            <div class="pm-cov-label">1y liquidity available</div>
+            <div class="pm-cov-label">Cash on hand</div>
             <div class="pm-cov-value" id="pm-cov-avail">—</div>
-            <div class="pm-cov-sub" id="pm-cov-avail-sub">T1 + T2 redemptions + T3 distributions</div>
+            <div class="pm-cov-sub" id="pm-cov-avail-sub">available without selling assets</div>
           </div>
           <div class="pm-cov-cell">
-            <div class="pm-cov-label">Coverage cushion</div>
+            <div class="pm-cov-label">Cash coverage</div>
             <div class="pm-cov-value" id="pm-cov-cushion">—</div>
-            <div class="pm-cov-sub" id="pm-cov-cushion-sub">multiple of annual spend need</div>
+            <div class="pm-cov-sub" id="pm-cov-cushion-sub">years of need held in cash</div>
           </div>
         </div>
         <div class="pm-cov-bars">
@@ -6490,20 +6490,15 @@
             <div class="pm-cov-bar-val" id="pm-cov-bar-need-val">—</div>
           </div>
           <div class="pm-cov-bar-row">
-            <div class="pm-cov-bar-label">Available</div>
-            <div class="pm-cov-bar-track">
-              <div class="pm-cov-bar-fill t1" id="pm-cov-bar-t1" title="Tier 1 · daily liquid"></div>
-              <div class="pm-cov-bar-fill t2" id="pm-cov-bar-t2" title="Tier 2 · 50% accessible in 12mo"></div>
-              <div class="pm-cov-bar-fill t3" id="pm-cov-bar-t3" title="Tier 3 · ~15% NAV distributions"></div>
-            </div>
-            <div class="pm-cov-bar-val" id="pm-cov-bar-avail-val">—</div>
+            <div class="pm-cov-bar-label">Cash</div>
+            <div class="pm-cov-bar-track"><div class="pm-cov-bar-fill t1" id="pm-cov-bar-cash" title="Cash · immediately available"></div></div>
+            <div class="pm-cov-bar-val" id="pm-cov-bar-cash-val">—</div>
           </div>
         </div>
         <div class="pm-cov-legend">
-          <span><i style="background: var(--accent);"></i>T1 daily-liquid · 100%</span>
-          <span><i style="background: #c4830d;"></i>T2 ≤12mo redemption · ${(T2_ACCESS*100).toFixed(0)}%</span>
-          <span><i style="background: #6b5c8a;"></i>T3 NAV distributions · ${(T3_DISTRIB*100).toFixed(0)}%/yr</span>
-          <span style="margin-left: auto; color: var(--muted);">spend ${pmFmtPct(inferSpendingRate(state.facts?.spending),1)} + calls ${(CALL_RATE*100).toFixed(0)}% of T3</span>
+          <span><i style="background: #b13a3a;"></i>Annual need · spending + capital calls</span>
+          <span><i style="background: var(--accent);"></i>Cash · meets need without forced sales</span>
+          <span style="margin-left: auto; color: var(--muted);" id="pm-cov-backstop">backstop —</span>
         </div>
       </div>
 
@@ -6583,38 +6578,45 @@
 
     const t1pct = metrics.tiers[1], t2pct = metrics.tiers[2], t3pct = metrics.tiers[3];
 
-    // Liquidity & spending coverage (12-month projection)
+    // Liquidity coverage (12-month). Measure the annual need against CASH — what's available
+    // without selling anything — rather than against everything that could be sold. The
+    // sellable sources (daily-liquid securities, T2 redemptions, T3 distributions) are shown
+    // separately as a backstop, since relying on forced sales (especially in a drawdown) is
+    // not the same as having the cash on hand.
     const spendingRate = inferSpendingRate(state.facts?.spending);
     const callsNeed = t3pct * CALL_RATE;
     const totalNeed = spendingRate + callsNeed;
-    const t1src = t1pct;
+    const cashPct = state_pm.weights.cash || 0;
+    const cushion = totalNeed > 0 ? cashPct / totalNeed : 0;
+    // Backstop if assets are sold: daily-liquid securities (T1 ex-cash) + T2 + T3 sources.
+    const sellSecurities = Math.max(0, t1pct - cashPct);
     const t2src = t2pct * T2_ACCESS;
     const t3src = t3pct * T3_DISTRIB;
-    const totalAvail = t1src + t2src + t3src;
-    const cushion = totalNeed > 0 ? totalAvail / totalNeed : 0;
+    const backstop = sellSecurities + t2src + t3src;
 
     const need = document.getElementById('pm-cov-need');
     if (need) {
       need.textContent = pmFmtPct(totalNeed, 1);
       document.getElementById('pm-cov-need-sub').textContent = `${pmFmtPct(spendingRate, 1)} spending + ${pmFmtPct(callsNeed, 1)} capital calls`;
-      document.getElementById('pm-cov-avail').textContent = pmFmtPct(totalAvail, 1);
-      document.getElementById('pm-cov-avail-sub').textContent = `${pmFmtPct(t1src, 1)} T1 · ${pmFmtPct(t2src, 1)} T2 · ${pmFmtPct(t3src, 1)} T3`;
+      document.getElementById('pm-cov-avail').textContent = pmFmtPct(cashPct, 1);
       const cushionEl = document.getElementById('pm-cov-cushion');
       cushionEl.textContent = cushion >= 99 ? '∞' : `${cushion.toFixed(1)}×`;
-      cushionEl.classList.toggle('warn', cushion < 1.5);
-      cushionEl.classList.toggle('ok', cushion >= 3);
-      document.getElementById('pm-cov-cushion-sub').textContent = cushion < 1.5
-        ? 'below comfort threshold — review allocation or spending'
-        : cushion < 3 ? 'thin — manageable but watch capital calls' : 'multiple of annual spend need';
+      cushionEl.classList.toggle('warn', cushion < 0.5);
+      cushionEl.classList.toggle('ok', cushion >= 1 && cushion <= 2.5);
+      document.getElementById('pm-cov-cushion-sub').textContent = cushion < 0.5
+        ? 'under ½ year in cash — leans hard on sales & inflows'
+        : cushion < 1 ? 'under one year in cash — topped up by income & distributions'
+        : cushion <= 2 ? 'one to two years of need held in cash'
+        : 'well above need — excess cash is a drag; consider redeploying';
 
-      // Bars: scale to max(need, avail) so both fit
-      const scale = Math.max(totalNeed, totalAvail) * 1.05 + 1e-6;
+      // Bars: Need vs Cash, scaled so both fit.
+      const scale = Math.max(totalNeed, cashPct) * 1.05 + 1e-6;
       document.getElementById('pm-cov-bar-need').style.width = ((totalNeed / scale) * 100).toFixed(2) + '%';
-      document.getElementById('pm-cov-bar-t1').style.width = ((t1src / scale) * 100).toFixed(2) + '%';
-      document.getElementById('pm-cov-bar-t2').style.width = ((t2src / scale) * 100).toFixed(2) + '%';
-      document.getElementById('pm-cov-bar-t3').style.width = ((t3src / scale) * 100).toFixed(2) + '%';
+      document.getElementById('pm-cov-bar-cash').style.width = ((cashPct / scale) * 100).toFixed(2) + '%';
       document.getElementById('pm-cov-bar-need-val').textContent = pmFmtPct(totalNeed, 1);
-      document.getElementById('pm-cov-bar-avail-val').textContent = pmFmtPct(totalAvail, 1);
+      document.getElementById('pm-cov-bar-cash-val').textContent = pmFmtPct(cashPct, 1);
+      document.getElementById('pm-cov-backstop').textContent =
+        `+ ${pmFmtPct(backstop, 1)} sellable backstop (T1 securities ${pmFmtPct(sellSecurities,1)} · T2 ${pmFmtPct(t2src,1)} · T3 ${pmFmtPct(t3src,1)})`;
     }
 
     // Validate inputs against bounds
