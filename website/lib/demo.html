@@ -1728,9 +1728,12 @@
       await agentReply(`<p>Optimizer didn't find a feasible portfolio under the current bounds + Tier-1 floor. Try widening the IPS ranges.</p>`);
       return;
     }
-    // Set the working portfolio to the max-Sharpe optimum so analyze answers reflect it
+    // Analyze the max-Sharpe optimum, but restore the working allocation afterward so the
+    // chart keeps CURRENT on the client's actual book (distinct from the RECOMMENDED marker).
+    const savedWeights = state_pm.weights;
     state_pm.weights = { ...state_pm.mvo.optimal.w };
     const html = answerAnalysisQuery(query) || answerAnalysisQuery('metrics');
+    state_pm.weights = savedWeights;
     const optMetrics = state_pm.mvo.optimal.m;
     await agentReply(`<p>Ran mean-variance optimization — max Sharpe under IPS bounds + ${pmFmtPct(LIQ_FLOOR, 0)} Tier-1 floor. Sharpe: <strong>${optMetrics.sharpe.toFixed(2)}</strong>, return ${pmFmtPct(optMetrics.ret,1)}, vol ${pmFmtPct(optMetrics.vol,1)}.</p>${html}<p style="font-size:12.5px;color:var(--muted);">Open the Asset allocation item to inspect or adopt this as the SAA.</p>`);
   }
@@ -6269,6 +6272,27 @@
     return out;
   }
 
+  // Upper concave hull of a {vol,ret} point cloud. An efficient frontier is concave
+  // (diminishing return per unit of risk), so its smooth boundary is the upper hull —
+  // far cleaner than a bucketed envelope, which zig-zags with Monte-Carlo sampling noise.
+  function upperConcaveHull(points) {
+    const pts = points.slice().sort((a, b) => a.vol - b.vol || a.ret - b.ret);
+    const hull = [];
+    for (const p of pts) {
+      while (hull.length >= 2) {
+        const a = hull[hull.length - 2], b = hull[hull.length - 1];
+        // Cross product of (b−a)×(p−a): ≥0 means b is on/below the line a→p, so drop it.
+        const cross = (b.vol - a.vol) * (p.ret - a.ret) - (b.ret - a.ret) * (p.vol - a.vol);
+        if (cross >= 0) hull.pop(); else break;
+      }
+      hull.push(p);
+    }
+    // Keep only the rising (efficient) part — up to the maximum-return vertex.
+    let maxI = 0;
+    for (let i = 1; i < hull.length; i++) if (hull[i].ret >= hull[maxI].ret) maxI = i;
+    return hull.slice(0, maxI + 1);
+  }
+
   // ── IPS-bounded efficient frontier (the achievable "policy" frontier) ─────────
   // The efficient frontier of the SAME feasible set the optimizer searches — the IPS ranges
   // intersected with the 50% Tier-1 liquidity floor. The recommended (max-Sharpe) portfolio
@@ -6308,13 +6332,7 @@
       }
       consider(projectToBoundsAndSimplex(w));
     }
-    // Upper envelope over volatility buckets, kept monotonically non-decreasing in return.
-    const vmin = Math.min(...pts.map((p) => p.vol)), vmax = Math.max(...pts.map((p) => p.vol));
-    const B = 64, bucket = new Array(B).fill(null);
-    pts.forEach((p) => { const idx = Math.min(B - 1, Math.max(0, Math.floor((p.vol - vmin) / (vmax - vmin) * B))); if (!bucket[idx] || p.ret > bucket[idx].ret) bucket[idx] = p; });
-    let best = -Infinity; const envelope = [];
-    for (const p of bucket.filter(Boolean)) { if (p.ret >= best) { envelope.push(p); best = p.ret; } }
-    _ipsFrontier = { envelope, optimal };
+    _ipsFrontier = { envelope: upperConcaveHull(pts), optimal };
     return _ipsFrontier;
   }
 
@@ -6364,16 +6382,7 @@
       for (const id of ids) w[id] = (w[id] || 0) / s;
       consider(w);
     }
-    // Upper envelope over volatility buckets, kept monotonically non-decreasing in return.
-    const vmin = Math.min(...pts.map((p) => p.vol)), vmax = Math.max(...pts.map((p) => p.vol));
-    const B = 90, bucket = new Array(B).fill(null);
-    pts.forEach((p) => {
-      const idx = Math.min(B - 1, Math.max(0, Math.floor((p.vol - vmin) / (vmax - vmin) * B)));
-      if (!bucket[idx] || p.ret > bucket[idx].ret) bucket[idx] = p;
-    });
-    let best = -Infinity; const envelope = [];
-    for (const p of bucket.filter(Boolean)) { if (p.ret >= best) { envelope.push(p); best = p.ret; } }
-    _oppFrontier = { envelope, tangency };
+    _oppFrontier = { envelope: upperConcaveHull(pts), tangency };
     return _oppFrontier;
   }
 
@@ -6415,7 +6424,7 @@
 
     const pmActions = `
       <button class="save-changes-btn" data-action="pm-reset" id="pm-reset-btn" style="background: transparent; color: var(--ink); border-color: var(--line);" title="Set weights to the IPS-range midpoints">Set to midpoints</button>
-      <button class="save-changes-btn" data-action="pm-run" id="pm-run-btn" style="background: transparent; color: var(--ink); border-color: var(--line);" title="Re-run mean-variance optimization">Re-run MVO</button>
+      <button class="save-changes-btn" data-action="pm-run" id="pm-run-btn" style="background: transparent; color: var(--ink); border-color: var(--line);" title="Set the working allocation to the recommended (max-Sharpe within-IPS) SAA">Match recommended SAA</button>
       <button class="save-changes-btn" data-action="pm-adopt" id="pm-adopt-btn" title="Adopt this allocation as the Strategic Asset Allocation">Adopt as SAA</button>
     `;
     artifactBody.innerHTML = `
@@ -6528,19 +6537,12 @@
     // In client-open mode, the footer is hidden — buttons live in the item head instead.
     if (!layout.classList.contains('client-open')) setPortfolioFooter();
     recomputePortfolio();
-    // Auto-run MVO the first time the module is opened.
-    // If an SAA is already adopted, keep the current allocation and just compute the
-    // optimal as a reference marker on the chart (don't overwrite the user's weights).
+    // Compute the recommendation (and frontiers) the first time the module is opened.
+    // The CURRENT marker always stays on the working allocation (the client's actual book);
+    // the RECOMMENDED SAA is shown separately, so the two never collapse onto each other.
     if (!state_pm.mvo) {
       setTimeout(() => {
         state_pm.mvo = runMVO();
-        if (state_pm.mvo.optimal && !state.saa) {
-          state_pm.weights = { ...state_pm.mvo.optimal.w };
-          artifactBody.querySelectorAll('.pm-w-input').forEach((inp) => {
-            const id = inp.dataset.asset;
-            inp.value = (state_pm.weights[id] * 100).toFixed(1);
-          });
-        }
         recomputePortfolio();
         drawFrontierChart();
       }, 30);
@@ -6737,7 +6739,7 @@
       </div>
       <div class="footer-actions">
         <button class="btn-secondary" data-action="pm-reset">Reset to midpoints</button>
-        <button class="btn-secondary" data-action="pm-run">Run mean-variance optimization</button>
+        <button class="btn-secondary" data-action="pm-run">Match recommended SAA</button>
         <button class="btn-primary" data-action="pm-adopt">Adopt as SAA →</button>
       </div>
     `;
@@ -7119,13 +7121,14 @@
       else if (wf === 'capital-calls') openCapitalCallsView();
       else if (wf === 'spending') openSpendingView();
     } else if (a === 'pm-run') {
+      // Explicit "match the recommendation": copy the recommended SAA into the working
+      // allocation (so CURRENT moves onto RECOMMENDED only when the user asks for it).
       const desc = document.getElementById('pm-footer-desc');
-      if (desc) desc.textContent = 'Running 4,000-sample Monte Carlo optimization…';
+      if (desc) desc.textContent = 'Matching the recommended SAA…';
       setTimeout(() => {
-        state_pm.mvo = runMVO();
+        if (!state_pm.mvo) state_pm.mvo = runMVO();
         if (state_pm.mvo.optimal) {
           state_pm.weights = { ...state_pm.mvo.optimal.w };
-          // Update inputs
           artifactBody.querySelectorAll('.pm-w-input').forEach((inp) => {
             const id = inp.dataset.asset;
             inp.value = (state_pm.weights[id] * 100).toFixed(1);
@@ -7133,7 +7136,7 @@
         }
         recomputePortfolio();
         drawFrontierChart();
-        if (desc) desc.textContent = 'Set to the max-Sharpe portfolio. Adjust further or adopt.';
+        if (desc) desc.textContent = 'Matched the recommended SAA — adjust further or adopt.';
       }, 30);
     } else if (a === 'pm-reset') {
       // Set weights to the IPS-range midpoints. Keep the cached MVO result so
