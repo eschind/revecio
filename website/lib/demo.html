@@ -5449,10 +5449,32 @@
     return projectToBoundsAndSimplex(w);
   }
 
+  // Hand-picked anchors at the conservative and aggressive extremes of the IPS-feasible
+  // space (both within bounds and summing to 1). Used to deterministically seed the
+  // efficient frontier so its line covers the full vol range, not just the centroid.
+  const CONSERVATIVE_ANCHOR = { us_eq: 0.20, intl_eq: 0.10, em_eq: 0.05, core_fi: 0.25, tips: 0.07, hy: 0.00, hf: 0.10, pe: 0.05, pc: 0.10, ra: 0.03, cash: 0.05 };
+  const AGGRESSIVE_ANCHOR   = { us_eq: 0.35, intl_eq: 0.20, em_eq: 0.12, core_fi: 0.10, tips: 0.00, hy: 0.05, hf: 0.00, pe: 0.15, pc: 0.00, ra: 0.03, cash: 0.00 };
+  function lerpPortfolio(a, b, t) {
+    const out = {};
+    for (const k of Object.keys(a)) out[k] = a[k] + t * (b[k] - a[k]);
+    return out;
+  }
+
   // Sample N portfolios, filter by liquidity floor; return cloud + max-Sharpe.
   function runMVO({ samples = 4000, liquidityFloor = LIQ_FLOOR } = {}) {
     const cloud = [];
     let best = null;
+    // Seed with deterministic anchor portfolios along the conservative ↔ aggressive line.
+    // These guarantee the frontier covers the full vol range; MC samples fill in the body.
+    const ANCHOR_STEPS = 120;
+    for (let i = 0; i <= ANCHOR_STEPS; i++) {
+      const t = i / ANCHOR_STEPS;
+      const w = lerpPortfolio(CONSERVATIVE_ANCHOR, AGGRESSIVE_ANCHOR, t);
+      const m = portfolioMetrics(w);
+      if (m.tiers[1] < liquidityFloor - 1e-6) continue;
+      cloud.push({ w, m });
+      if (!best || m.sharpe > best.m.sharpe) best = { w, m };
+    }
     for (let i = 0; i < samples; i++) {
       const w = sampleRandomFeasible();
       const m = portfolioMetrics(w);
