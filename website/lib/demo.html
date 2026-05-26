@@ -841,6 +841,7 @@
   .ci-row { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; padding: 3px 0; }
   .ci-row-label { font-family: 'JetBrains Mono', monospace; font-size: 9.5px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); flex-shrink: 0; }
   .ci-row-value { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--ink); }
+  .ci-divider { height: 1px; background: var(--line-soft); margin: 8px 0; }
   .ci-card-people { display: flex; flex-direction: column; gap: 2px; }
   .ci-person { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; line-height: 1.3; }
   .ci-person-name { font-size: 12.5px; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; flex: 1; }
@@ -3055,6 +3056,8 @@
     ).join('') || '<div class="ci-person-empty">No contacts yet</div>';
     const clientInfoCard = `<div class="client-info-card">
       <div class="ci-row"><span class="ci-row-label">AUM</span><span class="ci-row-value">${fmtAum(state.aum)}</span></div>
+      <div class="ci-divider"></div>
+      <div class="ci-row-label" style="margin-bottom: 4px;">Contacts</div>
       <div class="ci-card-people">${peopleHtml}</div>
     </div>`;
     const sections = [
