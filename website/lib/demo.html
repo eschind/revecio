@@ -654,8 +654,6 @@
   .cc-queued-block { display: inline-flex; flex-direction: column; gap: 6px; align-items: flex-start; padding: 10px 14px; background: rgba(31,112,80,0.06); border: 1px solid rgba(31,112,80,0.18); border-radius: 8px; }
   .cc-queued-headline { display: inline-flex; align-items: center; font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); }
   .cc-queued-sub { font-size: 12.5px; color: var(--ink-2); line-height: 1.5; max-width: 60ch; }
-  .cc-queued-override { font-size: 11px; padding: 4px 10px; align-self: flex-start; opacity: 0.75; }
-  .cc-queued-override:hover { opacity: 1; }
   .cc-notice { border: 1px solid var(--line); border-radius: 12px; padding: 22px 24px; background: var(--panel); max-width: 640px; }
   .cc-notice-head { border-bottom: 2px solid var(--ink); padding-bottom: 8px; margin-bottom: 14px; }
   .cc-notice-from { font-family: 'Newsreader', serif; font-size: 18px; color: var(--ink); }
@@ -5233,7 +5231,7 @@
     return CAPITAL_CALLS.map((c) => ({ ...c, status: done.includes(c.id) ? 'completed' : c.status }));
   }
   function ccStatusTag(s) {
-    return s === 'completed' ? '<span class="qr-tag t-done">Completed</span>' : '<span class="qr-tag t-pending">Action needed</span>';
+    return s === 'completed' ? '<span class="qr-tag t-done">Completed</span>' : '<span class="qr-tag t-pending">Queued</span>';
   }
 
   // The rich demo content (reports, memos, communications, capital calls,
@@ -5344,7 +5342,7 @@
 
     const pendingBlock = pending.length
       ? `<div class="qr-exhibit">
-          <div class="qr-exhibit-head"><div class="qx-label">Outstanding</div><div class="qx-title">Action needed · ${pending.length} call${pending.length === 1 ? '' : 's'} · $${pendingTotal.toFixed(1)}M</div></div>
+          <div class="qr-exhibit-head"><div class="qx-label">Outstanding</div><div class="qx-title">${pending.length} call${pending.length === 1 ? '' : 's'} queued · $${pendingTotal.toFixed(1)}M</div></div>
           <table class="qr-table cc-table"><thead><tr><th>Fund / call</th><th>Amount</th><th>Called</th><th>Due</th><th></th></tr></thead><tbody>${pending.map(pendingRow).join('')}</tbody></table>
         </div>`
       : `<div class="qr-callout"><div class="qc-label">All clear</div><p>No outstanding capital calls — all funded.</p></div>`;
@@ -5373,7 +5371,6 @@
       ? `<div class="cc-queued-block">
           <div class="cc-queued-headline"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;vertical-align:-2px;"><circle cx="12" cy="12" r="9"/><polyline points="9 12 11 14 15 10"/></svg>Wire queued by agent</div>
           <div class="cc-queued-sub">The agent will initiate the wire from the Tier-1 cash buffer on or before <strong>${escapeHtml(fmtDate(c.due))}</strong>. No action required.</div>
-          <button class="btn-secondary cc-queued-override" data-action="cc-complete" data-id="${c.id}" title="Mark as executed if this wire has already cleared.">Mark as executed</button>
         </div>`
       : `<div class="cc-done-badge">✓ Completed</div>`;
     artifactBody.innerHTML = `${itemHeadHtml('Capital call notice')}
