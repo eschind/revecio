@@ -2740,6 +2740,31 @@
         'United States': 0.60, 'International Developed': 0.22,
         'Emerging Markets': 0.11, 'Global / Multi-region': 0.07,
       },
+      // Quarterly NAV indexed to 100 at Q1 2021. Net of fees.
+      // Benchmark = 60% U.S. Equity / 40% Core Fixed Income.
+      navHistory: [
+        { q: '2021 Q1', portfolio: 102.0, benchmark: 101.5 },
+        { q: '2021 Q2', portfolio: 107.1, benchmark: 105.0 },
+        { q: '2021 Q3', portfolio: 110.4, benchmark: 107.8 },
+        { q: '2021 Q4', portfolio: 117.2, benchmark: 113.0 },
+        { q: '2022 Q1', portfolio: 113.0, benchmark: 108.1 },
+        { q: '2022 Q2', portfolio: 104.2, benchmark:  98.9 },
+        { q: '2022 Q3', portfolio: 100.8, benchmark:  95.4 },
+        { q: '2022 Q4', portfolio: 104.6, benchmark:  99.2 },
+        { q: '2023 Q1', portfolio: 108.9, benchmark: 103.4 },
+        { q: '2023 Q2', portfolio: 114.6, benchmark: 108.8 },
+        { q: '2023 Q3', portfolio: 113.8, benchmark: 107.0 },
+        { q: '2023 Q4', portfolio: 121.4, benchmark: 114.9 },
+        { q: '2024 Q1', portfolio: 126.2, benchmark: 119.6 },
+        { q: '2024 Q2', portfolio: 128.7, benchmark: 121.1 },
+        { q: '2024 Q3', portfolio: 131.4, benchmark: 123.8 },
+        { q: '2024 Q4', portfolio: 134.9, benchmark: 126.7 },
+        { q: '2025 Q1', portfolio: 137.2, benchmark: 128.5 },
+        { q: '2025 Q2', portfolio: 141.3, benchmark: 131.8 },
+        { q: '2025 Q3', portfolio: 143.8, benchmark: 133.6 },
+        { q: '2025 Q4', portfolio: 148.0, benchmark: 137.0 },
+        { q: '2026 Q1', portfolio: 152.6, benchmark: 140.9 },
+      ],
       realizedRisk: {
         // trailing twelve months (T12M)
         vol: 0.096,       // realized vol
@@ -3300,6 +3325,85 @@
     return `$${n.toFixed(0)}`;
   }
 
+  function renderNavHistoryCard(p) {
+    const hist = p.navHistory || [];
+    if (hist.length < 2) return '';
+    const portRet = (hist[hist.length - 1].portfolio / hist[0].portfolio) - 1;
+    const benchRet = (hist[hist.length - 1].benchmark / hist[0].benchmark) - 1;
+    const years = hist.length / 4; // quarterly
+    const annPort = Math.pow(1 + portRet, 1 / years) - 1;
+    const annBench = Math.pow(1 + benchRet, 1 / years) - 1;
+    const delta = annPort - annBench;
+
+    const W = 680, H = 280, ML = 60, MR = 18, MT = 18, MB = 36;
+    const values = hist.flatMap((d) => [d.portfolio, d.benchmark]);
+    let yMin = Math.min(...values), yMax = Math.max(...values);
+    const yPad = (yMax - yMin) * 0.08;
+    yMin = Math.max(80, yMin - yPad);
+    yMax = yMax + yPad;
+    const sx = (i) => ML + (i / (hist.length - 1)) * (W - ML - MR);
+    const sy = (v) => H - MB - ((v - yMin) / (yMax - yMin)) * (H - MT - MB);
+
+    let grid = '';
+    let axes = '';
+    const yTicks = 5;
+    for (let i = 0; i <= yTicks; i++) {
+      const v = yMin + (yMax - yMin) * (i / yTicks);
+      const y = sy(v);
+      grid += `<line x1="${ML}" y1="${y}" x2="${W - MR}" y2="${y}" stroke="#ece8dc" stroke-width="1"/>`;
+      axes += `<text x="${ML - 10}" y="${y + 3}" font-family="JetBrains Mono, monospace" font-size="10.5" fill="#7c7468" text-anchor="end">${v.toFixed(0)}</text>`;
+    }
+    // X labels: show year markers only to keep it clean
+    const seenYears = new Set();
+    hist.forEach((d, i) => {
+      const year = d.q.slice(0, 4);
+      if (seenYears.has(year)) return;
+      // Only label first quarter of each year (or first datum)
+      if (!d.q.endsWith('Q1') && i !== 0) return;
+      seenYears.add(year);
+      const x = sx(i);
+      axes += `<text x="${x}" y="${H - MB + 18}" font-family="JetBrains Mono, monospace" font-size="10.5" fill="#7c7468" text-anchor="middle">${year}</text>`;
+      axes += `<line x1="${x}" y1="${H - MB}" x2="${x}" y2="${H - MB + 4}" stroke="#c5bfae"/>`;
+    });
+    axes += `<line x1="${ML}" y1="${H-MB}" x2="${W-MR}" y2="${H-MB}" stroke="#c5bfae" stroke-width="1"/>`;
+    axes += `<line x1="${ML}" y1="${MT}" x2="${ML}" y2="${H-MB}" stroke="#c5bfae" stroke-width="1"/>`;
+    axes += `<text x="18" y="${(H + MT - MB) / 2}" font-family="JetBrains Mono, monospace" font-size="10.5" fill="#7c7468" text-anchor="middle" letter-spacing="0.08em" transform="rotate(-90 18 ${(H + MT - MB) / 2})">NAV (REBASED)</text>`;
+
+    const portfolioPath = hist.map((d, i) => `${i === 0 ? 'M' : 'L'} ${sx(i).toFixed(1)} ${sy(d.portfolio).toFixed(1)}`).join(' ');
+    const benchPath = hist.map((d, i) => `${i === 0 ? 'M' : 'L'} ${sx(i).toFixed(1)} ${sy(d.benchmark).toFixed(1)}`).join(' ');
+
+    // End-of-series markers + value labels
+    const lastIdx = hist.length - 1;
+    const portEnd = `<circle cx="${sx(lastIdx).toFixed(1)}" cy="${sy(hist[lastIdx].portfolio).toFixed(1)}" r="4" fill="#1f7050" stroke="#fff" stroke-width="1.5"/>`;
+    const benchEnd = `<circle cx="${sx(lastIdx).toFixed(1)}" cy="${sy(hist[lastIdx].benchmark).toFixed(1)}" r="4" fill="#7c7468" stroke="#fff" stroke-width="1.5"/>`;
+
+    const headlineColor = delta >= 0 ? 'var(--accent)' : '#b13a3a';
+    const headlineSign = delta >= 0 ? '+' : '';
+
+    return `<div class="pm-card">
+      <div class="pm-card-label" style="display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;">
+        <span>Performance · trailing ${years.toFixed(0)} years</span>
+        <span style="font-family:'Newsreader',serif;font-size:13px;color:var(--ink-2);text-transform:none;letter-spacing:0;">
+          Portfolio <strong style="color:var(--accent);">${(annPort*100).toFixed(1)}%</strong> annualized vs. 60/40 <strong style="color:var(--muted);">${(annBench*100).toFixed(1)}%</strong>
+          <span style="color:${headlineColor};margin-left:6px;">(${headlineSign}${(delta*100).toFixed(1)}pp)</span>
+        </span>
+      </div>
+      <svg width="100%" height="280" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" style="display:block;">
+        ${grid}
+        ${axes}
+        <path d="${benchPath}" fill="none" stroke="#7c7468" stroke-width="1.5" stroke-dasharray="4,3"/>
+        <path d="${portfolioPath}" fill="none" stroke="#1f7050" stroke-width="2.5" stroke-linejoin="round"/>
+        ${benchEnd}
+        ${portEnd}
+      </svg>
+      <div class="pm-legend">
+        <span><i style="background:#1f7050;"></i>Portfolio (net of fees)</span>
+        <span><i style="background:#7c7468;border-radius:0;height:2px;margin-top:4px;"></i>60/40 benchmark (U.S. Equity / Core FI)</span>
+        <span style="margin-left:auto;color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:0.04em;">Indexed to 100 at ${escapeHtml(hist[0].q)}</span>
+      </div>
+    </div>`;
+  }
+
   function openMonitoringView() {
     if (!state.org.name) return;
     if (!state.portfolio) {
@@ -3425,6 +3529,8 @@
         <div class="pm-metric"><div class="pm-metric-label">Max drawdown</div><div class="pm-metric-value">${pmFmtPct(rr.maxDD, 1)}</div><div class="pm-metric-sub">peak-to-trough</div></div>
         <div class="pm-metric"><div class="pm-metric-label">Beta · MSCI ACWI</div><div class="pm-metric-value">${rr.beta.toFixed(2)}</div><div class="pm-metric-sub">trailing 12mo</div></div>
       </div>
+
+      ${renderNavHistoryCard(p)}
 
       <div class="pm-card">
         <div class="pm-card-label">Drift vs SAA targets</div>
