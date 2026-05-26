@@ -5896,7 +5896,8 @@
     }).join('');
 
     const pmActions = `
-      <button class="save-changes-btn" data-action="pm-run" id="pm-run-btn" style="background: transparent; color: var(--ink); border-color: var(--line);" title="Re-run optimization">Re-run MVO</button>
+      <button class="save-changes-btn" data-action="pm-reset" id="pm-reset-btn" style="background: transparent; color: var(--ink); border-color: var(--line);" title="Set weights to the IPS-range midpoints">Set to midpoints</button>
+      <button class="save-changes-btn" data-action="pm-run" id="pm-run-btn" style="background: transparent; color: var(--ink); border-color: var(--line);" title="Re-run mean-variance optimization">Re-run MVO</button>
       <button class="save-changes-btn" data-action="pm-adopt" id="pm-adopt-btn" title="Adopt this allocation as the Strategic Asset Allocation">Adopt as SAA</button>
     `;
     artifactBody.innerHTML = `
@@ -6266,7 +6267,11 @@
     renderPortfolioModule();
     renderClientWorkspace();
     updateUrl();
-    addAgent(`<p>Opened <strong>Portfolio Modeling</strong> for ${escapeHtml(state.org.name)}. Starting from the IPS-range midpoints. You can edit individual weights, run the optimizer, or adopt straight away.</p>`);
+    const orgName = escapeHtml(state.org.name);
+    const startedMsg = state.saa
+      ? `Opened <strong>Portfolio Modeling</strong> for ${orgName} — showing the adopted Strategic Asset Allocation, with the optimizer's max-Sharpe portfolio marked on the frontier for reference. Edit weights, set to midpoints, re-run the optimizer, or re-adopt.`
+      : `Opened <strong>Portfolio Modeling</strong> for ${orgName}. I've run mean-variance optimization and set the allocation to the max-Sharpe portfolio within the IPS ranges and the Tier-1 floor. You can set it to the IPS midpoints, edit weights, re-run, or adopt.`;
+    addAgent(`<p>${startedMsg}</p>`);
   }
 
   function adoptSaaToIps() {
@@ -6596,8 +6601,10 @@
         if (desc) desc.textContent = 'Set to the max-Sharpe portfolio. Adjust further or adopt.';
       }, 30);
     } else if (a === 'pm-reset') {
+      // Set weights to the IPS-range midpoints. Keep the cached MVO result so
+      // the frontier/optimal marker stays and the auto-MVO doesn't overwrite
+      // the midpoints back to the optimum on re-render.
       state_pm.weights = defaultMidpointWeights();
-      state_pm.mvo = null;
       renderPortfolioModule();
     } else if (a === 'pm-adopt') {
       if (btn.disabled) return;
