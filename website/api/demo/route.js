@@ -15,7 +15,7 @@ Classify the message and return ONLY a single JSON object (no markdown, no comme
   "intent": "analyze" | "answer_content" | "org_info" | "optimize" | "open" | "next" | "previous" | "switch" | "edit" | "switch_and_edit" | "question" | "unclear",
   "targetModule": "ips" | "portfolio" | "materials" | "monitoring" | "board" | "decisions" | "profile" | null,
   "targetSectionNum": <number or null>,
-  "query": "sharpe" | "return" | "vol" | "real_return" | "allocation" | "liquidity" | "metrics" | null,
+  "query": "sharpe" | "return" | "vol" | "real_return" | "allocation" | "liquidity" | "metrics" | "capital_calls" | "capital_calls_all" | null,
   "editPrompt": <string or null>,
   "answer": <string or null>,
   "reply": <string or null>
@@ -30,7 +30,10 @@ Rules:
   - "what's the asset mix?" / "show the weights" / "current allocation?" / "what are we holding?" → query="allocation"
   - "liquidity coverage?" / "spending cushion?" / "can we cover capital calls?" / "how much liquidity?" → query="liquidity"
   - "summarize the portfolio" / "give me the key metrics" / "headline numbers" → query="metrics"
+  - "outstanding capital calls" / "any capital calls due" / "what capital calls do we have" / "upcoming capital calls" → query="capital_calls" (returns only pending)
+  - "show me all the capital calls" / "capital call history" → query="capital_calls_all"
   If a question mentions a metric word (Sharpe, vol, allocation, weights, return, real return, liquidity, coverage, cushion), it is almost always analyze.
+  If a question is about capital calls — outstanding, upcoming, due, history — it is ALWAYS analyze with a capital_calls query, NEVER open with targetModule=monitoring.
 - "answer_content" — a factual question about what the IPS DOCUMENT TEXT says: its provisions, rules, requirements, definitions, or whether the IPS addresses a given topic. This is about the written policy, NOT a portfolio number. Set "targetSectionNum" to the single most relevant IPS section (use the section list to pick it), and set "reply" to a one-sentence direct lead-in answer. Examples:
   - "are there any ESG requirements in the IPS?" / "does the IPS cover mission-aligned investing?" / "what's our SRI policy?" → answer_content, targetSectionNum = the "Mission-Aligned Investing and ESG" section
   - "what does the IPS say about rebalancing?" / "when do we rebalance?" / "what are the rebalancing triggers?" → answer_content, targetSectionNum = the "Rebalancing Policy" section
