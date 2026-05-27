@@ -1723,11 +1723,13 @@
     }
 
     if (intent === 'question' || intent === 'unclear') {
+      console.log('[route] unclear/question reply:', route);
       await agentReply(`<p>${escapeHtml(route.reply || 'Could you clarify what you\'d like to do?')}</p>`);
       return;
     }
 
-    // Fallback for unexpected intent
+    // Fallback for unexpected intent — log the full route so we can diagnose
+    console.log('[route] fallback hit; route was:', route);
     await agentReply(`<p>Could you clarify what you'd like to do — open something, ask for a metric, or make an edit?</p>`);
   }
 
