@@ -6002,14 +6002,23 @@
       .sort((a, b) => b.weight - a.weight);
     const compositeStr = comps.map((r) => `${pmFmtPct(r.weight, 0)} ${escapeHtml(r.bm)}`).join('&nbsp;&nbsp;·&nbsp;&nbsp;');
 
+    const fmtRet = (x) => x == null ? '—' : `<span style="color:${x < 0 ? '#b13a3a' : 'inherit'}">${x >= 0 ? '' : ''}${x.toFixed(1)}%</span>`;
+    // Composite (policy benchmark) returns — SAA-weighted blend over each trailing period.
+    const composite = [0, 1, 2].map((p) => CMA.reduce((s, c) => {
+      const r = benchmarkReturns(c.id);
+      return s + (w[c.id] || 0) * (r ? r[p] : 0);
+    }, 0));
+
     const rows = CMA.map((c) => {
       const cur = benchmarkFor(c.id);
       const optList = [...new Set([cur, ...((BENCHMARKS[c.id] && BENCHMARKS[c.id].options) || [])])];
-      const sel = `<select class="bm-select" data-asset="${c.id}" style="font:inherit;font-size:12.5px;padding:5px 8px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--ink);max-width:320px;">`
+      const sel = `<select class="bm-select" data-asset="${c.id}" style="font:inherit;font-size:12px;padding:5px 8px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--ink);max-width:240px;">`
         + optList.map((o) => `<option${o === cur ? ' selected' : ''}>${escapeHtml(o)}</option>`).join('') + `</select>`;
       const isCustom = state.benchmarks[c.id] && state.benchmarks[c.id] !== (BENCHMARKS[c.id] && BENCHMARKS[c.id].default);
-      return `<tr><td>${escapeHtml(c.name)}</td><td class="num">${pmFmtPct(w[c.id] || 0, 1)}</td><td>${sel}${isCustom ? ' <span class="vault-status vk-ok" style="margin-left:6px;">changed</span>' : ''}</td></tr>`;
-    }).join('');
+      const r = benchmarkReturns(c.id);
+      return `<tr><td>${escapeHtml(c.name)}</td><td class="num">${pmFmtPct(w[c.id] || 0, 1)}</td><td>${sel}${isCustom ? ' <span class="vault-status vk-ok" style="margin-left:6px;">changed</span>' : ''}</td><td class="num">${fmtRet(r ? r[0] : null)}</td><td class="num">${fmtRet(r ? r[1] : null)}</td><td class="num">${fmtRet(r ? r[2] : null)}</td></tr>`;
+    }).join('')
+      + `<tr class="qr-total"><td>Policy composite</td><td class="num">100.0%</td><td>SAA-weighted blend</td><td class="num">${fmtRet(composite[0])}</td><td class="num">${fmtRet(composite[1])}</td><td class="num">${fmtRet(composite[2])}</td></tr>`;
 
     const resetBtn = hasOv ? `<button class="btn btn-sm add-btn" data-action="bm-reset">Reset to proposed</button>` : '';
     const head = `${itemHeadHtml('Benchmarks', resetBtn)}
@@ -6024,8 +6033,8 @@
       </div>
       <div class="qr-exhibit">
         <div class="qr-exhibit-head"><div class="qx-label">By asset class</div><div class="qx-title">Proposed benchmarks</div></div>
-        <table class="qr-table"><thead><tr><th>Asset class</th><th class="num">Weight</th><th>Benchmark</th></tr></thead><tbody>${rows}</tbody></table>
-        <div class="qr-exhibit-note">Choose an alternative from any dropdown, or ask the agent — e.g. <em>"use Russell 1000 for U.S. equity"</em> or <em>"benchmark private credit against the Morningstar LSTA leveraged loan index + 1.5%."</em> Private-market benchmarks are reported on a one-quarter lag.</div>
+        <table class="qr-table"><thead><tr><th>Asset class</th><th class="num">Weight</th><th>Benchmark</th><th class="num">1Y</th><th class="num">3Y</th><th class="num">5Y</th></tr></thead><tbody>${rows}</tbody></table>
+        <div class="qr-exhibit-note">Trailing annualized returns; private-market benchmarks are reported on a one-quarter lag. Choose an alternative from any dropdown, or ask the agent — e.g. <em>"use Russell 1000 for U.S. equity"</em> or <em>"benchmark private credit against the Morningstar LSTA leveraged loan index + 1.5%."</em></div>
       </div>`;
     artifactFooter.classList.remove('visible');
     updateUrl();
@@ -6253,6 +6262,26 @@
   };
   function benchmarkFor(id) { return (state.benchmarks && state.benchmarks[id]) || (BENCHMARKS[id] && BENCHMARKS[id].default) || '—'; }
   function benchmarkWeights() { return (state.saa && state.saa.weights) ? state.saa.weights : defaultMidpointWeights(); }
+  // Trailing annualized total returns by benchmark (illustrative, as of the demo date),
+  // as [1Y, 3Y, 5Y]. Private-market series are on a one-quarter reporting lag.
+  const BENCHMARK_RETURNS = {
+    'S&P 500': [14.2, 11.8, 13.5], 'Russell 1000': [14.0, 11.5, 13.2], 'Russell 3000': [13.6, 11.0, 12.9], 'CRSP US Total Market': [13.7, 11.1, 13.0],
+    'MSCI EAFE': [11.5, 8.2, 8.0], 'MSCI World ex-US': [11.0, 8.0, 8.1], 'MSCI ACWI ex-US': [10.8, 7.5, 7.8],
+    'MSCI Emerging Markets': [8.5, 3.2, 4.5], 'MSCI EM IMI': [8.7, 3.4, 4.7], 'FTSE Emerging': [8.6, 3.3, 4.6],
+    'Bloomberg U.S. Aggregate Bond': [4.8, 1.2, 0.5], 'Bloomberg U.S. Universal': [5.2, 1.6, 1.0], 'ICE BofA US Broad Market': [4.7, 1.1, 0.5],
+    'Bloomberg U.S. TIPS': [5.0, 2.0, 2.8], 'ICE BofA US Inflation-Linked Treasury': [4.9, 1.9, 2.7],
+    'Bloomberg U.S. Corporate High Yield': [9.2, 4.8, 4.6], 'ICE BofA US High Yield': [9.0, 4.7, 4.5], 'Morningstar LSTA Leveraged Loan': [8.8, 6.2, 5.0],
+    'HFRI Fund-Weighted Composite': [8.4, 5.5, 6.8], 'HFRI Fund of Funds Composite': [7.2, 4.6, 5.5], 'ICE BofA 3-Month T-Bill + 3%': [8.0, 7.8, 5.2],
+    'Cambridge Associates U.S. PE': [12.0, 10.5, 16.2], 'Russell 3000 + 3% (lagged)': [16.6, 14.0, 15.9], 'MSCI ACWI + 3% (lagged)': [14.5, 11.5, 13.5],
+    'Cliffwater Direct Lending Index': [9.8, 9.2, 8.9], 'Morningstar LSTA Leveraged Loan + 1.5%': [10.3, 7.7, 6.5], 'S&P/LSTA Leveraged Loan': [8.7, 6.1, 4.9],
+    'NCREIF ODCE': [-2.5, 2.0, 4.5], 'FTSE EPRA Nareit Developed': [6.5, 1.5, 4.0], 'Bloomberg Commodity': [5.0, 6.5, 8.0], 'CPI + 4%': [6.6, 8.0, 8.2],
+    'ICE BofA US 3-Month Treasury Bill': [5.0, 4.8, 2.2], 'FTSE 3-Month T-Bill': [4.9, 4.7, 2.1],
+  };
+  // Returns for the benchmark currently selected for an asset class; falls back to the
+  // asset class's default benchmark if a custom (agent-proposed) benchmark has no series.
+  function benchmarkReturns(id) {
+    return BENCHMARK_RETURNS[benchmarkFor(id)] || BENCHMARK_RETURNS[BENCHMARKS[id] && BENCHMARKS[id].default] || null;
+  }
 
   // IPS policy ranges (alts-forward diversified endowment with growth tilt).
   // The 2025 IPS eased the public-equity floors and widened the alternatives sleeve
