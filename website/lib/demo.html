@@ -226,6 +226,22 @@
   .st-due.muted { color: var(--muted); }
   .layout.sidebar-collapsed .sidebar-tasks-label { display: none; }
   .layout.sidebar-collapsed .sidebar-tasks { display: none; }
+  /* Tasks page (in the artifact panel) */
+  .tk-list { display: flex; flex-direction: column; gap: 2px; }
+  .tk-row { display: grid; grid-template-columns: 10px 1fr auto; gap: 12px; align-items: start; padding: 12px 10px; border-radius: 8px; cursor: pointer; border: 1px solid transparent; }
+  .tk-row:hover { background: rgba(20,23,28,0.04); border-color: var(--line); }
+  .tk-row .st-dot { margin-top: 5px; }
+  .tk-main { min-width: 0; }
+  .tk-title { font-size: 13.5px; color: var(--ink); line-height: 1.35; margin-bottom: 2px; }
+  .tk-detail { font-size: 12px; color: var(--ink-2); line-height: 1.45; margin-bottom: 4px; }
+  .tk-meta { font-family: 'JetBrains Mono', monospace; font-size: 9.5px; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); }
+  .tk-meta .tk-client { color: var(--ink-2); }
+  .tk-right { flex-shrink: 0; }
+  .tk-pill { display: inline-block; font-family: 'JetBrains Mono', monospace; font-size: 9.5px; letter-spacing: 0.04em; text-transform: uppercase; padding: 3px 8px; border-radius: 999px; white-space: nowrap; background: var(--line); color: var(--muted); }
+  .tk-pill.k-action { background: rgba(177,58,58,0.12); color: #b13a3a; }
+  .tk-pill.k-review { background: rgba(196,131,13,0.15); color: #8a5d0a; }
+  .tk-pill.k-agent { background: rgba(31,112,80,0.12); color: var(--accent); }
+  .tk-pill.k-pending { background: var(--line); color: var(--muted); }
   .conv-header {
     padding: 14px 32px; border-bottom: 1px solid var(--line-soft);
     display: flex; align-items: center; justify-content: space-between; gap: 16px;
@@ -955,10 +971,13 @@
             <span class="icon"><svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><path d="M20 8v6M23 11h-6"/></svg></span>
             <span class="nav-text">New client</span>
           </div>
+          <div class="nav-item" id="nav-tasks" data-action="open-tasks" title="View all tasks and updates">
+            <span class="icon"><svg viewBox="0 0 24 24"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg></span>
+            <span class="nav-text">Tasks</span>
+            <span class="badge" id="nav-tasks-badge"></span>
+          </div>
           <div class="nav-label" style="margin-top: 8px;">Active clients</div>
           <div class="nav-sub" id="nav-active-clients"></div>
-          <div class="nav-label sidebar-tasks-label" style="margin-top: 10px; display: flex; align-items: baseline; justify-content: space-between; gap: 6px;"><span>Tasks</span><span class="sidebar-tasks-counts" id="sidebar-tasks-counts"></span></div>
-          <div class="sidebar-tasks" id="sidebar-tasks"></div>
         </div>
       </div>
 
@@ -3069,7 +3088,7 @@
     layout.classList.remove('client-open');
     layout.classList.remove('expanded');
     renderActiveClients();
-    renderSidebarTasks();
+    renderTasksNav();
   }
 
   // ============================================================
@@ -3150,43 +3169,56 @@
     return out;
   }
 
-  // Render the Tasks list in the sidebar. Compact rows, one line per task.
-  function renderSidebarTasks() {
-    const list = document.getElementById('sidebar-tasks');
-    const counts = document.getElementById('sidebar-tasks-counts');
-    if (!list || !counts) return;
-    const all = buildAllClientTasks();
-    if (all.length === 0) {
-      counts.textContent = '';
-      list.innerHTML = '<div class="sidebar-tasks-empty">No tasks. Inbox zero.</div>';
-      return;
-    }
-    const mine = all.filter((t) => t.status !== 'agent').length;
-    counts.textContent = `${mine} · ${all.length - mine} agent`;
-    // Sort: action items first (with the closest due dates), then review, then agent
+  // Sort: action items first (closest due dates), then review, pending, agent.
+  function sortedTasks() {
     const order = { action: 0, review: 1, pending: 2, agent: 3 };
-    const sorted = all.slice().sort((a, b) => {
-      const oa = order[a.status] ?? 9;
-      const ob = order[b.status] ?? 9;
+    return buildAllClientTasks().slice().sort((a, b) => {
+      const oa = order[a.status] ?? 9, ob = order[b.status] ?? 9;
       if (oa !== ob) return oa - ob;
       if (a.due && b.due) return a.due.localeCompare(b.due);
       if (a.due) return -1;
       if (b.due) return 1;
       return 0;
     });
-    list.innerHTML = sorted.map((t) => {
-      const dueLabel = t.due ? fmtDate(t.due).replace(/, \d{4}$/, '') : '';
-      const dueCls = t.status === 'action' && t.due ? '' : ' muted';
-      const dueHtml = dueLabel ? `<span class="st-due${dueCls}">${escapeHtml(dueLabel)}</span>` : '';
-      return `<div class="st-row" data-action="open-task" data-client="${escapeHtml(t.clientId)}" data-view="${escapeHtml(t.view)}" title="${escapeHtml(t.title)}">
+  }
+
+  // Keep the "Tasks" nav item's badge in sync (count of items needing your attention).
+  function renderTasksNav() {
+    const badge = document.getElementById('nav-tasks-badge');
+    if (!badge) return;
+    const mine = buildAllClientTasks().filter((t) => t.status !== 'agent').length;
+    badge.textContent = mine ? String(mine) : '';
+    badge.style.display = mine ? '' : 'none';
+  }
+
+  // Full Tasks page — opens in the artifact panel, listing every task across all clients.
+  const TASK_STATUS_LABEL = { action: 'Action needed', review: 'In review', pending: 'Pending', agent: 'Agent' };
+  function openTasksView() {
+    state.tasksOpen = true;
+    artifactTitle.textContent = 'Tasks';
+    document.querySelectorAll('.nav-item').forEach((el) => el.classList.remove('active'));
+    document.getElementById('nav-tasks')?.classList.add('active');
+    const all = sortedTasks();
+    const mine = all.filter((t) => t.status !== 'agent').length;
+    const rows = all.map((t) => {
+      const due = t.due ? fmtDate(t.due) : '';
+      const pill = `<span class="tk-pill k-${escapeHtml(t.status)}">${escapeHtml(t.agentLabel || TASK_STATUS_LABEL[t.status] || t.status)}</span>`;
+      return `<div class="tk-row" data-action="open-task" data-client="${escapeHtml(t.clientId)}" data-view="${escapeHtml(t.view)}" title="${escapeHtml(t.title)}">
         <div class="st-dot k-${escapeHtml(t.status)}"></div>
-        <div class="st-body">
-          <div class="st-title">${escapeHtml(t.title)}</div>
-          <div class="st-meta"><span class="st-meta-client">${escapeHtml(t.clientName)}</span> · ${escapeHtml(t.sectionLabel || t.kind)}</div>
+        <div class="tk-main">
+          <div class="tk-title">${escapeHtml(t.title)}</div>
+          ${t.detail ? `<div class="tk-detail">${escapeHtml(t.detail)}</div>` : ''}
+          <div class="tk-meta"><span class="tk-client">${escapeHtml(t.clientName)}</span> · ${escapeHtml(t.sectionLabel || t.kind)}${due ? ` · due ${escapeHtml(due)}` : ''}</div>
         </div>
-        ${dueHtml}
+        <div class="tk-right">${pill}</div>
       </div>`;
-    }).join('');
+    }).join('') || '<div class="sidebar-tasks-empty" style="padding:18px 4px;">No tasks. Inbox zero.</div>';
+    artifactBody.innerHTML = `
+      <div class="ips-title">Tasks</div>
+      <div class="ips-sub">${all.length} open across all clients — ${mine} for you, ${all.length - mine} handled by the agent. Click any item to jump to it.</div>
+      <div class="tk-list">${rows}</div>`;
+    artifactFooter.classList.remove('visible');
+    openArtifact();
   }
 
   function openTaskFor(clientId, view) {
@@ -7592,6 +7624,9 @@
       e.preventDefault();
       const card = btn.closest('.bn-card');
       if (card) card.classList.toggle('bn-expanded');
+    } else if (a === 'open-tasks') {
+      e.preventDefault();
+      openTasksView();
     } else if (a === 'open-task') {
       e.preventDefault();
       openTaskFor(btn.dataset.client, btn.dataset.view);
@@ -7815,7 +7850,7 @@
   }
   // Sidebar tasks render regardless of whether we restored a client URL —
   // they sit in the .sidebar-home block which is hidden when a client is open.
-  renderSidebarTasks();
+  renderTasksNav();
 </script>
 </body>
 </html>
