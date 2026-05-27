@@ -276,6 +276,13 @@
   .tk-pill.k-review { background: rgba(196,131,13,0.15); color: #8a5d0a; }
   .tk-pill.k-agent { background: rgba(31,112,80,0.12); color: var(--accent); }
   .tk-pill.k-pending { background: var(--line); color: var(--muted); }
+  .item-tasks-btn { appearance: none; cursor: pointer; background: transparent; border: 1px solid var(--line); color: var(--ink-2); border-radius: 6px; height: 28px; padding: 0 10px; font: inherit; font-size: 12px; flex-shrink: 0; margin-right: 6px; }
+  .item-tasks-btn:hover { border-color: var(--ink); color: var(--ink); }
+  .task-cta-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+  .task-cta { appearance: none; cursor: pointer; background: var(--accent); color: var(--dark-ink); border: 1px solid var(--accent); border-radius: 999px; padding: 6px 14px; font: inherit; font-size: 12.5px; }
+  .task-cta:hover { background: var(--accent-2); border-color: var(--accent-2); }
+  .task-cta.secondary { background: transparent; color: var(--ink); border-color: var(--line); }
+  .task-cta.secondary:hover { border-color: var(--ink); }
   .conv-header {
     padding: 14px 32px; border-bottom: 1px solid var(--line-soft);
     display: flex; align-items: center; justify-content: space-between; gap: 16px;
@@ -3102,6 +3109,7 @@
     }
     state.ipsDirty = false;
     state.module = 'ips';
+    state.fromTasks = false;
     state_pm.weights = null;
     state_pm.mvo = null;
     state.phase = 'reviewing-done';
@@ -3181,7 +3189,7 @@
       const name = c.name;
       // 1. Curated tasks
       const curated = CURATED_TASKS_BY_CLIENT[id] || [];
-      curated.forEach((t) => out.push({ ...t, clientId: id, clientName: name }));
+      curated.forEach((t) => out.push({ ...t, clientId: id, clientName: name, completable: t.status !== 'agent' }));
       // 2. Derived: IPS still draft
       const ipsStatus = c.ipsStatus || 'Draft';
       if (ipsStatus !== 'Live') {
@@ -3222,7 +3230,8 @@
         });
       }
     }
-    return out;
+    const done = new Set(state.completedTasks || []);
+    return out.filter((t) => !done.has(t.id));
   }
 
   // Sort: action items first (closest due dates), then review, pending, agent.
@@ -3249,25 +3258,15 @@
 
   // Full Tasks page — opens in the artifact panel, listing every task across all clients.
   const TASK_STATUS_LABEL = { action: 'Action needed', review: 'In review', pending: 'Pending', agent: 'Agent' };
-  function openTasksView() {
-    // Exit any other top-level mode (research / client) so we don't stack layouts
-    if (layout.classList.contains('research-open')) {
-      layout.classList.remove('research-open');
-      state.researchIntroShown = false;
-    }
-    layout.classList.remove('client-open');
-    layout.classList.remove('expanded');
-    state.tasksOpen = true;
-    state.module = 'tasks';
+  // Render just the Tasks artifact panel (list). Returns the task counts.
+  function renderTasksArtifact() {
     artifactTitle.textContent = 'Tasks';
-    document.querySelectorAll('.nav-item').forEach((el) => el.classList.remove('active'));
-    document.getElementById('nav-tasks')?.classList.add('active');
     const all = sortedTasks();
     const mine = all.filter((t) => t.status !== 'agent').length;
     const rows = all.map((t) => {
       const due = t.due ? fmtDate(t.due) : '';
       const pill = `<span class="tk-pill k-${escapeHtml(t.status)}">${escapeHtml(t.agentLabel || TASK_STATUS_LABEL[t.status] || t.status)}</span>`;
-      return `<div class="tk-row" data-action="open-task" data-client="${escapeHtml(t.clientId)}" data-view="${escapeHtml(t.view)}" title="${escapeHtml(t.title)}">
+      return `<div class="tk-row" data-action="surface-task" data-task="${escapeHtml(t.id)}" title="${escapeHtml(t.title)}">
         <div class="st-dot k-${escapeHtml(t.status)}"></div>
         <div class="tk-main">
           <div class="tk-title">${escapeHtml(t.title)}</div>
@@ -3279,10 +3278,27 @@
     }).join('') || '<div class="sidebar-tasks-empty" style="padding:18px 4px;">No tasks. Inbox zero.</div>';
     artifactBody.innerHTML = `
       <div class="ips-title">Tasks</div>
-      <div class="ips-sub">${all.length} open across all clients — ${mine} for you, ${all.length - mine} handled by the agent. Click any item to jump to it.</div>
+      <div class="ips-sub">${all.length} open across all clients — ${mine} for you, ${all.length - mine} handled by the agent. Click an item to see it here, then complete it or open it in the client's workspace.</div>
       <div class="tk-list">${rows}</div>`;
     artifactFooter.classList.remove('visible');
     openArtifact();
+    return { all, mine };
+  }
+
+  function openTasksView() {
+    // Exit any other top-level mode (research / client) so we don't stack layouts.
+    if (layout.classList.contains('research-open')) {
+      layout.classList.remove('research-open');
+      state.researchIntroShown = false;
+    }
+    layout.classList.remove('client-open');
+    layout.classList.remove('expanded');
+    state.tasksOpen = true;
+    state.fromTasks = false;
+    state.module = 'tasks';
+    document.querySelectorAll('.nav-item').forEach((el) => el.classList.remove('active'));
+    document.getElementById('nav-tasks')?.classList.add('active');
+    const { all, mine } = renderTasksArtifact();
 
     // Swap the home chat from the onboarding greeting to a tasks-focused message.
     feedInner.innerHTML = '';
@@ -3294,17 +3310,50 @@
       const actionLine = topAction.length
         ? ` The most time-sensitive: ${topAction.map((t) => `<strong>${escapeHtml(t.title)}</strong> (${escapeHtml(t.clientName)}${t.due ? `, due ${escapeHtml(fmtDate(t.due))}` : ''})`).join(' and ')}.`
         : '';
-      addAgent(`<p>Here's everything outstanding across your clients — <strong>${all.length} task${all.length === 1 ? '' : 's'}</strong>, ${mine} needing your attention and ${all.length - mine} the agent is handling.${actionLine}</p><p>Click any item on the right to open it, or ask me to dig in — e.g. <em>"what's left before the EM manager vote?"</em> or <em>"summarize Dream's open items."</em></p>`);
+      addAgent(`<p>Here's everything outstanding across your clients — <strong>${all.length} task${all.length === 1 ? '' : 's'}</strong>, ${mine} needing your attention and ${all.length - mine} the agent is handling.${actionLine}</p><p>Click any item to bring it up here — I'll lay out what's needed and you can complete it or jump into the client's workspace.</p>`);
     }
     composerInput.placeholder = 'Ask about a task, or click one to open it…';
   }
 
-  function openTaskFor(clientId, view) {
+  // Click a task → surface it in the chat with next-step CTAs (don't jump away yet).
+  function surfaceTask(taskId) {
+    const t = buildAllClientTasks().find((x) => x.id === taskId);
+    if (!t) return;
+    const due = t.due ? ` · due ${fmtDate(t.due)}` : '';
+    const pill = `<span class="tk-pill k-${escapeHtml(t.status)}">${escapeHtml(t.agentLabel || TASK_STATUS_LABEL[t.status] || t.status)}</span>`;
+    const meta = `<p style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin-top:2px;">${escapeHtml(t.clientName)} · ${escapeHtml(t.sectionLabel || t.kind)}${escapeHtml(due)}</p>`;
+    const agentNote = t.status === 'agent'
+      ? `<p style="color:var(--muted);font-size:12.5px;">Reve's agent is handling this${t.agentLabel ? ` (${escapeHtml(t.agentLabel)})` : ''} — open the workspace to watch or override.</p>` : '';
+    const reviewCta = `<button class="task-cta" data-action="goto-task" data-client="${escapeHtml(t.clientId)}" data-view="${escapeHtml(t.view)}">Open in ${escapeHtml(t.clientName)}'s workspace →</button>`;
+    const completeCta = t.completable ? `<button class="task-cta secondary" data-action="complete-task" data-task="${escapeHtml(t.id)}">Mark complete ✓</button>` : '';
+    addAgent(`<p><strong>${escapeHtml(t.title)}</strong> ${pill}</p>${t.detail ? `<p>${escapeHtml(t.detail)}</p>` : ''}${meta}${agentNote}<div class="task-cta-row">${reviewCta}${completeCta}</div>`);
+  }
+
+  function completeTask(taskId) {
+    const t = buildAllClientTasks().find((x) => x.id === taskId);
+    state.completedTasks = state.completedTasks || [];
+    if (!state.completedTasks.includes(taskId)) state.completedTasks.push(taskId);
+    renderTasksNav();
+    if (state.tasksOpen && !layout.classList.contains('client-open')) renderTasksArtifact();
+    addAgent(`<p>Marked ${t ? `<strong>${escapeHtml(t.title)}</strong>` : 'that task'} complete and cleared it from the list.</p>`);
+  }
+
+  // Return from a client's workspace to the global Tasks overview.
+  function backToTasks() {
+    state.fromTasks = false;
+    exitClientWorkspace();
+    openTasksView();
+  }
+
+  function openTaskFor(clientId, view, fromTasks = false) {
     // Switch to the client and the named view
     if (clientId && clientId !== state.clientId) {
       loadClient(clientId);
       // loadClient is synchronous; once it returns the workspace is open and module='ips'
     }
+    // Mark that we arrived from the Tasks overview, so item views and the vault show a
+    // "Back to tasks" affordance (set after loadClient, which clears the flag).
+    state.fromTasks = !!fromTasks;
     // Open the requested view (loadClient already lands on IPS by default)
     if (view && view !== 'ips') {
       if (view === 'portfolio') openPortfolioModule();
@@ -3317,6 +3366,9 @@
       else if (view === 'trading') openTradingView?.();
       else if (view === 'capital-calls') openCapitalCallsView?.();
       else if (view === 'spending') openSpendingView?.();
+    } else if (fromTasks) {
+      // IPS/default → land on the client's vault, re-rendered so its "Back to tasks" link appears.
+      renderVaultPanel();
     }
   }
   // ============================================================
@@ -3629,9 +3681,9 @@
           <div class="ch-name">${escapeHtml(state.org.name)}</div>
           <div class="ch-type">${escapeHtml(typeLabel)}</div>
         </div>
-        <a class="back-to-clients" data-action="back-to-clients" title="Back to all clients">
+        <a class="back-to-clients" data-action="${state.fromTasks ? 'back-to-tasks' : 'back-to-clients'}" title="${state.fromTasks ? 'Back to tasks' : 'Back to all clients'}">
           <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-          All clients
+          ${state.fromTasks ? 'Tasks' : 'All clients'}
         </a>
       </div>
       <div id="vault-items">${renderClientVault()}</div>
@@ -3745,7 +3797,8 @@
 
   function itemHeadHtml(label, rightHtml = '') {
     if (!layout.classList.contains('client-open')) return '';
-    return `<div class="item-head"><span style="color: var(--muted); font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;">${escapeHtml(label)}</span><span style="flex: 1;"></span>${rightHtml}<button class="item-close-btn" data-action="back-to-vault" title="Close (Esc)" aria-label="Close"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>`;
+    const backTasks = state.fromTasks ? `<button class="item-tasks-btn" data-action="back-to-tasks" title="Back to tasks">← Tasks</button>` : '';
+    return `<div class="item-head"><span style="color: var(--muted); font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;">${escapeHtml(label)}</span><span style="flex: 1;"></span>${rightHtml}${backTasks}<button class="item-close-btn" data-action="back-to-vault" title="Close (Esc)" aria-label="Close"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>`;
   }
   function enterItemView() {
     if (layout.classList.contains('client-open')) layout.classList.add('expanded');
@@ -7465,6 +7518,7 @@
     state.saa = null;
     state.ipsDirty = false;
     state.module = 'ips';
+    state.fromTasks = false;
     state.currentExample = null;
     state.reviewIdx = 0;
     state_pm.weights = null;
@@ -8701,6 +8755,18 @@
     } else if (a === 'open-tasks') {
       e.preventDefault();
       openTasksView();
+    } else if (a === 'surface-task') {
+      e.preventDefault();
+      surfaceTask(btn.dataset.task);
+    } else if (a === 'goto-task') {
+      e.preventDefault();
+      openTaskFor(btn.dataset.client, btn.dataset.view, true);
+    } else if (a === 'complete-task') {
+      e.preventDefault();
+      completeTask(btn.dataset.task);
+    } else if (a === 'back-to-tasks') {
+      e.preventDefault();
+      backToTasks();
     } else if (a === 'open-task') {
       e.preventDefault();
       openTaskFor(btn.dataset.client, btn.dataset.view);
