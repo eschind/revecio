@@ -3219,6 +3219,20 @@
       <div class="tk-list">${rows}</div>`;
     artifactFooter.classList.remove('visible');
     openArtifact();
+
+    // Swap the home chat from the onboarding greeting to a tasks-focused message.
+    feedInner.innerHTML = '';
+    state.chatHistory = [];
+    if (all.length === 0) {
+      addAgent(`<p>You're all caught up — no outstanding tasks across your clients. When capital calls come due, monitoring updates land, or an IPS/SAA needs adopting, they'll show up here.</p>`);
+    } else {
+      const topAction = all.filter((t) => t.status === 'action').slice(0, 2);
+      const actionLine = topAction.length
+        ? ` The most time-sensitive: ${topAction.map((t) => `<strong>${escapeHtml(t.title)}</strong> (${escapeHtml(t.clientName)}${t.due ? `, due ${escapeHtml(fmtDate(t.due))}` : ''})`).join(' and ')}.`
+        : '';
+      addAgent(`<p>Here's everything outstanding across your clients — <strong>${all.length} task${all.length === 1 ? '' : 's'}</strong>, ${mine} needing your attention and ${all.length - mine} the agent is handling.${actionLine}</p><p>Click any item on the right to open it, or ask me to dig in — e.g. <em>"what's left before the EM manager vote?"</em> or <em>"summarize Dream's open items."</em></p>`);
+    }
+    composerInput.placeholder = 'Ask about a task, or click one to open it…';
   }
 
   function openTaskFor(clientId, view) {
