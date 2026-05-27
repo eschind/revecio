@@ -6427,15 +6427,23 @@
   // intersected with the 50% Tier-1 liquidity floor. The recommended (max-Sharpe) portfolio
   // is, by construction, a point ON this curve. Seeded + cached so the curve and the
   // recommendation are STABLE across redraws (no Monte-Carlo jitter between openings).
-  let _ipsFrontier = null;
+  let _ipsFrontier = null, _ipsFrontierSpend = null;
   function computeIpsFrontier() {
-    if (_ipsFrontier) return _ipsFrontier;
+    // The achievable frontier is restricted to allocations that are also self-funding on
+    // liquidity: investment income + cash must cover the year's spending + capital calls, so
+    // the recommended SAA never relies on forced asset sales. Re-cache if spending changes.
+    const spendingRate = inferSpendingRate(state.facts?.spending);
+    if (_ipsFrontier && _ipsFrontierSpend === spendingRate) return _ipsFrontier;
     const ids = Object.keys(IPS_RANGE);
     const pts = [];
     let optimal = null;
     const consider = (w) => {
       const m = portfolioMetrics(w);
       if (m.tiers[1] < LIQ_FLOOR - 1e-6) return;
+      // Self-funding: income + cash ≥ spending + capital calls (no forced sales).
+      const income = CMA.reduce((s, c) => s + (w[c.id] || 0) * (c.inc || 0), 0);
+      const need = spendingRate + m.tiers[3] * CALL_RATE;
+      if (income + (w.cash || 0) < need - 1e-6) return;
       pts.push({ vol: m.vol, ret: m.ret });
       if (!optimal || m.sharpe > optimal.m.sharpe) optimal = { w, m };
     };
@@ -6462,6 +6470,7 @@
       consider(projectToBoundsAndSimplex(w));
     }
     _ipsFrontier = { envelope: upperConcaveHull(pts), optimal };
+    _ipsFrontierSpend = spendingRate;
     return _ipsFrontier;
   }
 
