@@ -3330,10 +3330,14 @@
     layout.classList.remove('research-open');
     document.querySelectorAll('.nav-item').forEach((el) => el.classList.remove('active'));
     document.getElementById('nav-new-client')?.classList.add('active');
+    // Reset so the next entry to Managers triggers the agent intro again
+    state.researchIntroShown = false;
   }
 
   function openManagersView() {
-    const firstEntry = !state.researchIntroShown;
+    // Fire the agent intro any time we ENTER research from outside it — not just
+    // once per session. Internal nav (list → detail → compare) won't re-trigger.
+    const wasInResearch = (state.module || '').startsWith('research-');
     state.module = 'research-managers';
     state.researchSelected = state.researchSelected || new Set();
     enterResearchMode();
@@ -3341,8 +3345,7 @@
     openArtifact();
     renderManagersList();
     updateUrl();
-    if (firstEntry) {
-      state.researchIntroShown = true;
+    if (!wasInResearch) {
       // Adjust the composer hint to reflect the research context
       if (composerInput) composerInput.placeholder = 'Ask the research agent — search, compare, dig into a manager…';
       addAgent(`<p>You're in <strong>Manager research</strong>. I can help you navigate the ${MANAGER_UNIVERSE.length} managers we track.</p>
