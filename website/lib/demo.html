@@ -1548,6 +1548,8 @@
           // Client materials/profile, so the agent can answer questions about
           // the organization grounded in the uploaded documents.
           materials: buildMaterialsCorpus(),
+          // Current profile facts so the agent can rewrite them on edit_facts intents
+          facts: state.facts || {},
           // Exclude the current message (already pushed into history by addUser)
           history: (state.chatHistory || []).slice(0, -1).slice(-10),
         }),
@@ -1666,6 +1668,19 @@
         return;
       }
       await agentReply(`<p>${escapeHtml(route?.reply || 'Which item would you like to open?')}</p>`);
+      return;
+    }
+
+    // Profile fact edits — update state.facts first, then offer to cascade to the IPS.
+    if (intent === 'edit_facts') {
+      const factKey = String(route?.factKey || '');
+      const newValue = String(route?.newValue || '').trim();
+      const validKeys = ['mission', 'spending', 'cashNeeds', 'drawdown', 'constraints', 'governance'];
+      if (!validKeys.includes(factKey) || !newValue) {
+        await agentReply(`<p>${escapeHtml(route?.reply || "I'm not sure which profile field you want to change. Try, for example, 'change the mission to focus on undergraduate education.'")}</p>`);
+        return;
+      }
+      await applyProfileFactEdit(factKey, newValue, route?.reply || '');
       return;
     }
 
@@ -3323,6 +3338,80 @@
   function onProfileMaterialsAdded(names) {
     rerenderProfileSection('materials');
     addAgent(`<p>Added <strong>${names.length} new ${names.length === 1 ? 'material' : 'materials'}</strong>: ${names.map((n) => escapeHtml(n)).join(', ')}. I'll fold these into context on the next review — ask me to scan them for IPS updates whenever you're ready.</p>`);
+  }
+
+  // Mapping from a Profile fact key to the IPS section that documents the same thing.
+  // Used when the user opts to cascade a profile edit into the IPS draft.
+  const FACT_TO_IPS_SECTION = {
+    mission: 1,        // Statement of Purpose and Scope
+    spending: 5,       // Spending Policy (or near it)
+    cashNeeds: 8,      // Liquidity Management
+    drawdown: 4,       // Risk Tolerance / Drawdown
+    constraints: 13,   // Mission-Aligned Investing and ESG
+    governance: 2,     // Roles and Responsibilities
+  };
+  const FACT_LABEL = {
+    mission: 'mission', spending: 'spending policy', cashNeeds: 'cash needs',
+    drawdown: 'drawdown tolerance', constraints: 'constraints', governance: 'governance',
+  };
+
+  async function applyProfileFactEdit(factKey, newValue, replyText) {
+    const oldValue = (state.facts && state.facts[factKey]) || '(not set)';
+    state.facts = state.facts || {};
+    state.facts[factKey] = newValue;
+    // If the user has the Profile open, refresh that section to show the new value
+    if (state.module === 'profile') {
+      profileEdit['facts'] = false;
+      rerenderProfileSection('facts');
+    }
+    // Persist on saved clients (skip the read-only sample)
+    if (state.clientId && !isSampleId(state.clientId)) saveClient();
+    const cascadeId = `fact-cascade-${factKey}-${Date.now().toString(36)}`;
+    const targetSec = FACT_TO_IPS_SECTION[factKey];
+    const cascadeBtn = targetSec
+      ? `<div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+           <button class="btn btn-sm" data-action="fact-cascade-ips" data-fact="${factKey}" data-cascade-id="${cascadeId}">Reflect this in the IPS (Section ${targetSec}) →</button>
+           <button class="btn btn-sm btn-secondary" data-action="fact-cascade-dismiss" data-cascade-id="${cascadeId}">Keep profile only</button>
+         </div>`
+      : '';
+    const replyLine = replyText ? `<p>${escapeHtml(replyText)}</p>` : '';
+    await agentReply(`${replyLine}
+      <div style="background:#fff;border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin-top:6px;">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">Profile · ${FACT_LABEL[factKey]}</div>
+        <div style="font-size:12px;color:var(--muted);text-decoration:line-through;margin-bottom:4px;">${escapeHtml(String(oldValue).slice(0, 240))}${String(oldValue).length > 240 ? '…' : ''}</div>
+        <div style="font-size:13px;color:var(--ink-2);line-height:1.55;">${escapeHtml(newValue)}</div>
+        ${cascadeBtn}
+      </div>
+      <div id="${cascadeId}-status" style="margin-top:6px;font-size:11.5px;color:var(--muted);"></div>`);
+  }
+
+  async function cascadeFactToIps(factKey, cascadeId) {
+    const targetSec = FACT_TO_IPS_SECTION[factKey];
+    if (!targetSec) return;
+    const value = state.facts?.[factKey] || '';
+    // Disable the buttons in the original chat card while we work
+    const wrap = document.querySelector(`[data-cascade-id="${cascadeId}"]`)?.closest('div');
+    if (wrap) wrap.querySelectorAll('button').forEach((b) => b.setAttribute('disabled', ''));
+    const statusEl = document.getElementById(`${cascadeId}-status`);
+    if (statusEl) statusEl.textContent = `Opening IPS Section ${targetSec}…`;
+    // Switch to IPS and find the section
+    if (state.module !== 'ips') {
+      switchToIpsView();
+      await new Promise((r) => setTimeout(r, 80));
+    }
+    const idx = IPS_SECTIONS.findIndex((s) => s.num === targetSec);
+    if (idx < 0) {
+      if (statusEl) statusEl.textContent = 'Couldn\'t locate that IPS section.';
+      return;
+    }
+    state.reviewIdx = idx;
+    const s = IPS_SECTIONS[idx];
+    highlightSection(s.id);
+    await new Promise((r) => setTimeout(r, 80));
+    if (statusEl) statusEl.textContent = `Updating Section ${targetSec}: ${s.title}…`;
+    const prompt = `Update this section to reflect the following ${FACT_LABEL[factKey]} from the client profile: "${value}". Integrate it naturally; do not echo the prompt verbatim.`;
+    await applyAiEdit(s.id, prompt);
+    if (statusEl) statusEl.textContent = `Section ${targetSec} updated.`;
   }
 
   function saveProfileSection(id) {
@@ -7205,6 +7294,15 @@
       e.preventDefault();
       const card = btn.closest('.bn-card');
       if (card) card.classList.toggle('bn-expanded');
+    } else if (a === 'fact-cascade-ips') {
+      e.preventDefault();
+      cascadeFactToIps(btn.dataset.fact, btn.dataset.cascadeId);
+    } else if (a === 'fact-cascade-dismiss') {
+      e.preventDefault();
+      const wrap = btn.closest('div');
+      if (wrap) wrap.querySelectorAll('button').forEach((b) => b.setAttribute('disabled', ''));
+      const statusEl = document.getElementById(`${btn.dataset.cascadeId}-status`);
+      if (statusEl) statusEl.textContent = 'Profile updated. IPS unchanged.';
     } else if (a === 'start-review') {
       e.preventDefault();
       beginSectionReview();
