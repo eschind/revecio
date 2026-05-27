@@ -12,12 +12,14 @@ You receive:
 Classify the message and return ONLY a single JSON object (no markdown, no commentary):
 
 {
-  "intent": "analyze" | "answer_content" | "org_info" | "spend_model" | "optimize" | "open" | "next" | "previous" | "switch" | "edit" | "switch_and_edit" | "question" | "unclear",
+  "intent": "analyze" | "answer_content" | "org_info" | "spend_model" | "edit_facts" | "optimize" | "open" | "next" | "previous" | "switch" | "edit" | "switch_and_edit" | "question" | "unclear",
   "targetModule": "ips" | "portfolio" | "spending" | "materials" | "monitoring" | "board" | "decisions" | "profile" | null,
   "targetSectionNum": <number or null>,
   "query": "sharpe" | "return" | "vol" | "real_return" | "allocation" | "liquidity" | "metrics" | "capital_calls" | "capital_calls_all" | null,
   "scenario": "base" | "downturn" | "upside" | null,
   "adjustments": [ { "key": <string>, "factor": <number> } ] | null,
+  "factKey": "mission" | "spending" | "cashNeeds" | "drawdown" | "constraints" | "governance" | null,
+  "newValue": <string or null>,
   "editPrompt": <string or null>,
   "answer": <string or null>,
   "reply": <string or null>
@@ -72,6 +74,17 @@ Rules:
       EXPENSE: comp (compensation/salaries/benefits), aid (financial aid), facilities (facilities & operations), research (research & academic programs), debt (debt service), otherExpense (administration & other).
     Examples: "donations drop 20% and tuition falls 5%" → adjustments=[{"key":"gifts","factor":0.8},{"key":"tuition","factor":0.95}]; "increase financial aid by 10%" → [{"key":"aid","factor":1.1}]; "what if research spending doubles" → [{"key":"research","factor":2}].
   - Set "reply" to a one-to-two-sentence narration of the change and its effect on the margin of safety. If the user only names a scenario with no line change, set adjustments=null.
+- "edit_facts" — user wants to change a CLIENT PROFILE fact (mission, spending policy, cash needs, drawdown tolerance, constraints, or governance). Use this — NOT edit/switch_and_edit — when the request is about the profile facts, especially when the current module is "profile" but ALSO when the user is anywhere and explicitly says "in the profile" or names one of the fact fields. Set:
+  - "factKey" = one of mission | spending | cashNeeds | drawdown | constraints | governance, matched to the user's wording.
+  - "newValue" = the REWRITTEN fact text in plain English (1–3 sentences). Read the current fact value (provided below in "Client profile facts") and incorporate the user's change. Do not echo the user's instruction verbatim; produce a clean replacement.
+  - "reply" = a one-sentence narration of what changed.
+  Mapping examples:
+  - "change the mission to focus on undergraduate education" → factKey="mission"
+  - "update the spending policy to 5% of trailing 12-quarter average" → factKey="spending"
+  - "tighten the drawdown tolerance to 15%" → factKey="drawdown"
+  - "add an exclusion for private prisons" → factKey="constraints"
+  - "the IC has nine members now, not seven" → factKey="governance"
+  After this intent fires, the app updates the profile fact and offers the user a one-click way to cascade the change into the IPS. Do NOT directly call edit/switch_and_edit when the user is asking for a profile change.
 - "next" / "previous" — only when IPS is in focus and the user wants to advance/retreat through sections.
 - "switch" — focus on a different IPS section without editing.
 - "edit" — change the CURRENT IPS section. editPrompt = neutral instruction.
@@ -136,6 +149,7 @@ export default async function handler(req, res) {
   const sections = Array.isArray(body.sections) ? body.sections.slice(0, 30) : [];
   const history = Array.isArray(body.history) ? body.history.slice(-10) : [];
   const materials = Array.isArray(body.materials) ? body.materials.slice(0, 8) : [];
+  const facts = (body.facts && typeof body.facts === 'object') ? body.facts : null;
 
   if (!userMessage || !sections.length) {
     res.statusCode = 400;
@@ -153,12 +167,15 @@ export default async function handler(req, res) {
   const materialsBlock = materials.length
     ? `\nClient materials on file (excerpts — the ONLY source for org_info answers; do not invent beyond these):\n${materials.map((m) => `[${String(m.source || 'document').slice(0, 80)}] ${String(m.text || '').slice(0, 1800)}`).join('\n\n')}\n`
     : '';
+  const factsBlock = facts
+    ? `\nClient profile facts (the CURRENT values — read these when an edit_facts intent fires, and produce a clean rewritten replacement):\n${['mission','spending','cashNeeds','drawdown','constraints','governance'].map((k) => `  ${k}: ${String(facts[k] || '(none)').slice(0, 600)}`).join('\n')}\n`
+    : '';
   const userBlock = `Current module: ${currentModule}
 Current IPS section in focus: ${currentSectionNum}. ${currentSectionTitle}
 
 All IPS sections:
 ${sectionList}
-${materialsBlock}${historyBlock}
+${materialsBlock}${factsBlock}${historyBlock}
 Latest user message: ${userMessage}
 
 Use the conversation so far to resolve references like "it", "that", "what about", "what if". For example, if the user asked about Sharpe and then says "what would it be with MVO", the intent is "optimize" with query="sharpe".
