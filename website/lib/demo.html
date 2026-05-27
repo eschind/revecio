@@ -3250,7 +3250,15 @@
   // Full Tasks page — opens in the artifact panel, listing every task across all clients.
   const TASK_STATUS_LABEL = { action: 'Action needed', review: 'In review', pending: 'Pending', agent: 'Agent' };
   function openTasksView() {
+    // Exit any other top-level mode (research / client) so we don't stack layouts
+    if (layout.classList.contains('research-open')) {
+      layout.classList.remove('research-open');
+      state.researchIntroShown = false;
+    }
+    layout.classList.remove('client-open');
+    layout.classList.remove('expanded');
     state.tasksOpen = true;
+    state.module = 'tasks';
     artifactTitle.textContent = 'Tasks';
     document.querySelectorAll('.nav-item').forEach((el) => el.classList.remove('active'));
     document.getElementById('nav-tasks')?.classList.add('active');
@@ -3352,6 +3360,7 @@
     // Fire the agent intro any time we ENTER research from outside it — not just
     // once per session. Internal nav (list → detail → compare) won't re-trigger.
     const wasInResearch = (state.module || '').startsWith('research-');
+    state.tasksOpen = false;
     state.module = 'research-managers';
     state.researchSelected = state.researchSelected || new Set();
     enterResearchMode();
@@ -8907,13 +8916,27 @@
     if (params.get('research') === 'managers') {
       const mgr = params.get('mgr');
       const compare = params.get('compare');
+      // Always show the research intro on a fresh load — otherwise refreshing
+      // directly on a detail/compare URL would leave the agent pane empty.
+      if (composerInput) composerInput.placeholder = 'Ask the research agent — search, compare, dig into a manager…';
+      addAgent(`<p>You're in <strong>Manager research</strong>. I can help you navigate the ${MANAGER_UNIVERSE.length} managers we track — ask me to search, compare, or dig into any name.</p>`);
       if (compare) {
         state.researchSelected = new Set(compare.split(',').filter(Boolean));
+        state.module = 'research-managers';
         openManagersCompare();
       } else if (mgr) {
         openManagerDetail(mgr);
       } else {
-        openManagersView();
+        // openManagersView's intro is gated on wasInResearch — we've already
+        // added the intro above, so just route into the list view.
+        state.tasksOpen = false;
+        state.module = 'research-managers';
+        state.researchSelected = state.researchSelected || new Set();
+        enterResearchMode();
+        artifactTitle.textContent = 'Manager universe';
+        openArtifact();
+        renderManagersList();
+        updateUrl();
       }
       return true;
     }
@@ -8950,8 +8973,11 @@
       if (tBtn) { tBtn.title = 'Expand sidebar'; tBtn.setAttribute('aria-label', 'Expand sidebar'); }
     }
   } catch {}
+  // Always render the Active clients sidebar so it's populated even when
+  // restoring directly into a research/tasks URL (otherwise the sidebar is
+  // blank until you nav back to a home action, which made Dream "disappear").
+  renderActiveClients();
   if (!restoreFromUrl()) {
-    renderActiveClients();
     startConversation();
     updateUrl();
   }
