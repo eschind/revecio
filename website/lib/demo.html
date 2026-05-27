@@ -207,42 +207,25 @@
     height: 100%;
   }
   .conv-feed { min-height: 0; }
-  .home-tasks { background: var(--panel); border-bottom: 1px solid var(--line); padding: 16px 28px 18px; max-height: 50vh; overflow-y: auto; }
-  .home-tasks-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; gap: 12px; flex-wrap: wrap; }
-  .home-tasks-title { font-family: 'Newsreader', serif; font-size: 17px; color: var(--ink); }
-  .home-tasks-meta { font-family: 'JetBrains Mono', monospace; font-size: 10.5px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
-  .home-tasks-filter { display: inline-flex; gap: 4px; padding: 2px; background: var(--bg-2); border-radius: 999px; }
-  .home-tasks-filter button { appearance: none; cursor: pointer; background: transparent; border: 0; padding: 3px 10px; border-radius: 999px; font: inherit; font-size: 10.5px; letter-spacing: 0.04em; color: var(--muted); font-family: 'JetBrains Mono', monospace; text-transform: uppercase; }
-  .home-tasks-filter button.active { background: var(--ink); color: var(--dark-ink); }
-  .home-tasks-empty { color: var(--muted); font-size: 13px; font-style: italic; padding: 8px 0; }
-  .task-row { display: grid; grid-template-columns: 28px 1fr auto; gap: 12px; align-items: center; padding: 9px 10px; border-radius: 8px; cursor: pointer; border: 1px solid transparent; }
-  .task-row:hover { background: var(--bg-2); border-color: var(--line); }
-  .task-icon { width: 28px; height: 28px; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; background: var(--bg-2); border: 1px solid var(--line); }
-  .task-icon svg { width: 15px; height: 15px; stroke: var(--ink-2); fill: none; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
-  .task-icon.k-comms { background: rgba(43,90,138,0.10); border-color: rgba(43,90,138,0.25); }
-  .task-icon.k-comms svg { stroke: #2b5a8a; }
-  .task-icon.k-capital { background: rgba(196,131,13,0.12); border-color: rgba(196,131,13,0.28); }
-  .task-icon.k-capital svg { stroke: #8a5d0a; }
-  .task-icon.k-monitoring { background: rgba(31,112,80,0.10); border-color: rgba(31,112,80,0.25); }
-  .task-icon.k-monitoring svg { stroke: var(--accent); }
-  .task-icon.k-trading { background: rgba(107,92,138,0.12); border-color: rgba(107,92,138,0.28); }
-  .task-icon.k-trading svg { stroke: #4d3f6b; }
-  .task-icon.k-ips { background: rgba(177,58,58,0.08); border-color: rgba(177,58,58,0.22); }
-  .task-icon.k-ips svg { stroke: #b13a3a; }
-  .task-icon.k-saa { background: rgba(196,131,13,0.12); border-color: rgba(196,131,13,0.28); }
-  .task-icon.k-saa svg { stroke: #8a5d0a; }
-  .task-body { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-  .task-client { font-family: 'JetBrains Mono', monospace; font-size: 9.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
-  .task-title { font-size: 13px; color: var(--ink); line-height: 1.3; }
-  .task-detail { font-size: 11.5px; color: var(--muted); line-height: 1.4; }
-  .task-status { font-family: 'JetBrains Mono', monospace; font-size: 9.5px; letter-spacing: 0.06em; text-transform: uppercase; padding: 3px 8px; border-radius: 4px; white-space: nowrap; flex-shrink: 0; }
-  .task-status.t-action { background: rgba(177,58,58,0.10); color: #b13a3a; border: 1px solid rgba(177,58,58,0.25); }
-  .task-status.t-agent { background: rgba(31,112,80,0.10); color: var(--accent); border: 1px solid rgba(31,112,80,0.25); }
-  .task-status.t-review { background: rgba(196,131,13,0.10); color: #8a5d0a; border: 1px solid rgba(196,131,13,0.25); }
-  .task-status.t-pending { background: var(--bg-2); color: var(--muted); border: 1px solid var(--line); }
-  .home-tasks-list { display: flex; flex-direction: column; gap: 4px; }
-  .home-tasks-section + .home-tasks-section { margin-top: 14px; }
-  .home-tasks-section-head { font-family: 'JetBrains Mono', monospace; font-size: 9.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; padding-left: 10px; }
+  /* Sidebar tasks — sits under Active clients in the home view */
+  .sidebar-tasks-label .sidebar-tasks-counts { font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 0.04em; text-transform: none; color: var(--muted); font-weight: 400; }
+  .sidebar-tasks { display: flex; flex-direction: column; gap: 2px; padding: 0 4px; }
+  .sidebar-tasks-empty { color: var(--muted); font-size: 11px; font-style: italic; padding: 6px 6px; }
+  .st-row { display: grid; grid-template-columns: 8px 1fr auto; gap: 7px; align-items: center; padding: 6px 6px; border-radius: 6px; cursor: pointer; border: 1px solid transparent; }
+  .st-row:hover { background: rgba(20,23,28,0.04); }
+  .st-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; align-self: center; }
+  .st-dot.k-action { background: #b13a3a; }
+  .st-dot.k-review { background: #c4830d; }
+  .st-dot.k-agent  { background: var(--accent); }
+  .st-dot.k-pending{ background: var(--line); border: 1px solid var(--muted); }
+  .st-body { min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+  .st-title { font-size: 11.5px; color: var(--ink); line-height: 1.3; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .st-meta { font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .st-meta .st-meta-client { color: var(--ink-2); }
+  .st-due { font-family: 'JetBrains Mono', monospace; font-size: 9.5px; color: #8a2828; letter-spacing: 0.02em; flex-shrink: 0; align-self: center; }
+  .st-due.muted { color: var(--muted); }
+  .layout.sidebar-collapsed .sidebar-tasks-label { display: none; }
+  .layout.sidebar-collapsed .sidebar-tasks { display: none; }
   .conv-header {
     padding: 14px 32px; border-bottom: 1px solid var(--line-soft);
     display: flex; align-items: center; justify-content: space-between; gap: 16px;
@@ -974,6 +957,8 @@
           </div>
           <div class="nav-label" style="margin-top: 8px;">Active clients</div>
           <div class="nav-sub" id="nav-active-clients"></div>
+          <div class="nav-label sidebar-tasks-label" style="margin-top: 10px; display: flex; align-items: baseline; justify-content: space-between; gap: 6px;"><span>Tasks</span><span class="sidebar-tasks-counts" id="sidebar-tasks-counts"></span></div>
+          <div class="sidebar-tasks" id="sidebar-tasks"></div>
         </div>
       </div>
 
@@ -987,7 +972,6 @@
         </div>
       </div>
 
-      <div id="home-tasks" class="home-tasks" hidden></div>
       <div class="conv-feed" id="conv-feed">
         <div class="inner" id="conv-inner"></div>
       </div>
@@ -3079,15 +3063,13 @@
 
   function enterClientWorkspace() {
     layout.classList.add('client-open');
-    const el = document.getElementById('home-tasks');
-    if (el) el.hidden = true;
     renderVaultPanel();
   }
   function exitClientWorkspace() {
     layout.classList.remove('client-open');
     layout.classList.remove('expanded');
     renderActiveClients();
-    renderHomeTasksPanel();
+    renderSidebarTasks();
   }
 
   // ============================================================
@@ -3168,63 +3150,43 @@
     return out;
   }
 
-  function renderHomeTasksPanel(filter = state.taskFilter || 'all') {
-    state.taskFilter = filter;
-    const el = document.getElementById('home-tasks');
-    if (!el) return;
-    // Hide whenever a client is open
-    if (layout.classList.contains('client-open')) { el.hidden = true; return; }
+  // Render the Tasks list in the sidebar. Compact rows, one line per task.
+  function renderSidebarTasks() {
+    const list = document.getElementById('sidebar-tasks');
+    const counts = document.getElementById('sidebar-tasks-counts');
+    if (!list || !counts) return;
     const all = buildAllClientTasks();
-    const filtered = filter === 'mine'
-      ? all.filter((t) => t.status !== 'agent')
-      : filter === 'agent'
-        ? all.filter((t) => t.status === 'agent')
-        : all;
-    const counts = { all: all.length, mine: all.filter((t) => t.status !== 'agent').length, agent: all.filter((t) => t.status === 'agent').length };
-    const pill = (key, label) => `<button class="${filter === key ? 'active' : ''}" data-action="home-task-filter" data-filter="${key}">${label} · ${counts[key]}</button>`;
-
-    // Group by client for clarity
-    const byClient = {};
-    for (const t of filtered) { (byClient[t.clientId] = byClient[t.clientId] || []).push(t); }
-
-    const statusBadge = (t) => {
-      if (t.status === 'agent') return `<span class="task-status t-agent">${escapeHtml(t.agentLabel || 'Agent · in progress')}</span>`;
-      if (t.status === 'review') return `<span class="task-status t-review">Review</span>`;
-      if (t.status === 'pending') return `<span class="task-status t-pending">Pending</span>`;
-      return `<span class="task-status t-action">${t.due ? `Action · due ${escapeHtml(fmtDate(t.due))}` : 'Action needed'}</span>`;
-    };
-
-    const taskRow = (t) => `<div class="task-row" data-action="open-task" data-client="${escapeHtml(t.clientId)}" data-view="${escapeHtml(t.view)}">
-      <div class="task-icon k-${escapeHtml(t.kind)}" aria-hidden="true">${TASK_ICONS[t.kind] || ''}</div>
-      <div class="task-body">
-        <div class="task-client">${escapeHtml(t.clientName)} · ${escapeHtml(t.sectionLabel || '')}</div>
-        <div class="task-title">${escapeHtml(t.title)}</div>
-        ${t.detail ? `<div class="task-detail">${escapeHtml(t.detail)}</div>` : ''}
-      </div>
-      ${statusBadge(t)}
-    </div>`;
-
-    const body = filtered.length === 0
-      ? `<div class="home-tasks-empty">${filter === 'all' ? 'No outstanding tasks.' : (filter === 'mine' ? 'No items waiting on you — agent is handling the rest.' : 'No items currently with the agent.')}</div>`
-      : Object.keys(byClient).map((cid) => {
-          const tasks = byClient[cid];
-          return `<div class="home-tasks-section">
-            <div class="home-tasks-section-head">${escapeHtml(tasks[0].clientName)} · ${tasks.length} item${tasks.length === 1 ? '' : 's'}</div>
-            <div class="home-tasks-list">${tasks.map(taskRow).join('')}</div>
-          </div>`;
-        }).join('');
-
-    el.hidden = false;
-    el.innerHTML = `
-      <div class="home-tasks-head">
-        <div>
-          <div class="home-tasks-title">Tasks across your clients</div>
-          <div class="home-tasks-meta">${all.length} open · ${counts.mine} need you · ${counts.agent} with the agent</div>
+    if (all.length === 0) {
+      counts.textContent = '';
+      list.innerHTML = '<div class="sidebar-tasks-empty">No tasks. Inbox zero.</div>';
+      return;
+    }
+    const mine = all.filter((t) => t.status !== 'agent').length;
+    counts.textContent = `${mine} · ${all.length - mine} agent`;
+    // Sort: action items first (with the closest due dates), then review, then agent
+    const order = { action: 0, review: 1, pending: 2, agent: 3 };
+    const sorted = all.slice().sort((a, b) => {
+      const oa = order[a.status] ?? 9;
+      const ob = order[b.status] ?? 9;
+      if (oa !== ob) return oa - ob;
+      if (a.due && b.due) return a.due.localeCompare(b.due);
+      if (a.due) return -1;
+      if (b.due) return 1;
+      return 0;
+    });
+    list.innerHTML = sorted.map((t) => {
+      const dueLabel = t.due ? fmtDate(t.due).replace(/, \d{4}$/, '') : '';
+      const dueCls = t.status === 'action' && t.due ? '' : ' muted';
+      const dueHtml = dueLabel ? `<span class="st-due${dueCls}">${escapeHtml(dueLabel)}</span>` : '';
+      return `<div class="st-row" data-action="open-task" data-client="${escapeHtml(t.clientId)}" data-view="${escapeHtml(t.view)}" title="${escapeHtml(t.title)}">
+        <div class="st-dot k-${escapeHtml(t.status)}"></div>
+        <div class="st-body">
+          <div class="st-title">${escapeHtml(t.title)}</div>
+          <div class="st-meta"><span class="st-meta-client">${escapeHtml(t.clientName)}</span> · ${escapeHtml(t.sectionLabel || t.kind)}</div>
         </div>
-        <div class="home-tasks-filter">${pill('all', 'All')}${pill('mine', 'Need me')}${pill('agent', 'Agent')}</div>
-      </div>
-      ${body}
-    `;
+        ${dueHtml}
+      </div>`;
+    }).join('');
   }
 
   function openTaskFor(clientId, view) {
@@ -7633,9 +7595,6 @@
     } else if (a === 'open-task') {
       e.preventDefault();
       openTaskFor(btn.dataset.client, btn.dataset.view);
-    } else if (a === 'home-task-filter') {
-      e.preventDefault();
-      renderHomeTasksPanel(btn.dataset.filter);
     } else if (a === 'fact-cascade-ips') {
       e.preventDefault();
       cascadeFactToIps(btn.dataset.fact, btn.dataset.cascadeId);
@@ -7852,9 +7811,11 @@
   if (!restoreFromUrl()) {
     renderActiveClients();
     startConversation();
-    renderHomeTasksPanel();
     updateUrl();
   }
+  // Sidebar tasks render regardless of whether we restored a client URL —
+  // they sit in the .sidebar-home block which is hidden when a client is open.
+  renderSidebarTasks();
 </script>
 </body>
 </html>
