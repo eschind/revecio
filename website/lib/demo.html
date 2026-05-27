@@ -207,6 +207,37 @@
     height: 100%;
   }
   .conv-feed { min-height: 0; }
+  /* Research · Manager universe */
+  .layout.research-open { grid-template-columns: 232px 1fr 0; }
+  .layout.research-open.with-artifact { grid-template-columns: 232px 1fr 720px; }
+  .mu-head { margin-bottom: 16px; }
+  .mu-toolbar { display: flex; gap: 12px; align-items: center; margin-bottom: 10px; flex-wrap: wrap; }
+  .mu-search { flex: 1; min-width: 220px; padding: 7px 12px; border: 1px solid var(--line); border-radius: 999px; font: inherit; font-size: 12.5px; background: #fff; color: var(--ink); }
+  .mu-search:focus { outline: none; border-color: var(--ink); }
+  .mu-compare-bar { display: flex; align-items: center; gap: 8px; }
+  .mu-compare-hint { font-size: 11.5px; color: var(--muted); font-style: italic; }
+  .mu-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+  .mu-chip { appearance: none; cursor: pointer; background: transparent; border: 1px solid var(--line); color: var(--ink-2); border-radius: 999px; padding: 4px 12px; font: inherit; font-size: 11.5px; }
+  .mu-chip:hover { border-color: var(--ink); color: var(--ink); }
+  .mu-chip.active { background: var(--ink); border-color: var(--ink); color: var(--dark-ink); }
+  .mu-chip-count { font-family: 'JetBrains Mono', monospace; font-size: 9.5px; letter-spacing: 0.04em; color: var(--muted); margin-left: 4px; }
+  .mu-chip.active .mu-chip-count { color: rgba(244,241,234,0.65); }
+  .mu-table .mu-row { cursor: default; }
+  .mu-table .mu-row:hover { background: rgba(20,23,28,0.025); }
+  .mu-table .mu-row-sel { background: rgba(31,112,80,0.05); }
+  .mu-row-name { font-size: 13px; color: var(--ink); cursor: pointer; }
+  .mu-row-name:hover { color: var(--accent); text-decoration: underline; }
+  .mu-row-meta { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .mu-tag { font-family: 'JetBrains Mono', monospace; font-size: 9.5px; letter-spacing: 0.04em; padding: 2px 8px; background: var(--bg-2); color: var(--ink-2); border-radius: 4px; }
+  .mu-tag.mu-tag-vehicle { background: rgba(107,92,138,0.10); color: #4d3f6b; }
+  .mu-checkbox { width: 16px; height: 16px; cursor: pointer; accent-color: var(--accent); }
+  .mu-client-link { color: var(--ink); border-bottom: 1px dotted var(--muted); text-decoration: none; cursor: pointer; }
+  .mu-client-link:hover { color: var(--accent); border-bottom-color: var(--accent); }
+  .mu-cmp-table th, .mu-cmp-table td { vertical-align: top; }
+  .mu-cmp-label { color: var(--muted); font-family: 'JetBrains Mono', monospace; font-size: 10.5px; letter-spacing: 0.04em; text-transform: uppercase; }
+  .mu-cmp-name { color: var(--ink); text-decoration: none; border-bottom: 1px dotted var(--muted); cursor: pointer; }
+  .mu-cmp-name:hover { color: var(--accent); border-bottom-color: var(--accent); }
+
   /* Sidebar tasks — sits under Active clients in the home view */
   .sidebar-tasks-label .sidebar-tasks-counts { font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 0.04em; text-transform: none; color: var(--muted); font-weight: 400; }
   .sidebar-tasks { display: flex; flex-direction: column; gap: 2px; padding: 0 4px; }
@@ -978,6 +1009,12 @@
           </div>
           <div class="nav-label" style="margin-top: 8px;">Active clients</div>
           <div class="nav-sub" id="nav-active-clients"></div>
+          <div class="nav-label" style="margin-top: 12px;">Research</div>
+          <div class="nav-item" id="nav-research-managers" data-action="open-research" data-research="managers" title="Manager universe">
+            <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></span>
+            <span class="nav-text">Managers</span>
+            <span class="badge" id="nav-research-mgr-count"></span>
+          </div>
         </div>
       </div>
 
@@ -3022,6 +3059,8 @@
   function loadClient(id) {
     const client = listClients().find((c) => c.id === id);
     if (!client) return;
+    // If we were in research mode, exit before entering a client workspace
+    if (layout.classList.contains('research-open')) exitResearchMode();
     // Reset state
     state.org = { name: client.name, type: client.type };
     state.aum = client.aum || null;
@@ -3255,6 +3294,270 @@
       else if (view === 'spending') openSpendingView?.();
     }
   }
+  // ============================================================
+  // Research · Manager universe
+  // ============================================================
+  const MGR_ASSET_LABELS = {
+    us_eq: 'U.S. Equity', intl_eq: 'Intl Developed', em_eq: 'EM Equity',
+    core_fi: 'Core Fixed Income', tips: 'TIPS', hy: 'High Yield',
+    hf: 'Hedge Funds', pe: 'Private Equity', pc: 'Private Credit', ra: 'Real Assets', cash: 'Cash',
+  };
+  function clientsHoldingManager(managerId) {
+    const out = [];
+    for (const c of listClients()) {
+      const mgrs = c.portfolio?.managers || [];
+      if (mgrs.some((m) => m.id === managerId || m.name === MANAGER_UNIVERSE.find((u) => u.id === managerId)?.name)) {
+        out.push({ id: c.id, name: c.name });
+      }
+    }
+    return out;
+  }
+
+  function enterResearchMode() {
+    layout.classList.add('research-open');
+    // Hide client-open if it was set
+    layout.classList.remove('client-open');
+    layout.classList.remove('expanded');
+    // Mark the nav item active
+    document.querySelectorAll('.nav-item').forEach((el) => el.classList.remove('active'));
+    document.getElementById('nav-research-managers')?.classList.add('active');
+    // Sidebar tasks list (if rendered) keeps its state — no need to refresh here
+  }
+  function exitResearchMode() {
+    layout.classList.remove('research-open');
+    document.querySelectorAll('.nav-item').forEach((el) => el.classList.remove('active'));
+    document.getElementById('nav-new-client')?.classList.add('active');
+  }
+
+  function openManagersView() {
+    state.module = 'research-managers';
+    state.researchSelected = state.researchSelected || new Set();
+    enterResearchMode();
+    artifactTitle.textContent = 'Manager universe';
+    openArtifact();
+    renderManagersList();
+    updateUrl();
+  }
+
+  function renderManagersList() {
+    const all = MANAGER_UNIVERSE;
+    const filter = state.researchFilter || { asset: 'all', search: '' };
+    const filtered = all.filter((m) => {
+      if (filter.asset !== 'all' && m.assetClass !== filter.asset) return false;
+      if (filter.search) {
+        const q = filter.search.toLowerCase();
+        const hay = [m.name, m.sleeve, m.hq, m.vehicle].join(' ').toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
+    const selected = state.researchSelected || new Set();
+    // Build asset-class filter chips with counts
+    const assetCounts = { all: all.length };
+    all.forEach((m) => { assetCounts[m.assetClass] = (assetCounts[m.assetClass] || 0) + 1; });
+    const chipKeys = ['all', 'us_eq', 'intl_eq', 'em_eq', 'core_fi', 'tips', 'hy', 'hf', 'pe', 'pc', 'ra'];
+    const chips = chipKeys.filter((k) => k === 'all' || assetCounts[k]).map((k) => {
+      const active = filter.asset === k;
+      const label = k === 'all' ? 'All' : MGR_ASSET_LABELS[k];
+      return `<button class="mu-chip ${active ? 'active' : ''}" data-action="mu-filter-asset" data-asset="${k}">${escapeHtml(label)} <span class="mu-chip-count">${assetCounts[k]}</span></button>`;
+    }).join('');
+
+    const fmtAumShort = (n) => n >= 1e9 ? `$${(n/1e9).toFixed(1)}B` : `$${(n/1e6).toFixed(0)}M`;
+    const sortedSel = Array.from(selected);
+    const compareBtn = sortedSel.length >= 2
+      ? `<button class="btn btn-sm" data-action="mu-compare">Compare · ${sortedSel.length}</button>`
+      : `<span class="mu-compare-hint">Select 2–3 managers to compare</span>`;
+
+    const rows = filtered.map((m) => {
+      const isSel = selected.has(m.id);
+      const usedBy = clientsHoldingManager(m.id);
+      const usedLabel = usedBy.length ? usedBy.length : '—';
+      const itdLabel = m.trackRecord.itd != null ? `${(m.trackRecord.itd * 100).toFixed(1)}%` : '—';
+      const benchLabel = m.trackRecord.benchItd != null ? `${(m.trackRecord.benchItd * 100).toFixed(1)}%` : '—';
+      const itdCls = m.trackRecord.itd > m.trackRecord.benchItd ? 'pm-pos' : (m.trackRecord.itd < m.trackRecord.benchItd ? 'pm-neg' : '');
+      return `<tr class="mu-row ${isSel ? 'mu-row-sel' : ''}" data-mgr-id="${escapeHtml(m.id)}">
+        <td><input type="checkbox" class="mu-checkbox" data-action="mu-toggle-select" data-mgr-id="${escapeHtml(m.id)}" ${isSel ? 'checked' : ''} aria-label="Select for comparison" /></td>
+        <td><div class="mu-row-name" data-action="mu-open-mgr" data-mgr-id="${escapeHtml(m.id)}">${escapeHtml(m.name)}</div><div class="mu-row-meta">${escapeHtml(m.sleeve)} · ${escapeHtml(m.hq)}</div></td>
+        <td><span class="mu-tag">${escapeHtml(MGR_ASSET_LABELS[m.assetClass] || m.assetClass)}</span></td>
+        <td><span class="mu-tag mu-tag-vehicle">${escapeHtml(m.vehicle)}</span></td>
+        <td class="num">${fmtAumShort(m.firmAum)}</td>
+        <td class="num">${fmtAumShort(m.strategyAum)}</td>
+        <td class="num"><span class="${itdCls}">${itdLabel}</span> <span class="pm-bench-num">/ ${benchLabel}</span></td>
+        <td class="num">${usedLabel}</td>
+      </tr>`;
+    }).join('');
+
+    artifactBody.innerHTML = `
+      <div class="mu-head">
+        <div class="ips-title">Manager universe</div>
+        <div class="ips-sub">${all.length} managers tracked across ${Object.keys(assetCounts).length - 1} asset categories. Click a row to open the full profile; check rows to compare.</div>
+      </div>
+      <div class="mu-toolbar">
+        <input type="search" class="mu-search" placeholder="Search by name, sleeve, vehicle, location…" value="${escapeHtml(filter.search || '')}" data-action="mu-search" />
+        <div class="mu-compare-bar">${compareBtn}</div>
+      </div>
+      <div class="mu-chips">${chips}</div>
+      <table class="pm-table mu-table">
+        <thead><tr>
+          <th></th><th>Manager</th><th>Asset class</th><th>Vehicle</th>
+          <th class="num">Firm AUM</th><th class="num">Strategy AUM</th>
+          <th class="num">ITD net / bench</th><th class="num">Clients</th>
+        </tr></thead>
+        <tbody>${rows || `<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--muted);">No managers match this filter.</td></tr>`}</tbody>
+      </table>
+    `;
+    // Search debounce
+    const searchEl = artifactBody.querySelector('.mu-search');
+    if (searchEl) {
+      searchEl.addEventListener('input', (e) => {
+        state.researchFilter = { ...(state.researchFilter || {}), asset: filter.asset, search: e.target.value };
+        clearTimeout(state._muSearchTimer);
+        state._muSearchTimer = setTimeout(() => renderManagersList(), 180);
+      });
+    }
+  }
+
+  function openManagerDetail(id) {
+    const m = MANAGER_UNIVERSE.find((x) => x.id === id);
+    if (!m) { openManagersView(); return; }
+    state.module = 'research-manager';
+    state.researchManagerId = id;
+    enterResearchMode();
+    artifactTitle.textContent = m.name;
+    openArtifact();
+    const tr = m.trackRecord;
+    const usedBy = clientsHoldingManager(id);
+    const fmtPct = (n) => n == null ? '—' : `${(n * 100).toFixed(1)}%`;
+    const cls = (a, b) => (a == null || b == null) ? '' : (a > b ? 'pm-pos' : (a < b ? 'pm-neg' : ''));
+    const trackRow = (k, label) => `<tr><td>${label}</td><td class="num ${cls(tr[k], tr['bench' + k.charAt(0).toUpperCase() + k.slice(1)])}">${fmtPct(tr[k])}</td><td class="num pm-bench-num">${fmtPct(tr['bench' + k.charAt(0).toUpperCase() + k.slice(1)])}</td></tr>`;
+    const peopleRows = (m.keyPeople || []).map((p) => `<tr><td>${escapeHtml(p.name)}</td><td>${escapeHtml(p.role)}</td><td class="pm-bench">${escapeHtml(p.tenure || '')}</td></tr>`).join('');
+    const usedHtml = usedBy.length
+      ? usedBy.map((c) => `<a class="mu-client-link" data-action="open-client-from-research" data-id="${escapeHtml(c.id)}">${escapeHtml(c.name)}</a>`).join(' · ')
+      : '<span class="pm-bench">Not currently held by any tracked client.</span>';
+    artifactBody.innerHTML = `
+      <a class="mm-back" data-action="back-to-managers"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>All managers</a>
+      <div class="ips-title">${escapeHtml(m.name)}</div>
+      <div class="ips-sub">${escapeHtml(MGR_ASSET_LABELS[m.assetClass] || m.assetClass)} · ${escapeHtml(m.sleeve)} · ${escapeHtml(m.vehicle)} · ${escapeHtml(m.hq)}</div>
+
+      <div class="pm-card pm-metrics" style="grid-template-columns: repeat(4, 1fr);">
+        <div class="pm-metric"><div class="pm-metric-label">Firm AUM</div><div class="pm-metric-value">${m.firmAum >= 1e9 ? `$${(m.firmAum/1e9).toFixed(1)}B` : `$${(m.firmAum/1e6).toFixed(0)}M`}</div><div class="pm-metric-sub">total firm</div></div>
+        <div class="pm-metric"><div class="pm-metric-label">Strategy AUM</div><div class="pm-metric-value">${m.strategyAum >= 1e9 ? `$${(m.strategyAum/1e9).toFixed(1)}B` : `$${(m.strategyAum/1e6).toFixed(0)}M`}</div><div class="pm-metric-sub">this mandate</div></div>
+        <div class="pm-metric"><div class="pm-metric-label">Inception</div><div class="pm-metric-value">${m.inception}</div><div class="pm-metric-sub">years in market</div></div>
+        <div class="pm-metric"><div class="pm-metric-label">Benchmark</div><div class="pm-metric-value" style="font-size:14px;line-height:1.3;">${escapeHtml(m.benchmark)}</div><div class="pm-metric-sub">net of fees</div></div>
+      </div>
+
+      <div class="pm-card">
+        <div class="pm-card-label">Description</div>
+        <p style="font-size:13.5px;color:var(--ink-2);line-height:1.65;">${escapeHtml(m.description)}</p>
+      </div>
+
+      <div class="pm-card">
+        <div class="pm-card-label">Strategy</div>
+        <p style="font-size:13.5px;color:var(--ink-2);line-height:1.65;">${escapeHtml(m.strategy)}</p>
+      </div>
+
+      <div class="pm-card">
+        <div class="pm-card-label">Track record · net of fees</div>
+        <table class="pm-table">
+          <thead><tr><th>Period</th><th class="num">${escapeHtml(m.name).split(' ').slice(0, 2).join(' ')}…</th><th class="num pm-bench">Benchmark</th></tr></thead>
+          <tbody>
+            ${trackRow('ytd', 'YTD')}
+            ${trackRow('oneY', '1 year')}
+            ${trackRow('threeY', '3 years (annualized)')}
+            ${trackRow('fiveY', '5 years (annualized)')}
+            ${trackRow('itd', 'Since inception (annualized)')}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="pm-card">
+        <div class="pm-card-label">Key people</div>
+        <table class="pm-table"><thead><tr><th>Name</th><th>Role</th><th>Tenure</th></tr></thead><tbody>${peopleRows}</tbody></table>
+      </div>
+
+      <div class="pm-card">
+        <div class="pm-card-label">Portfolio &amp; positioning</div>
+        <table class="pm-table"><tbody>
+          ${m.holdingsCount != null ? `<tr><td>Holdings</td><td class="num">${m.holdingsCount}</td></tr>` : ''}
+          <tr><td>Top positions / example investments</td><td>${(m.topPositions || []).map((p) => escapeHtml(p)).join(' · ')}</td></tr>
+        </tbody></table>
+      </div>
+
+      <div class="pm-card">
+        <div class="pm-card-label">Fees &amp; terms</div>
+        <table class="pm-table"><tbody>
+          <tr><td>Fee</td><td>${escapeHtml(m.fee)}</td></tr>
+          <tr><td>Minimum investment</td><td>$${(m.minimum/1e6).toFixed(1)}M</td></tr>
+          <tr><td>Liquidity</td><td>${escapeHtml(m.liquidity)}</td></tr>
+        </tbody></table>
+      </div>
+
+      <div class="pm-card">
+        <div class="pm-card-label">Used by</div>
+        <div style="font-size:13px;color:var(--ink-2);line-height:1.6;">${usedHtml}</div>
+      </div>
+    `;
+    updateUrl();
+  }
+
+  function openManagersCompare() {
+    const sel = Array.from(state.researchSelected || []);
+    if (sel.length < 2) return;
+    const mgrs = sel.map((id) => MANAGER_UNIVERSE.find((m) => m.id === id)).filter(Boolean).slice(0, 3);
+    state.module = 'research-compare';
+    enterResearchMode();
+    artifactTitle.textContent = 'Compare managers';
+    openArtifact();
+    const fmtPct = (n) => n == null ? '—' : `${(n * 100).toFixed(1)}%`;
+    const usd = (n) => n >= 1e9 ? `$${(n/1e9).toFixed(1)}B` : `$${(n/1e6).toFixed(0)}M`;
+    const rowsFor = (key, label, fn) => `<tr><td class="mu-cmp-label">${label}</td>${mgrs.map((m) => `<td>${fn(m)}</td>`).join('')}</tr>`;
+    artifactBody.innerHTML = `
+      <a class="mm-back" data-action="back-to-managers"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>All managers</a>
+      <div class="ips-title">Compare · ${mgrs.length} managers</div>
+      <div class="ips-sub">Side-by-side comparison.</div>
+
+      <div class="pm-card">
+        <table class="pm-table mu-cmp-table">
+          <thead><tr><th></th>${mgrs.map((m) => `<th><a class="mu-cmp-name" data-action="mu-open-mgr" data-mgr-id="${escapeHtml(m.id)}">${escapeHtml(m.name)}</a></th>`).join('')}</tr></thead>
+          <tbody>
+            ${rowsFor('assetClass', 'Asset class', (m) => escapeHtml(MGR_ASSET_LABELS[m.assetClass]))}
+            ${rowsFor('sleeve', 'Sleeve', (m) => escapeHtml(m.sleeve))}
+            ${rowsFor('vehicle', 'Vehicle', (m) => escapeHtml(m.vehicle))}
+            ${rowsFor('hq', 'HQ', (m) => escapeHtml(m.hq))}
+            ${rowsFor('inception', 'Inception', (m) => String(m.inception))}
+            ${rowsFor('firmAum', 'Firm AUM', (m) => usd(m.firmAum))}
+            ${rowsFor('stratAum', 'Strategy AUM', (m) => usd(m.strategyAum))}
+            ${rowsFor('bench', 'Benchmark', (m) => escapeHtml(m.benchmark))}
+            ${rowsFor('fee', 'Fee', (m) => escapeHtml(m.fee))}
+            ${rowsFor('liquidity', 'Liquidity', (m) => escapeHtml(m.liquidity))}
+            ${rowsFor('min', 'Minimum', (m) => `$${(m.minimum/1e6).toFixed(1)}M`)}
+            ${rowsFor('ytd', 'YTD (net)', (m) => fmtPct(m.trackRecord.ytd))}
+            ${rowsFor('oneY', '1 year', (m) => fmtPct(m.trackRecord.oneY))}
+            ${rowsFor('threeY', '3 yr annualized', (m) => fmtPct(m.trackRecord.threeY))}
+            ${rowsFor('fiveY', '5 yr annualized', (m) => fmtPct(m.trackRecord.fiveY))}
+            ${rowsFor('itd', 'ITD annualized', (m) => fmtPct(m.trackRecord.itd))}
+            ${rowsFor('itdBench', 'ITD vs benchmark', (m) => {
+              const d = (m.trackRecord.itd != null && m.trackRecord.benchItd != null) ? (m.trackRecord.itd - m.trackRecord.benchItd) : null;
+              if (d == null) return '—';
+              const sign = d >= 0 ? '+' : '';
+              const c = d >= 0 ? 'pm-pos' : 'pm-neg';
+              return `<span class="${c}">${sign}${(d * 100).toFixed(1)}pp</span>`;
+            })}
+            ${rowsFor('holdings', 'Holdings', (m) => m.holdingsCount != null ? String(m.holdingsCount) : '—')}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="pm-card">
+        <div class="pm-card-label">Description</div>
+        <table class="pm-table mu-cmp-table">
+          <tbody><tr>${mgrs.map((m) => `<td style="vertical-align:top;font-size:13px;line-height:1.55;color:var(--ink-2);">${escapeHtml(m.description)}</td>`).join('')}</tr></tbody>
+        </table>
+      </div>
+    `;
+    updateUrl();
+  }
+
   function renderClientWorkspace() {
     // When in vault view, refresh the panel. When in an item view, the open-item
     // function manages its own panel content — leave it alone.
@@ -5524,6 +5827,399 @@
     updateUrl();
   }
 
+  // ============================================================
+  // Manager universe — the full set of fictitious managers Reve tracks across
+  // every client. A given manager may or may not be currently held by any
+  // client; the universe is the research surface.
+  // ============================================================
+  const MANAGER_UNIVERSE = [
+    // ---- U.S. Equity ----
+    {
+      id: 'cascade-park', name: 'Cascade Park U.S. Large Growth', assetClass: 'us_eq',
+      sleeve: 'U.S. Large Cap Growth', vehicle: 'SMA', firmAum: 28_000_000_000, strategyAum: 6_400_000_000,
+      inception: 2009, hq: 'Boston, MA', benchmark: 'Russell 1000 Growth',
+      fee: '0.45% on SMA', minimum: 25_000_000, liquidity: 'Daily',
+      description: 'Concentrated U.S. large-cap growth manager with a deliberate underweight to mega-cap index heavyweights. Active share ~80%. Long-tenured PM team with a quality-growth orientation.',
+      strategy: 'Fundamental, bottom-up, ~35 holdings. Looks for durable franchises with reinvestment runway and pricing power. Underweights names with limited incremental upside even when index weights are large.',
+      keyPeople: [
+        { name: 'Daniel Hwang', role: 'CIO / Lead PM', tenure: '15 yrs' },
+        { name: 'Priya Subramanian', role: 'PM, Healthcare', tenure: '11 yrs' },
+        { name: 'Robert Greene', role: 'Director of Research', tenure: '9 yrs' },
+      ],
+      trackRecord: { ytd: 0.058, oneY: 0.139, threeY: 0.114, fiveY: 0.143, itd: 0.131, benchYtd: 0.052, benchOneY: 0.128, benchThreeY: 0.108, benchFiveY: 0.135, benchItd: 0.122 },
+      holdingsCount: 34, topPositions: ['NVIDIA', 'Mastercard', 'Eli Lilly', 'Microsoft', 'ASML'],
+    },
+    {
+      id: 'harbor-main', name: 'Harbor & Main U.S. Value', assetClass: 'us_eq',
+      sleeve: 'U.S. Large Cap Value', vehicle: 'SMA', firmAum: 14_000_000_000, strategyAum: 4_100_000_000,
+      inception: 2003, hq: 'Philadelphia, PA', benchmark: 'Russell 1000 Value',
+      fee: '0.40% on SMA', minimum: 25_000_000, liquidity: 'Daily',
+      description: 'Deep-value U.S. large-cap manager known for patience and discipline through cycles. Holds at the long end of the value style spectrum, with low turnover and strong drawdown resistance.',
+      strategy: 'Bottom-up valuation work emphasizes normalized earnings, balance-sheet quality, and capital return. Sector exposures emerge from name selection; typical position count 40-50.',
+      keyPeople: [
+        { name: 'Catherine Mendez', role: 'CIO', tenure: '21 yrs' },
+        { name: 'Jonathan Reilly', role: 'PM, Financials', tenure: '14 yrs' },
+      ],
+      trackRecord: { ytd: 0.041, oneY: 0.118, threeY: 0.094, fiveY: 0.108, itd: 0.092, benchYtd: 0.038, benchOneY: 0.112, benchThreeY: 0.088, benchFiveY: 0.102, benchItd: 0.085 },
+      holdingsCount: 45, topPositions: ['Berkshire Hathaway', 'JPMorgan Chase', 'Chevron', 'Johnson & Johnson', 'Cigna'],
+    },
+    {
+      id: 'bramble-ridge', name: 'Bramble Ridge Mid Cap Core', assetClass: 'us_eq',
+      sleeve: 'U.S. Mid Cap Core', vehicle: 'Commingled Fund', firmAum: 6_200_000_000, strategyAum: 2_800_000_000,
+      inception: 2012, hq: 'Chicago, IL', benchmark: 'Russell Midcap',
+      fee: '0.65% (commingled)', minimum: 10_000_000, liquidity: 'Monthly',
+      description: 'Style-agnostic mid-cap manager balancing growth and value names within a quality framework. Active share ~75%; turnover ~35%.',
+      strategy: 'Two-PM model with explicit growth/value coverage; the portfolio targets balanced style exposure. Holdings ~60. Avoids capital structures with material refinancing risk.',
+      keyPeople: [
+        { name: 'Lila Park', role: 'Co-PM (Growth)', tenure: '12 yrs' },
+        { name: 'Marcus Vance', role: 'Co-PM (Value)', tenure: '13 yrs' },
+      ],
+      trackRecord: { ytd: 0.046, oneY: 0.121, threeY: 0.085, fiveY: 0.099, itd: 0.106, benchYtd: 0.045, benchOneY: 0.115, benchThreeY: 0.082, benchFiveY: 0.092, benchItd: 0.098 },
+      holdingsCount: 58, topPositions: ['Pool Corp', 'Old Dominion Freight', 'Tractor Supply', 'Vail Resorts', 'Snap-on'],
+    },
+    {
+      id: 'halcyon-small', name: 'Halcyon Small Cap Quality', assetClass: 'us_eq',
+      sleeve: 'U.S. Small Cap Quality', vehicle: 'Commingled Fund', firmAum: 3_800_000_000, strategyAum: 1_500_000_000,
+      inception: 2014, hq: 'San Francisco, CA', benchmark: 'Russell 2000',
+      fee: '0.85% (commingled)', minimum: 5_000_000, liquidity: 'Monthly',
+      description: 'Quality-tilted U.S. small-cap manager. Filters the universe heavily on return on capital, balance-sheet strength, and earnings predictability before fundamental work begins.',
+      strategy: 'Bottom-up; concentrated ~50 names. Avoids unprofitable growth, structurally-challenged industries, and excessive leverage. Long-only with sector caps at +/-8% vs benchmark.',
+      keyPeople: [
+        { name: 'Amelia Stoddard', role: 'Lead PM', tenure: '10 yrs' },
+        { name: 'Devon Lai', role: 'Senior Analyst', tenure: '8 yrs' },
+      ],
+      trackRecord: { ytd: 0.034, oneY: 0.105, threeY: 0.071, fiveY: 0.084, itd: 0.092, benchYtd: 0.029, benchOneY: 0.094, benchThreeY: 0.061, benchFiveY: 0.072, benchItd: 0.081 },
+      holdingsCount: 48, topPositions: ['SiteOne Landscape', 'Boot Barn', 'Watsco', 'Carlisle Companies', 'Performance Food Group'],
+    },
+    // ---- International Developed Equity ----
+    {
+      id: 'atlas-bridge', name: 'Atlas Bridge International Developed', assetClass: 'intl_eq',
+      sleeve: 'International Developed Equity', vehicle: 'SMA', firmAum: 19_000_000_000, strategyAum: 5_700_000_000,
+      inception: 2007, hq: 'London, UK', benchmark: 'MSCI EAFE',
+      fee: '0.50% on SMA', minimum: 30_000_000, liquidity: 'Daily',
+      description: 'Quality-growth manager investing in developed-market large caps outside the U.S. Concentrated ~45 holdings with a multi-year horizon and low turnover (~20%).',
+      strategy: 'Fundamental, GARP-leaning. Five-year intrinsic-value framework. Weights driven by conviction and risk; country/sector exposures are residual.',
+      keyPeople: [
+        { name: 'Helena Wright', role: 'CIO', tenure: '17 yrs' },
+        { name: 'Hiroshi Yamada', role: 'PM, Asia', tenure: '12 yrs' },
+      ],
+      trackRecord: { ytd: 0.067, oneY: 0.139, threeY: 0.078, fiveY: 0.091, itd: 0.094, benchYtd: 0.054, benchOneY: 0.118, benchThreeY: 0.063, benchFiveY: 0.078, benchItd: 0.081 },
+      holdingsCount: 44, topPositions: ['Novo Nordisk', 'ASML', 'LVMH', 'Nestle', 'Toyota'],
+    },
+    {
+      id: 'meridian-foreign', name: 'Meridian Foreign Equity', assetClass: 'intl_eq',
+      sleeve: 'International Value', vehicle: 'Commingled Fund', firmAum: 7_500_000_000, strategyAum: 2_200_000_000,
+      inception: 2010, hq: 'Edinburgh, UK', benchmark: 'MSCI EAFE Value',
+      fee: '0.60% (commingled)', minimum: 10_000_000, liquidity: 'Daily',
+      description: 'Deep-value international manager with a meaningful cyclical tilt. Long-term horizon, willing to be early. Holdings ~60.',
+      strategy: 'Replacement-cost framework for industrials, materials, and capital-intensive sectors. Looks for franchises trading below normalized earnings power.',
+      keyPeople: [
+        { name: 'Iain Ferguson', role: 'CIO', tenure: '19 yrs' },
+        { name: 'Sarah Whitfield', role: 'Senior PM', tenure: '11 yrs' },
+      ],
+      trackRecord: { ytd: 0.062, oneY: 0.131, threeY: 0.071, fiveY: 0.082, itd: 0.087, benchYtd: 0.055, benchOneY: 0.121, benchThreeY: 0.066, benchFiveY: 0.072, benchItd: 0.079 },
+      holdingsCount: 62, topPositions: ['Holcim', 'BP', 'Anheuser-Busch InBev', 'Mitsubishi UFJ', 'BNP Paribas'],
+    },
+    {
+      id: 'stonecourt-ex-us', name: 'Stonecourt Global ex-U.S.', assetClass: 'intl_eq',
+      sleeve: 'Global ex-U.S. Core', vehicle: 'Commingled Fund', firmAum: 11_000_000_000, strategyAum: 3_900_000_000,
+      inception: 2008, hq: 'New York, NY', benchmark: 'MSCI ACWI ex-USA',
+      fee: '0.55% (commingled)', minimum: 5_000_000, liquidity: 'Daily',
+      description: 'Core international manager combining developed and emerging markets in a single mandate. Style-balanced, broadly diversified.',
+      strategy: 'Multi-PM team; each PM owns regional sleeves with central risk and portfolio construction. ~150 holdings; tracking error 2-3%.',
+      keyPeople: [
+        { name: 'Theo Marchetti', role: 'CIO', tenure: '14 yrs' },
+        { name: 'Renata Souza', role: 'PM, EM', tenure: '9 yrs' },
+      ],
+      trackRecord: { ytd: 0.058, oneY: 0.127, threeY: 0.069, fiveY: 0.078, itd: 0.082, benchYtd: 0.051, benchOneY: 0.118, benchThreeY: 0.064, benchFiveY: 0.074, benchItd: 0.077 },
+      holdingsCount: 152, topPositions: ['TSMC', 'Novo Nordisk', 'Nestle', 'Tencent', 'Samsung'],
+    },
+    // ---- Emerging Markets ----
+    {
+      id: 'equinox-em', name: 'Equinox Emerging Markets', assetClass: 'em_eq',
+      sleeve: 'EM Core', vehicle: 'Commingled Fund', firmAum: 9_000_000_000, strategyAum: 4_800_000_000,
+      inception: 2006, hq: 'Boston, MA', benchmark: 'MSCI Emerging Markets',
+      fee: '0.75% (commingled)', minimum: 10_000_000, liquidity: 'Daily',
+      description: 'Broad EM manager with country/sector active exposures within a fundamental framework. Long history, strong middle/back office, transparent process.',
+      strategy: 'Top-down country/sector framework combined with bottom-up name selection. ~90 holdings; tracking error 4%.',
+      keyPeople: [
+        { name: 'Aman Patel', role: 'CIO', tenure: '16 yrs' },
+        { name: 'Lin Chen', role: 'Senior PM, North Asia', tenure: '12 yrs' },
+      ],
+      trackRecord: { ytd: 0.042, oneY: 0.073, threeY: 0.038, fiveY: 0.046, itd: 0.058, benchYtd: 0.041, benchOneY: 0.069, benchThreeY: 0.033, benchFiveY: 0.041, benchItd: 0.052 },
+      holdingsCount: 88, topPositions: ['TSMC', 'Tencent', 'Samsung', 'Infosys', 'Petrobras'],
+    },
+    {
+      id: 'riverstone-em-growth', name: 'Riverstone EM Growth', assetClass: 'em_eq',
+      sleeve: 'EM Growth', vehicle: 'Commingled Fund', firmAum: 4_400_000_000, strategyAum: 1_800_000_000,
+      inception: 2013, hq: 'Singapore', benchmark: 'MSCI EM Growth',
+      fee: '0.85% (commingled)', minimum: 5_000_000, liquidity: 'Daily',
+      description: 'Growth-tilted EM equity strategy with a deliberate overweight to consumer, technology, and healthcare names. Singapore-based research footprint.',
+      strategy: 'Fundamental bottom-up; ~60 holdings. Names a region/country preference each year as part of the playbook (currently India OW).',
+      keyPeople: [
+        { name: 'Wei Tan', role: 'Lead PM', tenure: '11 yrs' },
+        { name: 'Anika Reddy', role: 'PM, India / South Asia', tenure: '9 yrs' },
+      ],
+      trackRecord: { ytd: 0.071, oneY: 0.092, threeY: 0.051, fiveY: 0.058, itd: 0.064, benchYtd: 0.062, benchOneY: 0.082, benchThreeY: 0.044, benchFiveY: 0.051, benchItd: 0.058 },
+      holdingsCount: 56, topPositions: ['Reliance Industries', 'MercadoLibre', 'HDFC Bank', 'TSMC', 'Infosys'],
+    },
+    {
+      id: 'sandpiper-em-value', name: 'Sandpiper EM Value', assetClass: 'em_eq',
+      sleeve: 'EM Value', vehicle: 'Commingled Fund', firmAum: 3_200_000_000, strategyAum: 1_100_000_000,
+      inception: 2015, hq: 'New York, NY', benchmark: 'MSCI EM Value',
+      fee: '0.80% (commingled)', minimum: 5_000_000, liquidity: 'Daily',
+      description: 'Value-oriented EM manager focused on cash-generative franchises with strong governance and capital return. Avoids the lowest end of valuation distribution where governance risks dominate.',
+      strategy: 'Bottom-up value with a quality overlay. ~50 holdings. State-owned enterprises only when capital allocation track record is established.',
+      keyPeople: [
+        { name: 'Ravi Krishnan', role: 'CIO', tenure: '13 yrs' },
+        { name: 'Maria Vasquez', role: 'PM, LatAm', tenure: '10 yrs' },
+      ],
+      trackRecord: { ytd: 0.039, oneY: 0.068, threeY: 0.029, fiveY: 0.034, itd: 0.044, benchYtd: 0.036, benchOneY: 0.061, benchThreeY: 0.024, benchFiveY: 0.028, benchItd: 0.038 },
+      holdingsCount: 51, topPositions: ['Vale', 'Bank of China', 'Petrobras', 'Itau Unibanco', 'Lukoil'],
+    },
+    // ---- Core Fixed Income ----
+    {
+      id: 'beacon-bond-core', name: 'Beacon Bond Core', assetClass: 'core_fi',
+      sleeve: 'Core U.S. Aggregate', vehicle: 'SMA', firmAum: 92_000_000_000, strategyAum: 18_000_000_000,
+      inception: 1995, hq: 'Newport Beach, CA', benchmark: 'Bloomberg U.S. Aggregate',
+      fee: '0.18% on SMA', minimum: 100_000_000, liquidity: 'Daily',
+      description: 'Established core bond manager. Balanced duration and sector positioning vs the Agg, with measured active deviations. Long history through multiple rate regimes.',
+      strategy: 'Top-down rate/credit framework combined with bottom-up bond selection. Duration +/- 0.5 yrs vs benchmark; credit OW typical.',
+      keyPeople: [
+        { name: 'Susan Gallagher', role: 'CIO, Core', tenure: '22 yrs' },
+        { name: 'Andrew Lim', role: 'Sector Specialist, Credit', tenure: '15 yrs' },
+      ],
+      trackRecord: { ytd: 0.021, oneY: 0.048, threeY: 0.026, fiveY: 0.018, itd: 0.052, benchYtd: 0.018, benchOneY: 0.043, benchThreeY: 0.021, benchFiveY: 0.014, benchItd: 0.047 },
+      holdingsCount: 412, topPositions: ['UST 10Y', 'FNMA 30Y MBS', 'GS Senior Unsecured', 'AAPL 2030', 'JPM Subordinated'],
+    },
+    {
+      id: 'driftwood-core-plus', name: 'Driftwood Core Plus', assetClass: 'core_fi',
+      sleeve: 'Core Plus', vehicle: 'Commingled Fund', firmAum: 41_000_000_000, strategyAum: 9_500_000_000,
+      inception: 2003, hq: 'New York, NY', benchmark: 'Bloomberg U.S. Aggregate',
+      fee: '0.30% (commingled)', minimum: 5_000_000, liquidity: 'Daily',
+      description: 'Core plus manager with measured allocations to high-yield, emerging-market debt, and securitized non-agency credit on top of an Agg backbone.',
+      strategy: 'Up to 25% in plus sectors; duration management +/- 1 yr; active credit selection. Strong middle office, deep risk analytics.',
+      keyPeople: [
+        { name: 'Cory Ng', role: 'CIO', tenure: '18 yrs' },
+        { name: 'Jasmine Walker', role: 'PM, EMD', tenure: '11 yrs' },
+      ],
+      trackRecord: { ytd: 0.024, oneY: 0.054, threeY: 0.031, fiveY: 0.024, itd: 0.058, benchYtd: 0.018, benchOneY: 0.043, benchThreeY: 0.021, benchFiveY: 0.014, benchItd: 0.047 },
+      holdingsCount: 268, topPositions: ['UST 5Y', 'GNMA 30Y MBS', 'CCC Energy HY Basket', 'Mexico 2032', 'CLO BB tranche'],
+    },
+    {
+      id: 'garnet-treasury', name: 'Garnet Treasury', assetClass: 'core_fi',
+      sleeve: 'U.S. Treasury', vehicle: 'SMA', firmAum: 18_000_000_000, strategyAum: 4_200_000_000,
+      inception: 2001, hq: 'Boston, MA', benchmark: 'Bloomberg U.S. Treasury',
+      fee: '0.10% on SMA', minimum: 100_000_000, liquidity: 'Daily',
+      description: 'Pure U.S. Treasury manager — duration and curve positioning with no credit risk. Used as a liquidity/duration sleeve by institutional allocators.',
+      strategy: 'Active duration and yield-curve shape positioning. Holdings entirely UST and TIPS at PM discretion (within mandate limits).',
+      keyPeople: [
+        { name: 'Hannah Owens', role: 'PM', tenure: '14 yrs' },
+      ],
+      trackRecord: { ytd: 0.019, oneY: 0.042, threeY: 0.018, fiveY: 0.011, itd: 0.041, benchYtd: 0.017, benchOneY: 0.040, benchThreeY: 0.015, benchFiveY: 0.008, benchItd: 0.038 },
+      holdingsCount: 24, topPositions: ['UST 2Y', 'UST 5Y', 'UST 10Y', 'UST 30Y', 'TIPS 10Y'],
+    },
+    // ---- TIPS ----
+    {
+      id: 'salt-pine-tips', name: 'Salt Pine Inflation-Linked', assetClass: 'tips',
+      sleeve: 'TIPS', vehicle: 'Commingled Fund', firmAum: 7_000_000_000, strategyAum: 2_100_000_000,
+      inception: 2008, hq: 'San Francisco, CA', benchmark: 'Bloomberg U.S. TIPS',
+      fee: '0.15% (commingled)', minimum: 5_000_000, liquidity: 'Daily',
+      description: 'Active TIPS manager exploiting positioning on the real-yield curve and breakeven inflation. Useful sleeve for inflation-aware allocators.',
+      strategy: 'Active duration and curve trades within TIPS. Some on-the-run vs off-the-run RV. No nominal exposure.',
+      keyPeople: [
+        { name: 'Eric Bowman', role: 'Lead PM', tenure: '12 yrs' },
+      ],
+      trackRecord: { ytd: 0.015, oneY: 0.041, threeY: 0.030, fiveY: 0.022, itd: 0.034, benchYtd: 0.014, benchOneY: 0.040, benchThreeY: 0.027, benchFiveY: 0.019, benchItd: 0.031 },
+      holdingsCount: 32, topPositions: ['TIPS 5Y', 'TIPS 10Y', 'TIPS 30Y', 'TIPS 2Y', 'TIPS 7Y'],
+    },
+    // ---- High Yield ----
+    {
+      id: 'iron-hollow-hy', name: 'Iron Hollow High Yield', assetClass: 'hy',
+      sleeve: 'U.S. High Yield', vehicle: 'Commingled Fund', firmAum: 22_000_000_000, strategyAum: 6_700_000_000,
+      inception: 2002, hq: 'Stamford, CT', benchmark: 'ICE BofA U.S. HY',
+      fee: '0.50% (commingled)', minimum: 5_000_000, liquidity: 'Daily',
+      description: 'Long-tenured U.S. high-yield manager with a quality-orientation. Higher-rated within HY (BB/B); shorter average duration than index.',
+      strategy: 'Deep credit research; large analyst bench. Tight on CCC and below. Rotates between sectors based on relative-value spreads.',
+      keyPeople: [
+        { name: 'Frank Castellanos', role: 'CIO, HY', tenure: '19 yrs' },
+        { name: 'Sara Patel', role: 'PM, Energy', tenure: '12 yrs' },
+      ],
+      trackRecord: { ytd: 0.028, oneY: 0.074, threeY: 0.044, fiveY: 0.036, itd: 0.062, benchYtd: 0.024, benchOneY: 0.068, benchThreeY: 0.040, benchFiveY: 0.031, benchItd: 0.058 },
+      holdingsCount: 162, topPositions: ['Charter Comms HY', 'Carnival HY', 'CCO Holdings', 'Ford Motor Credit', 'Sprint Capital'],
+    },
+    {
+      id: 'cinder-lane-loan', name: 'Cinder Lane Loan Plus', assetClass: 'hy',
+      sleeve: 'Bank Loans + HY', vehicle: 'Commingled Fund', firmAum: 11_000_000_000, strategyAum: 3_400_000_000,
+      inception: 2010, hq: 'New York, NY', benchmark: 'CS Leveraged Loan + ICE BofA HY (blend)',
+      fee: '0.55% (commingled)', minimum: 5_000_000, liquidity: 'Monthly',
+      description: 'Floating-rate bank loan strategy with a high-yield bond complement. Lower duration than pure HY; senior-secured tilt.',
+      strategy: 'Primarily 1st lien loans plus opportunistic HY when relative value favors. Tight on covenant-lite and PE-sponsored over-levered names.',
+      keyPeople: [
+        { name: 'Daria Sokolova', role: 'CIO', tenure: '14 yrs' },
+      ],
+      trackRecord: { ytd: 0.031, oneY: 0.082, threeY: 0.055, fiveY: 0.048, itd: 0.068, benchYtd: 0.027, benchOneY: 0.075, benchThreeY: 0.052, benchFiveY: 0.044, benchItd: 0.062 },
+      holdingsCount: 198, topPositions: ['Asurion 1L TL', 'TransDigm 1L TL', 'Numericable 1L TL', 'Univision Comm 1L TL', 'Berry Plastics 1L TL'],
+    },
+    // ---- Hedge Funds ----
+    {
+      id: 'polaris-macro', name: 'Polaris Global Macro', assetClass: 'hf',
+      sleeve: 'Global Macro', vehicle: 'Hedge Fund', firmAum: 14_000_000_000, strategyAum: 6_000_000_000,
+      inception: 2005, hq: 'Greenwich, CT', benchmark: 'HFRI Macro',
+      fee: '1.5% / 20%', minimum: 25_000_000, liquidity: 'Quarterly, 90-day notice',
+      description: 'Discretionary global-macro manager spanning rates, FX, commodities, and equity-index futures. Long-volatility bias in tail scenarios.',
+      strategy: 'Top-down macro thesis development across DM/EM. Risk-budget framework with explicit factor and theme caps. Modest leverage.',
+      keyPeople: [
+        { name: 'David Fenwick', role: 'Founder / CIO', tenure: '20 yrs' },
+        { name: 'Jonathan Park', role: 'PM, Rates', tenure: '14 yrs' },
+      ],
+      trackRecord: { ytd: 0.038, oneY: 0.094, threeY: 0.061, fiveY: 0.052, itd: 0.077, benchYtd: 0.022, benchOneY: 0.058, benchThreeY: 0.041, benchFiveY: 0.036, benchItd: 0.052 },
+      holdingsCount: null, topPositions: ['Long USD vs EUR/JPY basket', 'Long Brazil rates', 'Short JGB futures', 'Long gold', 'Short emerging FX basket'],
+    },
+    {
+      id: 'quill-neutral', name: 'Quill Market Neutral', assetClass: 'hf',
+      sleeve: 'Equity Market Neutral', vehicle: 'Hedge Fund', firmAum: 6_500_000_000, strategyAum: 4_200_000_000,
+      inception: 2011, hq: 'New York, NY', benchmark: 'HFRI Equity Market Neutral',
+      fee: '1.25% / 20%', minimum: 10_000_000, liquidity: 'Monthly, 60-day notice',
+      description: 'Systematic equity market-neutral strategy combining factor signals (value, momentum, quality, low-vol) with statistical-arbitrage layers.',
+      strategy: 'Beta-zero portfolio constructed daily. Sector- and country-neutral. Target net 0%, gross 200%. Risk-targeted to 6-8% vol.',
+      keyPeople: [
+        { name: 'Vikram Shah', role: 'CIO / Head of Research', tenure: '13 yrs' },
+      ],
+      trackRecord: { ytd: 0.024, oneY: 0.062, threeY: 0.048, fiveY: 0.042, itd: 0.054, benchYtd: 0.018, benchOneY: 0.041, benchThreeY: 0.034, benchFiveY: 0.029, benchItd: 0.039 },
+      holdingsCount: null, topPositions: ['Long quality factor basket', 'Short low-quality basket', 'L/S momentum US LCG', 'L/S value Japan', 'Sector-neutral pairs trades'],
+    },
+    {
+      id: 'slate-bay-multi', name: 'Slate Bay Multi-Strategy', assetClass: 'hf',
+      sleeve: 'Multi-Strategy', vehicle: 'Hedge Fund', firmAum: 28_000_000_000, strategyAum: 11_000_000_000,
+      inception: 2003, hq: 'New York, NY', benchmark: 'HFRI Fund-of-Funds',
+      fee: '2.0% / 20%', minimum: 25_000_000, liquidity: 'Quarterly, 65-day notice',
+      description: 'Multi-PM platform with equity L/S, credit, macro, and statistical-arb sleeves. Centralized risk management. Reputation for consistent low-double-digit returns with limited drawdowns.',
+      strategy: '~80 PM teams allocated capital by central risk. Pass-through fee structure. Strict drawdown gates per PM.',
+      keyPeople: [
+        { name: 'Helena Cross', role: 'CEO', tenure: '17 yrs' },
+        { name: 'Michael Steiner', role: 'CRO', tenure: '15 yrs' },
+      ],
+      trackRecord: { ytd: 0.041, oneY: 0.108, threeY: 0.092, fiveY: 0.084, itd: 0.106, benchYtd: 0.018, benchOneY: 0.052, benchThreeY: 0.039, benchFiveY: 0.034, benchItd: 0.048 },
+      holdingsCount: null, topPositions: ['Equity L/S — US tech', 'Credit RV — IG spreads', 'Macro — DM rates curve', 'Stat-arb — global pairs', 'Distressed debt sleeve'],
+    },
+    // ---- Private Equity ----
+    {
+      id: 'stillwater-buyout', name: 'Stillwater Buyout Partners', assetClass: 'pe',
+      sleeve: 'Mid-Market Buyout', vehicle: 'PE Fund', firmAum: 18_000_000_000, strategyAum: 7_500_000_000,
+      inception: 2007, hq: 'Boston, MA', benchmark: 'Burgiss Buyout',
+      fee: '2.0% / 20% (8% pref)', minimum: 10_000_000, liquidity: '10-year fund, 12-yr wind-down',
+      description: 'Sector-focused mid-market buyout firm investing in healthcare services, industrial tech, and business services. Operating-partner model with in-house value creation team.',
+      strategy: 'Control equity, $50-300M check sizes. EBITDA-based valuations; operational improvement focus. Hold period 4-6 years typical.',
+      keyPeople: [
+        { name: 'Martin Reyes', role: 'Managing Partner', tenure: '17 yrs' },
+        { name: 'Olivia Bennett', role: 'Partner, Healthcare', tenure: '12 yrs' },
+      ],
+      trackRecord: { ytd: 0.012, oneY: 0.158, threeY: 0.182, fiveY: 0.221, itd: 0.198, benchYtd: 0.011, benchOneY: 0.118, benchThreeY: 0.142, benchFiveY: 0.168, benchItd: 0.152 },
+      holdingsCount: 14, topPositions: ['Healthcare RCM platform', 'Industrial automation rollup', 'Outsourced research services', 'Specialty distribution', 'Behavioral health network'],
+    },
+    {
+      id: 'cardinal-growth', name: 'Cardinal Growth Equity', assetClass: 'pe',
+      sleeve: 'Growth Equity', vehicle: 'PE Fund', firmAum: 9_500_000_000, strategyAum: 4_200_000_000,
+      inception: 2012, hq: 'Menlo Park, CA', benchmark: 'Cambridge Associates Growth Equity',
+      fee: '2.0% / 20% (8% pref)', minimum: 10_000_000, liquidity: '10-year fund, 12-yr wind-down',
+      description: 'Late-stage growth equity manager investing in profitable software and tech-enabled services businesses. Minority positions with board representation.',
+      strategy: '$25-100M checks, Series C through pre-IPO. Focus on durable unit economics rather than top-line growth alone. Hold period 4-5 yrs typical.',
+      keyPeople: [
+        { name: 'Naomi Chen', role: 'Managing Partner', tenure: '13 yrs' },
+        { name: 'Jordan Vance', role: 'Partner, Software', tenure: '10 yrs' },
+      ],
+      trackRecord: { ytd: 0.008, oneY: 0.114, threeY: 0.142, fiveY: 0.178, itd: 0.164, benchYtd: 0.006, benchOneY: 0.098, benchThreeY: 0.118, benchFiveY: 0.145, benchItd: 0.132 },
+      holdingsCount: 22, topPositions: ['Vertical SaaS for legal', 'Cybersecurity platform', 'B2B fintech', 'Health-tech infrastructure', 'AI infrastructure'],
+    },
+    {
+      id: 'meadowlark-vc', name: 'Meadowlark Ventures', assetClass: 'pe',
+      sleeve: 'Early-Stage Venture', vehicle: 'VC Fund', firmAum: 3_200_000_000, strategyAum: 950_000_000,
+      inception: 2016, hq: 'Palo Alto, CA', benchmark: 'Cambridge Associates U.S. Venture',
+      fee: '2.5% / 25% (no pref)', minimum: 5_000_000, liquidity: '12-year fund, 15-yr wind-down',
+      description: 'Early-stage venture manager investing in deeptech, AI infrastructure, and climate. Concentrated portfolio with high-conviction Series A/B leads.',
+      strategy: 'Lead position in Series A or B; $5-25M initial checks. Reserve aggressively (~50% of fund for follow-on). Sector focus on AI/ML infrastructure and climate tech.',
+      keyPeople: [
+        { name: 'Avery Sullivan', role: 'Founding Partner', tenure: '9 yrs' },
+        { name: 'Diego Martinez', role: 'Partner, Climate', tenure: '7 yrs' },
+      ],
+      trackRecord: { ytd: -0.018, oneY: 0.064, threeY: 0.182, fiveY: 0.214, itd: 0.205, benchYtd: -0.022, benchOneY: 0.052, benchThreeY: 0.158, benchFiveY: 0.184, benchItd: 0.172 },
+      holdingsCount: 28, topPositions: ['AI compute startup', 'Carbon-removal platform', 'Robotics for fulfillment', 'Energy-grid software', 'Drug-discovery AI'],
+    },
+    // ---- Private Credit ----
+    {
+      id: 'foundry-direct-lending', name: 'Foundry Lane Direct Lending', assetClass: 'pc',
+      sleeve: 'Senior Direct Lending', vehicle: 'Private Credit Fund', firmAum: 31_000_000_000, strategyAum: 14_000_000_000,
+      inception: 2013, hq: 'New York, NY', benchmark: 'Cliffwater Direct Lending',
+      fee: '1.0% / 15% (5% pref)', minimum: 10_000_000, liquidity: '8-year fund, 3-yr extension',
+      description: 'Senior direct-lending platform to PE-sponsored middle-market borrowers. First-lien only, asset-light to asset-light businesses with recurring revenue.',
+      strategy: 'Unitranche and 1st-lien senior loans. Floating-rate. Avg leverage 4.5x; LTV 45%. Diversified across ~120 borrowers.',
+      keyPeople: [
+        { name: 'Jeremy Quinn', role: 'Head of DL', tenure: '15 yrs' },
+        { name: 'Layla Habibi', role: 'Senior PM', tenure: '11 yrs' },
+      ],
+      trackRecord: { ytd: 0.032, oneY: 0.098, threeY: 0.087, fiveY: 0.082, itd: 0.092, benchYtd: 0.026, benchOneY: 0.094, benchThreeY: 0.082, benchFiveY: 0.078, benchItd: 0.086 },
+      holdingsCount: 124, topPositions: ['Software-services unitranche', 'Healthcare services 1L', 'Specialty industrial 1L', 'Insurance brokerage 1L', 'Consumer services unitranche'],
+    },
+    {
+      id: 'sentinel-credit-opp', name: 'Sentinel Credit Opportunities', assetClass: 'pc',
+      sleeve: 'Opportunistic Credit', vehicle: 'Private Credit Fund', firmAum: 14_000_000_000, strategyAum: 4_800_000_000,
+      inception: 2010, hq: 'Boston, MA', benchmark: 'Cambridge Associates Opportunistic Credit',
+      fee: '1.5% / 17.5% (7% pref)', minimum: 10_000_000, liquidity: '7-year fund, 2-yr extension',
+      description: 'Opportunistic credit strategy spanning special situations, distressed-for-control, structured equity, and rescue financing.',
+      strategy: 'Drawdown vehicle; non-correlated to plain-vanilla private credit. Concentrated ~25 investments per fund.',
+      keyPeople: [
+        { name: 'Sebastian Carr', role: 'Head of Credit', tenure: '18 yrs' },
+        { name: 'Yuki Tanaka', role: 'Partner, Distressed', tenure: '14 yrs' },
+      ],
+      trackRecord: { ytd: 0.028, oneY: 0.118, threeY: 0.142, fiveY: 0.121, itd: 0.135, benchYtd: 0.022, benchOneY: 0.098, benchThreeY: 0.115, benchFiveY: 0.105, benchItd: 0.118 },
+      holdingsCount: 28, topPositions: ['Distressed retailer DIP', 'Structured preferred — energy', 'Specialty finance second-lien', 'Aircraft leasing rescue', 'Industrial bondholder workout'],
+    },
+    // ---- Real Assets ----
+    {
+      id: 'pinewood-infra', name: 'Pinewood Infrastructure', assetClass: 'ra',
+      sleeve: 'Core+ Infrastructure', vehicle: 'Private RA Fund', firmAum: 24_000_000_000, strategyAum: 9_500_000_000,
+      inception: 2011, hq: 'Toronto, ON', benchmark: 'EDHEC infraNet Equity',
+      fee: '1.25% / 17.5% (7% pref)', minimum: 25_000_000, liquidity: '12-year fund, semi-open evergreen sleeve',
+      description: 'Core-plus infrastructure platform with focus on utilities, transmission, and digital infrastructure. Long-dated contracted revenues with inflation linkage.',
+      strategy: 'Brownfield and operating assets predominantly. 60% North America / 30% Europe / 10% APAC. Leverage 50-60% at asset level.',
+      keyPeople: [
+        { name: 'Ian Bouchard', role: 'Head of Infra', tenure: '16 yrs' },
+        { name: 'Priscilla Adekanmbi', role: 'Partner, Digital Infra', tenure: '10 yrs' },
+      ],
+      trackRecord: { ytd: 0.024, oneY: 0.092, threeY: 0.084, fiveY: 0.078, itd: 0.086, benchYtd: 0.018, benchOneY: 0.074, benchThreeY: 0.068, benchFiveY: 0.062, benchItd: 0.072 },
+      holdingsCount: 32, topPositions: ['Electric transmission line', 'Data-center colocation', 'Toll road concession', 'Natural-gas distribution', 'Renewables transmission portfolio'],
+    },
+    {
+      id: 'coastal-wharf-infra', name: 'Coastal Wharf Infrastructure', assetClass: 'ra',
+      sleeve: 'Renewables Infrastructure', vehicle: 'Private RA Fund', firmAum: 8_400_000_000, strategyAum: 3_100_000_000,
+      inception: 2017, hq: 'San Francisco, CA', benchmark: 'MSCI Global Quarterly Private Infra',
+      fee: '1.35% / 17.5% (7% pref)', minimum: 10_000_000, liquidity: '10-year fund',
+      description: 'Pure-play renewables and grid-modernization infrastructure manager. Solar, wind, storage, and transmission. Mission-aligned, contracted revenues, inflation-linked.',
+      strategy: 'Operating assets and late-stage development. PPA structures with utility/corporate counterparties. Leverage 55-65% at project level.',
+      keyPeople: [
+        { name: 'Maya Singh', role: 'Managing Partner', tenure: '11 yrs' },
+        { name: 'Brendan Fitzpatrick', role: 'Partner, Storage', tenure: '8 yrs' },
+      ],
+      trackRecord: { ytd: 0.018, oneY: 0.082, threeY: 0.071, fiveY: null, itd: 0.078, benchYtd: 0.015, benchOneY: 0.074, benchThreeY: 0.062, benchFiveY: null, benchItd: 0.068 },
+      holdingsCount: 18, topPositions: ['Texas wind portfolio', 'California solar+storage', 'PJM grid storage', 'Iberian solar platform', 'East Coast offshore wind'],
+    },
+    {
+      id: 'maple-land-re', name: 'Maple Land Real Estate', assetClass: 'ra',
+      sleeve: 'Value-Add Real Estate', vehicle: 'Private RA Fund', firmAum: 12_000_000_000, strategyAum: 4_200_000_000,
+      inception: 2009, hq: 'Chicago, IL', benchmark: 'NCREIF ODCE',
+      fee: '1.25% / 20% (8% pref)', minimum: 10_000_000, liquidity: '8-year fund, 2-yr extension',
+      description: 'Value-add U.S. real estate manager focused on industrial, multifamily, and select alternative property types (medical office, life sciences).',
+      strategy: 'Acquisition, repositioning, and stabilization. Leverage 50-60%. Hold period 4-6 years. Targets net IRR 12-14%.',
+      keyPeople: [
+        { name: 'Pablo Reyes', role: 'CIO', tenure: '14 yrs' },
+        { name: 'Hannah Lieb', role: 'Partner, Industrial', tenure: '11 yrs' },
+      ],
+      trackRecord: { ytd: 0.016, oneY: 0.064, threeY: 0.078, fiveY: 0.082, itd: 0.094, benchYtd: 0.012, benchOneY: 0.058, benchThreeY: 0.071, benchFiveY: 0.074, benchItd: 0.082 },
+      holdingsCount: 41, topPositions: ['Logistics park Atlanta', 'Multifamily Phoenix', 'Life-science Boston', 'Medical office Texas', 'Industrial portfolio Midwest'],
+    },
+  ];
+
   // ---- Capital calls (Dream University demo data) ----
   const CAPITAL_CALLS = [
     { id: 'cc-vista8-4', fund: 'Vista Equity Partners VIII', manager: 'Vista Equity Partners', kind: 'Private equity — software buyout', callNum: 4, amount: 7.4, called: '2026-05-18', due: '2026-06-01', status: 'pending', pctCommit: 'brings called capital to ~80% of the $30M commitment', remaining: '$2.6M', purpose: 'Funding the acquisition of a vertical-market software platform and associated transaction expenses.' },
@@ -7644,6 +8340,34 @@
     } else if (a === 'open-task') {
       e.preventDefault();
       openTaskFor(btn.dataset.client, btn.dataset.view);
+    } else if (a === 'open-research') {
+      e.preventDefault();
+      if (btn.dataset.research === 'managers') openManagersView();
+    } else if (a === 'mu-filter-asset') {
+      e.preventDefault();
+      state.researchFilter = { ...(state.researchFilter || {}), asset: btn.dataset.asset, search: state.researchFilter?.search || '' };
+      renderManagersList();
+    } else if (a === 'mu-toggle-select') {
+      e.stopPropagation();
+      state.researchSelected = state.researchSelected || new Set();
+      const id = btn.dataset.mgrId;
+      if (state.researchSelected.has(id)) state.researchSelected.delete(id);
+      else if (state.researchSelected.size < 3) state.researchSelected.add(id);
+      else { btn.checked = false; return; }
+      renderManagersList();
+    } else if (a === 'mu-open-mgr') {
+      e.preventDefault();
+      openManagerDetail(btn.dataset.mgrId);
+    } else if (a === 'mu-compare') {
+      e.preventDefault();
+      openManagersCompare();
+    } else if (a === 'back-to-managers') {
+      e.preventDefault();
+      openManagersView();
+    } else if (a === 'open-client-from-research') {
+      e.preventDefault();
+      exitResearchMode();
+      loadClient(btn.dataset.id);
     } else if (a === 'fact-cascade-ips') {
       e.preventDefault();
       cascadeFactToIps(btn.dataset.fact, btn.dataset.cascadeId);
@@ -7811,8 +8535,12 @@
   // Format: /demo?client=<id>&view=<module>. View is omitted for the vault home.
   function updateUrl() {
     const params = new URLSearchParams();
+    // Research views are app-level (no client). Encode separately so they restore on reload.
+    if (state.module === 'research-managers') { params.set('research', 'managers'); }
+    else if (state.module === 'research-manager') { params.set('research', 'managers'); if (state.researchManagerId) params.set('mgr', state.researchManagerId); }
+    else if (state.module === 'research-compare') { params.set('research', 'managers'); params.set('compare', Array.from(state.researchSelected || []).join(',')); }
     if (state.clientId) params.set('client', state.clientId);
-    if (state.module && state.module !== 'vault') params.set('view', state.module);
+    if (state.module && !state.module.startsWith('research-') && state.module !== 'vault') params.set('view', state.module);
     if (state.module === 'reports' && qrSelected) params.set('report', qrSelected);
     if (state.module === 'memos' && mmOpenId) params.set('memo', mmOpenId);
     if (state.module === 'comms' && commOpenId) params.set('comm', commOpenId);
@@ -7824,6 +8552,20 @@
   function restoreFromUrl() {
     let params;
     try { params = new URLSearchParams(window.location.search); } catch { return false; }
+    // Research mode (no client required)
+    if (params.get('research') === 'managers') {
+      const mgr = params.get('mgr');
+      const compare = params.get('compare');
+      if (compare) {
+        state.researchSelected = new Set(compare.split(',').filter(Boolean));
+        openManagersCompare();
+      } else if (mgr) {
+        openManagerDetail(mgr);
+      } else {
+        openManagersView();
+      }
+      return true;
+    }
     const clientId = params.get('client');
     if (!clientId) return false;
     const client = listClients().find((c) => c.id === clientId);
@@ -7865,6 +8607,11 @@
   // Sidebar tasks render regardless of whether we restored a client URL —
   // they sit in the .sidebar-home block which is hidden when a client is open.
   renderTasksNav();
+  // Research nav badge — show universe size
+  try {
+    const mc = document.getElementById('nav-research-mgr-count');
+    if (mc) mc.textContent = String(MANAGER_UNIVERSE.length);
+  } catch {}
 </script>
 </body>
 </html>
