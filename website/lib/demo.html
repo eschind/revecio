@@ -207,6 +207,42 @@
     height: 100%;
   }
   .conv-feed { min-height: 0; }
+  .home-tasks { background: var(--panel); border-bottom: 1px solid var(--line); padding: 16px 28px 18px; max-height: 50vh; overflow-y: auto; }
+  .home-tasks-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; gap: 12px; flex-wrap: wrap; }
+  .home-tasks-title { font-family: 'Newsreader', serif; font-size: 17px; color: var(--ink); }
+  .home-tasks-meta { font-family: 'JetBrains Mono', monospace; font-size: 10.5px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+  .home-tasks-filter { display: inline-flex; gap: 4px; padding: 2px; background: var(--bg-2); border-radius: 999px; }
+  .home-tasks-filter button { appearance: none; cursor: pointer; background: transparent; border: 0; padding: 3px 10px; border-radius: 999px; font: inherit; font-size: 10.5px; letter-spacing: 0.04em; color: var(--muted); font-family: 'JetBrains Mono', monospace; text-transform: uppercase; }
+  .home-tasks-filter button.active { background: var(--ink); color: var(--dark-ink); }
+  .home-tasks-empty { color: var(--muted); font-size: 13px; font-style: italic; padding: 8px 0; }
+  .task-row { display: grid; grid-template-columns: 28px 1fr auto; gap: 12px; align-items: center; padding: 9px 10px; border-radius: 8px; cursor: pointer; border: 1px solid transparent; }
+  .task-row:hover { background: var(--bg-2); border-color: var(--line); }
+  .task-icon { width: 28px; height: 28px; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; background: var(--bg-2); border: 1px solid var(--line); }
+  .task-icon svg { width: 15px; height: 15px; stroke: var(--ink-2); fill: none; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
+  .task-icon.k-comms { background: rgba(43,90,138,0.10); border-color: rgba(43,90,138,0.25); }
+  .task-icon.k-comms svg { stroke: #2b5a8a; }
+  .task-icon.k-capital { background: rgba(196,131,13,0.12); border-color: rgba(196,131,13,0.28); }
+  .task-icon.k-capital svg { stroke: #8a5d0a; }
+  .task-icon.k-monitoring { background: rgba(31,112,80,0.10); border-color: rgba(31,112,80,0.25); }
+  .task-icon.k-monitoring svg { stroke: var(--accent); }
+  .task-icon.k-trading { background: rgba(107,92,138,0.12); border-color: rgba(107,92,138,0.28); }
+  .task-icon.k-trading svg { stroke: #4d3f6b; }
+  .task-icon.k-ips { background: rgba(177,58,58,0.08); border-color: rgba(177,58,58,0.22); }
+  .task-icon.k-ips svg { stroke: #b13a3a; }
+  .task-icon.k-saa { background: rgba(196,131,13,0.12); border-color: rgba(196,131,13,0.28); }
+  .task-icon.k-saa svg { stroke: #8a5d0a; }
+  .task-body { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+  .task-client { font-family: 'JetBrains Mono', monospace; font-size: 9.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+  .task-title { font-size: 13px; color: var(--ink); line-height: 1.3; }
+  .task-detail { font-size: 11.5px; color: var(--muted); line-height: 1.4; }
+  .task-status { font-family: 'JetBrains Mono', monospace; font-size: 9.5px; letter-spacing: 0.06em; text-transform: uppercase; padding: 3px 8px; border-radius: 4px; white-space: nowrap; flex-shrink: 0; }
+  .task-status.t-action { background: rgba(177,58,58,0.10); color: #b13a3a; border: 1px solid rgba(177,58,58,0.25); }
+  .task-status.t-agent { background: rgba(31,112,80,0.10); color: var(--accent); border: 1px solid rgba(31,112,80,0.25); }
+  .task-status.t-review { background: rgba(196,131,13,0.10); color: #8a5d0a; border: 1px solid rgba(196,131,13,0.25); }
+  .task-status.t-pending { background: var(--bg-2); color: var(--muted); border: 1px solid var(--line); }
+  .home-tasks-list { display: flex; flex-direction: column; gap: 4px; }
+  .home-tasks-section + .home-tasks-section { margin-top: 14px; }
+  .home-tasks-section-head { font-family: 'JetBrains Mono', monospace; font-size: 9.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; padding-left: 10px; }
   .conv-header {
     padding: 14px 32px; border-bottom: 1px solid var(--line-soft);
     display: flex; align-items: center; justify-content: space-between; gap: 16px;
@@ -951,6 +987,7 @@
         </div>
       </div>
 
+      <div id="home-tasks" class="home-tasks" hidden></div>
       <div class="conv-feed" id="conv-feed">
         <div class="inner" id="conv-inner"></div>
       </div>
@@ -3042,12 +3079,173 @@
 
   function enterClientWorkspace() {
     layout.classList.add('client-open');
+    const el = document.getElementById('home-tasks');
+    if (el) el.hidden = true;
     renderVaultPanel();
   }
   function exitClientWorkspace() {
     layout.classList.remove('client-open');
     layout.classList.remove('expanded');
     renderActiveClients();
+    renderHomeTasksPanel();
+  }
+
+  // ============================================================
+  // Home task list (across all clients)
+  // ============================================================
+  // Tasks are derived from each client's data — pending capital calls, unread
+  // monitoring updates, IPS that hasn't gone live, SAA that hasn't been adopted —
+  // plus a per-client list of human-curated items (Dream's defaults below). Click
+  // any row to navigate to the client's relevant section.
+  const TASK_ICONS = {
+    comms:      '<svg viewBox="0 0 24 24"><path d="M4 4h16v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/><polyline points="4 6 12 13 20 6"/></svg>',
+    capital:    '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><line x1="12" y1="6" x2="12" y2="18"/><path d="M15 9.5a2 2 0 0 0-2-1.5h-2a2 2 0 0 0 0 4h2a2 2 0 0 1 0 4h-2.5A2 2 0 0 1 9 14.5"/></svg>',
+    monitoring: '<svg viewBox="0 0 24 24"><path d="M2 12h4l3 8 4-16 3 8h6"/></svg>',
+    trading:    '<svg viewBox="0 0 24 24"><polyline points="3 17 9 11 13 15 21 7"/><polyline points="15 7 21 7 21 13"/></svg>',
+    ips:        '<svg viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><polyline points="14 3 14 8 19 8"/></svg>',
+    saa:        '<svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 14l3-3 3 3 5-6"/></svg>',
+  };
+  // Per-client curated tasks not derivable from data (committee decisions, attestation
+  // sign-offs, follow-up action items from minutes). Keyed by client id.
+  const CURATED_TASKS_BY_CLIENT = {
+    'sample-dream': [
+      { id: 'dream-em-mgr', kind: 'comms', view: 'comms', sectionLabel: 'Communications', title: 'EM manager replacement — committee decision', detail: 'Final shortlist circulated April 24 (Pzena, GMO, William Blair). Vote scheduled May 17. Awaiting IC feedback.', status: 'action', due: '2026-05-17' },
+      { id: 'dream-attestation', kind: 'comms', view: 'comms', sectionLabel: 'Communications', title: 'Q1 2026 mission-alignment attestation — Board sign-off', detail: 'Reve delivered the attestation memo April 11. Board chair sign-off outstanding.', status: 'review' },
+      { id: 'dream-trade-ieg', kind: 'trading', view: 'trading', sectionLabel: 'Trading', title: 'EM bridge — IEMG transition unwind', detail: 'Once Pzena/GMO/William Blair selection clears May 17, agent unwinds the IEMG placeholder over T+5.', status: 'agent', agentLabel: 'Agent · queued for May 18' },
+      { id: 'dream-q1-followups', kind: 'monitoring', view: 'board', sectionLabel: 'Board notes', title: 'Q1 2026 IC follow-ups (3 open)', detail: 'EM manager recommendation by May 10 · FY27 spending analysis · operational DD report by May 30.', status: 'review' },
+      { id: 'dream-fy27-budget', kind: 'monitoring', view: 'spending', sectionLabel: 'Spending & liquidity', title: 'FY27 spending policy analysis', detail: 'Mark Foster to prepare five-year corpus impact projections for the May meeting. Margin tightens to ~0 by FY28.', status: 'action', due: '2026-05-10' },
+    ],
+  };
+
+  function buildAllClientTasks() {
+    const out = [];
+    for (const c of listClients()) {
+      const id = c.id;
+      const name = c.name;
+      // 1. Curated tasks
+      const curated = CURATED_TASKS_BY_CLIENT[id] || [];
+      curated.forEach((t) => out.push({ ...t, clientId: id, clientName: name }));
+      // 2. Derived: IPS still draft
+      const ipsStatus = c.ipsStatus || 'Draft';
+      if (ipsStatus !== 'Live') {
+        out.push({ id: `${id}-ips-finalize`, clientId: id, clientName: name, kind: 'ips', view: 'ips', sectionLabel: 'Investment Policy Statement', title: 'IPS pending finalization', detail: 'Adopt the draft as Live once the IC and Board have approved it.', status: 'action' });
+      }
+      // 3. Derived: SAA not yet adopted
+      if (!c.saa) {
+        out.push({ id: `${id}-saa-adopt`, clientId: id, clientName: name, kind: 'saa', view: 'portfolio', sectionLabel: 'Asset allocation', title: 'Strategic Asset Allocation — pending approval', detail: 'Run MVO and adopt policy targets so monitoring and rebalancing can run against them.', status: 'action' });
+      }
+      // 4. Derived: pending capital calls (agent-handled)
+      const calls = (c.portfolio?.capitalCalls || []);
+      if (id === 'sample-dream') {
+        // Pull from the live computed list so completed marks are honored
+        const live = (typeof CAPITAL_CALLS !== 'undefined') ? CAPITAL_CALLS : [];
+        const completedSet = new Set(state.completedCalls || []);
+        const pending = live.filter((cc) => cc.status === 'pending' && !completedSet.has(cc.id));
+        if (pending.length) {
+          const total = pending.reduce((s, x) => s + x.amount, 0);
+          out.push({
+            id: `${id}-capital-pending`,
+            clientId: id, clientName: name, kind: 'capital', view: 'capital-calls', sectionLabel: 'Capital calls',
+            title: `${pending.length} capital call${pending.length === 1 ? '' : 's'} queued · $${total.toFixed(1)}M`,
+            detail: pending.map((p) => `${p.fund} #${p.callNum} due ${fmtDate(p.due)}`).slice(0, 3).join(' · '),
+            status: 'agent', agentLabel: 'Agent · wiring queued',
+          });
+        }
+      }
+      // 5. Derived: unread monitoring updates
+      const updates = (c.portfolio?.updates || []);
+      const newCount = updates.filter((u) => u.isNew).length;
+      if (newCount > 0) {
+        out.push({
+          id: `${id}-monitoring-new`,
+          clientId: id, clientName: name, kind: 'monitoring', view: 'monitoring', sectionLabel: 'Portfolio monitoring',
+          title: `${newCount} new monitoring update${newCount === 1 ? '' : 's'}`,
+          detail: updates.filter((u) => u.isNew).slice(0, 2).map((u) => u.title).join(' · ') + (newCount > 2 ? ` · +${newCount - 2} more` : ''),
+          status: 'review',
+        });
+      }
+    }
+    return out;
+  }
+
+  function renderHomeTasksPanel(filter = state.taskFilter || 'all') {
+    state.taskFilter = filter;
+    const el = document.getElementById('home-tasks');
+    if (!el) return;
+    // Hide whenever a client is open
+    if (layout.classList.contains('client-open')) { el.hidden = true; return; }
+    const all = buildAllClientTasks();
+    const filtered = filter === 'mine'
+      ? all.filter((t) => t.status !== 'agent')
+      : filter === 'agent'
+        ? all.filter((t) => t.status === 'agent')
+        : all;
+    const counts = { all: all.length, mine: all.filter((t) => t.status !== 'agent').length, agent: all.filter((t) => t.status === 'agent').length };
+    const pill = (key, label) => `<button class="${filter === key ? 'active' : ''}" data-action="home-task-filter" data-filter="${key}">${label} · ${counts[key]}</button>`;
+
+    // Group by client for clarity
+    const byClient = {};
+    for (const t of filtered) { (byClient[t.clientId] = byClient[t.clientId] || []).push(t); }
+
+    const statusBadge = (t) => {
+      if (t.status === 'agent') return `<span class="task-status t-agent">${escapeHtml(t.agentLabel || 'Agent · in progress')}</span>`;
+      if (t.status === 'review') return `<span class="task-status t-review">Review</span>`;
+      if (t.status === 'pending') return `<span class="task-status t-pending">Pending</span>`;
+      return `<span class="task-status t-action">${t.due ? `Action · due ${escapeHtml(fmtDate(t.due))}` : 'Action needed'}</span>`;
+    };
+
+    const taskRow = (t) => `<div class="task-row" data-action="open-task" data-client="${escapeHtml(t.clientId)}" data-view="${escapeHtml(t.view)}">
+      <div class="task-icon k-${escapeHtml(t.kind)}" aria-hidden="true">${TASK_ICONS[t.kind] || ''}</div>
+      <div class="task-body">
+        <div class="task-client">${escapeHtml(t.clientName)} · ${escapeHtml(t.sectionLabel || '')}</div>
+        <div class="task-title">${escapeHtml(t.title)}</div>
+        ${t.detail ? `<div class="task-detail">${escapeHtml(t.detail)}</div>` : ''}
+      </div>
+      ${statusBadge(t)}
+    </div>`;
+
+    const body = filtered.length === 0
+      ? `<div class="home-tasks-empty">${filter === 'all' ? 'No outstanding tasks.' : (filter === 'mine' ? 'No items waiting on you — agent is handling the rest.' : 'No items currently with the agent.')}</div>`
+      : Object.keys(byClient).map((cid) => {
+          const tasks = byClient[cid];
+          return `<div class="home-tasks-section">
+            <div class="home-tasks-section-head">${escapeHtml(tasks[0].clientName)} · ${tasks.length} item${tasks.length === 1 ? '' : 's'}</div>
+            <div class="home-tasks-list">${tasks.map(taskRow).join('')}</div>
+          </div>`;
+        }).join('');
+
+    el.hidden = false;
+    el.innerHTML = `
+      <div class="home-tasks-head">
+        <div>
+          <div class="home-tasks-title">Tasks across your clients</div>
+          <div class="home-tasks-meta">${all.length} open · ${counts.mine} need you · ${counts.agent} with the agent</div>
+        </div>
+        <div class="home-tasks-filter">${pill('all', 'All')}${pill('mine', 'Need me')}${pill('agent', 'Agent')}</div>
+      </div>
+      ${body}
+    `;
+  }
+
+  function openTaskFor(clientId, view) {
+    // Switch to the client and the named view
+    if (clientId && clientId !== state.clientId) {
+      loadClient(clientId);
+      // loadClient is synchronous; once it returns the workspace is open and module='ips'
+    }
+    // Open the requested view (loadClient already lands on IPS by default)
+    if (view && view !== 'ips') {
+      if (view === 'portfolio') openPortfolioModule();
+      else if (view === 'materials') openMaterialsView();
+      else if (view === 'profile') openClientProfileView();
+      else if (view === 'board') openBoardNotesView();
+      else if (view === 'decisions') openDecisionLogView();
+      else if (view === 'monitoring') openMonitoringView();
+      else if (view === 'comms') openCommsView?.();
+      else if (view === 'trading') openTradingView?.();
+      else if (view === 'capital-calls') openCapitalCallsView?.();
+      else if (view === 'spending') openSpendingView?.();
+    }
   }
   function renderClientWorkspace() {
     // When in vault view, refresh the panel. When in an item view, the open-item
@@ -7403,6 +7601,12 @@
       e.preventDefault();
       const card = btn.closest('.bn-card');
       if (card) card.classList.toggle('bn-expanded');
+    } else if (a === 'open-task') {
+      e.preventDefault();
+      openTaskFor(btn.dataset.client, btn.dataset.view);
+    } else if (a === 'home-task-filter') {
+      e.preventDefault();
+      renderHomeTasksPanel(btn.dataset.filter);
     } else if (a === 'fact-cascade-ips') {
       e.preventDefault();
       cascadeFactToIps(btn.dataset.fact, btn.dataset.cascadeId);
@@ -7619,6 +7823,7 @@
   if (!restoreFromUrl()) {
     renderActiveClients();
     startConversation();
+    renderHomeTasksPanel();
     updateUrl();
   }
 </script>
