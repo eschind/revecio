@@ -3362,6 +3362,10 @@
     if (!wasInResearch) {
       // Adjust the composer hint to reflect the research context
       if (composerInput) composerInput.placeholder = 'Ask the research agent — search, compare, dig into a manager…';
+      // Clear any prior chat (onboarding greeting, tasks message, client load) so
+      // the research intro stands alone instead of being appended.
+      feedInner.innerHTML = '';
+      state.chatHistory = [];
       addAgent(`<p>You're in <strong>Manager research</strong>. I can help you navigate the ${MANAGER_UNIVERSE.length} managers we track.</p>
         <p style="font-size:12.5px;color:var(--muted);margin-top:6px;">Try asking:</p>
         <ul style="font-size:12.5px;color:var(--ink-2);line-height:1.7;margin:4px 0 4px 22px;padding:0;">
