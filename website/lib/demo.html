@@ -2213,6 +2213,20 @@
     layout.classList.remove('with-artifact');
     layout.classList.remove('expanded');
     if (artifactExpand) artifactExpand.title = 'Expand';
+    // If we were in research or tasks mode, fully exit so the user can come back
+    // via the sidebar nav (otherwise the layout stayed in research-grid but with
+    // no panel, and nothing in the UI hinted at how to re-open it).
+    if (layout.classList.contains('research-open')) {
+      exitResearchMode();
+      state.module = null;
+      try { updateUrl(); } catch {}
+    }
+    if (state.tasksOpen) {
+      state.tasksOpen = false;
+      document.querySelectorAll('.nav-item').forEach((el) => el.classList.remove('active'));
+      document.getElementById('nav-new-client')?.classList.add('active');
+      try { updateUrl(); } catch {}
+    }
   }
   function showArtifactFooter() { artifactFooter.classList.add('visible'); }
   function restoreIpsFooter() {
@@ -6239,6 +6253,321 @@
       ],
       trackRecord: { ytd: 0.016, oneY: 0.064, threeY: 0.078, fiveY: 0.082, itd: 0.094, benchYtd: 0.012, benchOneY: 0.058, benchThreeY: 0.071, benchFiveY: 0.074, benchItd: 0.082 },
       holdingsCount: 41, topPositions: ['Logistics park Atlanta', 'Multifamily Phoenix', 'Life-science Boston', 'Medical office Texas', 'Industrial portfolio Midwest'],
+    },
+    // ---- Additional US Equity ----
+    {
+      id: 'silverbrook-large-growth', name: 'Silverbrook Large Cap Growth', assetClass: 'us_eq',
+      sleeve: 'Large Cap Growth', vehicle: 'Separate Account', firmAum: 84_000_000_000, strategyAum: 22_000_000_000,
+      inception: 1998, hq: 'San Francisco, CA', benchmark: 'Russell 1000 Growth',
+      fee: '0.55%', minimum: 25_000_000, liquidity: 'Daily',
+      description: 'High-conviction, low-turnover large-cap growth manager with a quality-growth tilt. Concentrated 30-40 names.',
+      strategy: 'Bottom-up fundamental research; ~30-40 holdings; 5-year forward earnings power; emphasis on competitive moats.',
+      keyPeople: [
+        { name: 'Catherine Liang', role: 'Lead PM', tenure: '21 yrs' },
+        { name: 'Marcus Webb', role: 'Co-PM', tenure: '14 yrs' },
+      ],
+      trackRecord: { ytd: 0.092, oneY: 0.198, threeY: 0.142, fiveY: 0.158, itd: 0.121, benchYtd: 0.082, benchOneY: 0.184, benchThreeY: 0.128, benchFiveY: 0.142, benchItd: 0.108 },
+      holdingsCount: 34, topPositions: ['Mega-cap platform co.', 'Cloud infrastructure', 'Semis design leader', 'Payments network', 'Health-tech platform'],
+    },
+    {
+      id: 'beacon-hill-value', name: 'Beacon Hill Large Cap Value', assetClass: 'us_eq',
+      sleeve: 'Large Cap Value', vehicle: 'Separate Account', firmAum: 42_000_000_000, strategyAum: 11_500_000_000,
+      inception: 1992, hq: 'Boston, MA', benchmark: 'Russell 1000 Value',
+      fee: '0.50%', minimum: 10_000_000, liquidity: 'Daily',
+      description: 'Deep-value large-cap manager with a contrarian bent. Disciplined valuation framework, 60-80 holdings.',
+      strategy: 'Normalized earnings and FCF yield; mean-reversion bias; willing to look out 3-5 years through cycles.',
+      keyPeople: [
+        { name: 'Robert McKinney', role: 'CIO', tenure: '28 yrs' },
+        { name: 'Anika Patel', role: 'Senior Analyst', tenure: '12 yrs' },
+      ],
+      trackRecord: { ytd: 0.068, oneY: 0.142, threeY: 0.092, fiveY: 0.098, itd: 0.094, benchYtd: 0.062, benchOneY: 0.134, benchThreeY: 0.088, benchFiveY: 0.092, benchItd: 0.088 },
+      holdingsCount: 72, topPositions: ['Money-center bank', 'Integrated energy', 'Industrial conglomerate', 'Insurance leader', 'Consumer staples'],
+    },
+    {
+      id: 'cascade-smid', name: 'Cascade SMID Core', assetClass: 'us_eq',
+      sleeve: 'SMID Cap Core', vehicle: 'Commingled Fund', firmAum: 9_800_000_000, strategyAum: 3_200_000_000,
+      inception: 2005, hq: 'Portland, OR', benchmark: 'Russell 2500',
+      fee: '0.75%', minimum: 5_000_000, liquidity: 'Daily',
+      description: 'SMID-cap core manager with a quality bias. Capacity-disciplined; soft-closed at $4B.',
+      strategy: 'Quality-at-a-reasonable-price; ROIC > cost of capital; 60-90 holdings, 30% annual turnover.',
+      keyPeople: [
+        { name: 'Daniel Foster', role: 'Lead PM', tenure: '18 yrs' },
+        { name: 'Sophia Reyes', role: 'PM/Analyst', tenure: '11 yrs' },
+      ],
+      trackRecord: { ytd: 0.054, oneY: 0.128, threeY: 0.094, fiveY: 0.112, itd: 0.118, benchYtd: 0.048, benchOneY: 0.118, benchThreeY: 0.084, benchFiveY: 0.098, benchItd: 0.102 },
+      holdingsCount: 78, topPositions: ['Specialty distributor', 'Regional bank holding', 'Niche software', 'Aerospace components', 'Medical devices SMID'],
+    },
+    {
+      id: 'redwood-small-growth', name: 'Redwood Small Cap Growth', assetClass: 'us_eq',
+      sleeve: 'Small Cap Growth', vehicle: 'Mutual Fund', firmAum: 5_400_000_000, strategyAum: 1_900_000_000,
+      inception: 2008, hq: 'Austin, TX', benchmark: 'Russell 2000 Growth',
+      fee: '0.85%', minimum: 1_000_000, liquidity: 'Daily',
+      description: 'Small-cap growth specialist focused on emerging franchises in tech, health, and industrials.',
+      strategy: 'Forward-looking earnings inflection; 70-100 names; emphasis on founder-led businesses.',
+      keyPeople: [
+        { name: 'Vincent Hwang', role: 'PM', tenure: '15 yrs' },
+        { name: 'Olivia Brennan', role: 'PM', tenure: '9 yrs' },
+      ],
+      trackRecord: { ytd: 0.084, oneY: 0.182, threeY: 0.082, fiveY: 0.104, itd: 0.124, benchYtd: 0.072, benchOneY: 0.168, benchThreeY: 0.074, benchFiveY: 0.092, benchItd: 0.108 },
+      holdingsCount: 88, topPositions: ['Vertical SaaS', 'Med-tech innovator', 'Industrial automation', 'Specialty chemicals', 'Consumer brand'],
+    },
+    // ---- Additional International / EM Equity ----
+    {
+      id: 'thornbury-intl', name: 'Thornbury International Equity', assetClass: 'intl_eq',
+      sleeve: 'International Developed Equity', vehicle: 'Commingled Fund', firmAum: 38_000_000_000, strategyAum: 12_000_000_000,
+      inception: 2001, hq: 'London, UK', benchmark: 'MSCI EAFE',
+      fee: '0.65%', minimum: 10_000_000, liquidity: 'Daily',
+      description: 'International developed-markets equity manager with a quality-growth orientation across Europe, Japan, and Asia-Pacific.',
+      strategy: 'Bottom-up; ~60 names; long-duration compounders; FX-unhedged.',
+      keyPeople: [
+        { name: 'Henrietta Wallace', role: 'Lead PM', tenure: '19 yrs' },
+        { name: 'Takeshi Mori', role: 'Co-PM, Asia', tenure: '14 yrs' },
+      ],
+      trackRecord: { ytd: 0.072, oneY: 0.144, threeY: 0.084, fiveY: 0.092, itd: 0.088, benchYtd: 0.066, benchOneY: 0.132, benchThreeY: 0.074, benchFiveY: 0.082, benchItd: 0.078 },
+      holdingsCount: 62, topPositions: ['Swiss luxury', 'Japanese factory automation', 'Dutch semis equipment', 'French pharma', 'UK consumer staples'],
+    },
+    {
+      id: 'sapphire-em', name: 'Sapphire EM Equity', assetClass: 'em_eq',
+      sleeve: 'Emerging Markets Equity', vehicle: 'Commingled Fund', firmAum: 14_000_000_000, strategyAum: 6_400_000_000,
+      inception: 2006, hq: 'Singapore', benchmark: 'MSCI EM',
+      fee: '0.85%', minimum: 10_000_000, liquidity: 'Daily',
+      description: 'EM equity specialist with deep regional teams in Singapore, Mumbai, and São Paulo. Focus on domestic consumption and tech.',
+      strategy: 'Bottom-up; 70-90 names; structural growth themes; ex-state-owned bias.',
+      keyPeople: [
+        { name: 'Pooja Iyer', role: 'CIO', tenure: '20 yrs' },
+        { name: 'Carlos Mendes', role: 'PM, LatAm', tenure: '13 yrs' },
+      ],
+      trackRecord: { ytd: 0.058, oneY: 0.128, threeY: 0.062, fiveY: 0.058, itd: 0.082, benchYtd: 0.048, benchOneY: 0.112, benchThreeY: 0.052, benchFiveY: 0.048, benchItd: 0.072 },
+      holdingsCount: 84, topPositions: ['India private bank', 'Taiwan semis', 'Korea internet', 'Brazil retailer', 'Mexico industrial'],
+    },
+    {
+      id: 'tigris-em-small', name: 'Tigris EM Small Cap', assetClass: 'em_eq',
+      sleeve: 'EM Small Cap Equity', vehicle: 'Commingled Fund', firmAum: 6_200_000_000, strategyAum: 1_800_000_000,
+      inception: 2012, hq: 'Hong Kong', benchmark: 'MSCI EM Small Cap',
+      fee: '0.95%', minimum: 5_000_000, liquidity: 'Daily',
+      description: 'EM small-cap specialist focused on under-researched names across Asia, LatAm, and EMEA.',
+      strategy: '~100 holdings; on-the-ground research; alpha-driven, benchmark-agnostic.',
+      keyPeople: [
+        { name: 'Wei-Lin Cheng', role: 'Lead PM', tenure: '16 yrs' },
+        { name: 'Aditya Banerjee', role: 'PM', tenure: '11 yrs' },
+      ],
+      trackRecord: { ytd: 0.062, oneY: 0.142, threeY: 0.084, fiveY: 0.078, itd: 0.094, benchYtd: 0.052, benchOneY: 0.128, benchThreeY: 0.072, benchFiveY: 0.064, benchItd: 0.082 },
+      holdingsCount: 102, topPositions: ['Vietnam industrial', 'India specialty chem', 'Indonesia telco', 'Poland retailer', 'Mexico fintech'],
+    },
+    // ---- Additional Fixed Income ----
+    {
+      id: 'harbor-core-bond', name: 'Harbor Core Bond', assetClass: 'core_fi',
+      sleeve: 'Core US Aggregate', vehicle: 'Separate Account', firmAum: 220_000_000_000, strategyAum: 48_000_000_000,
+      inception: 1989, hq: 'New York, NY', benchmark: 'Bloomberg US Agg',
+      fee: '0.25%', minimum: 25_000_000, liquidity: 'Daily',
+      description: 'Core fixed-income manager with disciplined duration management and broad sector positioning across Treasuries, MBS, IG credit.',
+      strategy: 'Top-down duration/curve + bottom-up credit selection. Modest tracking error (~50-75 bps).',
+      keyPeople: [
+        { name: 'Stephen Kowalski', role: 'CIO Fixed Income', tenure: '24 yrs' },
+        { name: 'Maria Esposito', role: 'Senior PM', tenure: '18 yrs' },
+      ],
+      trackRecord: { ytd: 0.018, oneY: 0.064, threeY: 0.012, fiveY: 0.022, itd: 0.052, benchYtd: 0.016, benchOneY: 0.058, benchThreeY: 0.008, benchFiveY: 0.018, benchItd: 0.048 },
+      holdingsCount: 480, topPositions: ['US Treasury 10Y', 'Agency MBS 30Y', 'IG financials', 'IG industrials', 'Agency CMBS'],
+    },
+    {
+      id: 'kestrel-core-plus', name: 'Kestrel Core Plus', assetClass: 'core_fi',
+      sleeve: 'Core Plus Fixed Income', vehicle: 'Commingled Fund', firmAum: 56_000_000_000, strategyAum: 18_000_000_000,
+      inception: 2000, hq: 'Newport Beach, CA', benchmark: 'Bloomberg US Agg',
+      fee: '0.35%', minimum: 10_000_000, liquidity: 'Daily',
+      description: 'Core Plus manager with up to 25% off-benchmark in HY, EMD, and bank loans. Disciplined risk budget.',
+      strategy: 'Multi-sector rotation with active duration. Targets 100-150 bps of alpha.',
+      keyPeople: [
+        { name: 'Jonathan Pritchard', role: 'Lead PM', tenure: '22 yrs' },
+        { name: 'Rashida Khan', role: 'PM, Credit', tenure: '14 yrs' },
+      ],
+      trackRecord: { ytd: 0.024, oneY: 0.078, threeY: 0.022, fiveY: 0.034, itd: 0.058, benchYtd: 0.016, benchOneY: 0.058, benchThreeY: 0.008, benchFiveY: 0.018, benchItd: 0.048 },
+      holdingsCount: 620, topPositions: ['US Treasury 7Y', 'IG industrials', 'BB high-yield basket', 'EMD sovereign basket', 'Bank loans basket'],
+    },
+    {
+      id: 'aurora-tips', name: 'Aurora TIPS Active', assetClass: 'tips',
+      sleeve: 'Active TIPS', vehicle: 'Separate Account', firmAum: 32_000_000_000, strategyAum: 6_400_000_000,
+      inception: 2003, hq: 'Philadelphia, PA', benchmark: 'Bloomberg US TIPS',
+      fee: '0.20%', minimum: 25_000_000, liquidity: 'Daily',
+      description: 'Active TIPS manager taking views on real-rate curve positioning and breakeven spreads.',
+      strategy: 'Curve, breakeven, and liquidity-premium trades vs. nominals. Modest tracking error.',
+      keyPeople: [
+        { name: 'Geoffrey Holmes', role: 'PM', tenure: '19 yrs' },
+        { name: 'Lila Park', role: 'PM', tenure: '10 yrs' },
+      ],
+      trackRecord: { ytd: 0.022, oneY: 0.072, threeY: 0.018, fiveY: 0.034, itd: 0.044, benchYtd: 0.018, benchOneY: 0.064, benchThreeY: 0.014, benchFiveY: 0.028, benchItd: 0.038 },
+      holdingsCount: 38, topPositions: ['10Y TIPS', '5Y TIPS', '30Y TIPS', '2Y TIPS', '20Y TIPS'],
+    },
+    {
+      id: 'ironbridge-hy', name: 'Ironbridge High Yield', assetClass: 'hy',
+      sleeve: 'US High Yield', vehicle: 'Commingled Fund', firmAum: 28_000_000_000, strategyAum: 8_400_000_000,
+      inception: 2002, hq: 'New York, NY', benchmark: 'Bloomberg US HY',
+      fee: '0.45%', minimum: 10_000_000, liquidity: 'Daily',
+      description: 'High-yield manager with a quality bias (BB/B focused). Avoids CCCs in late-cycle environments.',
+      strategy: 'Bottom-up credit research; up-in-quality bias; 150-200 issuers.',
+      keyPeople: [
+        { name: 'Andrew Sokolov', role: 'Head of HY', tenure: '21 yrs' },
+        { name: 'Naomi Greene', role: 'Senior Analyst', tenure: '13 yrs' },
+      ],
+      trackRecord: { ytd: 0.038, oneY: 0.118, threeY: 0.062, fiveY: 0.054, itd: 0.072, benchYtd: 0.034, benchOneY: 0.108, benchThreeY: 0.054, benchFiveY: 0.048, benchItd: 0.064 },
+      holdingsCount: 184, topPositions: ['BB cable/media', 'BB healthcare svcs', 'BB energy midstream', 'B industrials', 'BB consumer'],
+    },
+    {
+      id: 'redfin-loans', name: 'Redfin Bank Loan Strategy', assetClass: 'hy',
+      sleeve: 'Bank Loans', vehicle: 'Commingled Fund', firmAum: 18_000_000_000, strategyAum: 5_200_000_000,
+      inception: 2007, hq: 'Chicago, IL', benchmark: 'CS Leveraged Loan',
+      fee: '0.50%', minimum: 5_000_000, liquidity: 'Monthly with 30-day notice',
+      description: 'Senior secured leveraged loan manager. Floating-rate, top-of-capital-structure exposure.',
+      strategy: 'Diversified 200-300 issuers, average BB-/B+ quality. Active CCC avoidance.',
+      keyPeople: [
+        { name: "Margaret O'Connor", role: 'Lead PM', tenure: '18 yrs' },
+        { name: 'Tyrone Jackson', role: 'PM', tenure: '12 yrs' },
+      ],
+      trackRecord: { ytd: 0.042, oneY: 0.108, threeY: 0.084, fiveY: 0.058, itd: 0.062, benchYtd: 0.038, benchOneY: 0.102, benchThreeY: 0.078, benchFiveY: 0.052, benchItd: 0.058 },
+      holdingsCount: 248, topPositions: ['Healthcare svcs 1L', 'Software 1L', 'Industrial svcs 1L', 'Specialty chem 1L', 'Consumer svcs 1L'],
+    },
+    // ---- Additional Hedge Funds ----
+    {
+      id: 'azure-equity-ls', name: 'Azure Equity Long/Short', assetClass: 'hf',
+      sleeve: 'Equity Long/Short', vehicle: 'Hedge Fund', firmAum: 12_000_000_000, strategyAum: 4_800_000_000,
+      inception: 2008, hq: 'Greenwich, CT', benchmark: 'HFRI Equity Hedge',
+      fee: '1.5% / 20%', minimum: 5_000_000, liquidity: 'Quarterly with 60-day notice',
+      description: 'Fundamental equity long/short with TMT and healthcare focus. Net exposure typically 30-50%.',
+      strategy: 'Pair-trade and single-name shorts; gross 150-180%; concentrated longs (~30).',
+      keyPeople: [
+        { name: 'Nathan Goldberg', role: 'Founder/CIO', tenure: '17 yrs (firm)' },
+        { name: 'Elena Volkov', role: 'PM, Healthcare', tenure: '11 yrs' },
+      ],
+      trackRecord: { ytd: 0.062, oneY: 0.148, threeY: 0.092, fiveY: 0.108, itd: 0.114, benchYtd: 0.048, benchOneY: 0.118, benchThreeY: 0.072, benchFiveY: 0.084, benchItd: 0.082 },
+      holdingsCount: 78, topPositions: ['TMT longs basket', 'Healthcare longs basket', 'Single-name shorts basket', 'Index hedge', 'Cash'],
+    },
+    {
+      id: 'meridian-global-macro', name: 'Meridian Global Macro', assetClass: 'hf',
+      sleeve: 'Global Macro', vehicle: 'Hedge Fund', firmAum: 18_000_000_000, strategyAum: 9_200_000_000,
+      inception: 1999, hq: 'London, UK', benchmark: 'HFRI Macro',
+      fee: '1.75% / 20%', minimum: 5_000_000, liquidity: 'Monthly with 30-day notice',
+      description: 'Discretionary global macro fund trading rates, FX, and commodities across G10 and EM.',
+      strategy: 'Top-down themes; ~25 active positions; vol target 10-12%.',
+      keyPeople: [
+        { name: 'Richard Ainsworth', role: 'CIO', tenure: '26 yrs' },
+        { name: 'Femi Adeyemi', role: 'PM, EM', tenure: '15 yrs' },
+      ],
+      trackRecord: { ytd: 0.048, oneY: 0.118, threeY: 0.084, fiveY: 0.072, itd: 0.094, benchYtd: 0.024, benchOneY: 0.072, benchThreeY: 0.054, benchFiveY: 0.048, benchItd: 0.068 },
+      holdingsCount: 32, topPositions: ['US 2s10s steepener', 'Long JPY / short USD', 'Long gold', 'EM rates basket', 'Energy curve trade'],
+    },
+    // ---- Additional Private Equity ----
+    {
+      id: 'highpoint-pe-v', name: 'Highpoint Capital Partners V', assetClass: 'pe',
+      sleeve: 'Mid-Market Buyout', vehicle: 'PE Fund', firmAum: 28_000_000_000, strategyAum: 4_500_000_000,
+      inception: 2003, hq: 'Dallas, TX', benchmark: 'Cambridge Associates US PE',
+      fee: '2.0% / 20% (8% pref)', minimum: 10_000_000, liquidity: '10-year fund, 2-yr extension',
+      description: 'Mid-market buyout firm focused on industrial-services, B2B distribution, and tech-enabled services.',
+      strategy: '$100M-$500M equity checks; majority control; operational value creation.',
+      keyPeople: [
+        { name: 'Cameron Reeves', role: 'Managing Partner', tenure: '22 yrs' },
+        { name: 'Jasmine Park', role: 'Partner', tenure: '14 yrs' },
+      ],
+      trackRecord: { ytd: 0.022, oneY: 0.118, threeY: 0.148, fiveY: 0.184, itd: 0.218, benchYtd: 0.018, benchOneY: 0.094, benchThreeY: 0.124, benchFiveY: 0.158, benchItd: 0.184 },
+      holdingsCount: 14, topPositions: ['B2B distribution platform', 'Industrial services rollup', 'Tech-enabled services', 'Specialty manufacturing', 'Healthcare services'],
+    },
+    {
+      id: 'oakshire-growth', name: 'Oakshire Growth Equity III', assetClass: 'pe',
+      sleeve: 'Growth Equity', vehicle: 'PE Fund', firmAum: 9_400_000_000, strategyAum: 2_800_000_000,
+      inception: 2014, hq: 'Menlo Park, CA', benchmark: 'Cambridge Associates Growth Equity',
+      fee: '2.0% / 20% (8% pref)', minimum: 5_000_000, liquidity: '10-year fund',
+      description: 'Growth-equity firm investing in profitable, founder-led tech and tech-enabled businesses at Series C+.',
+      strategy: 'Minority growth checks $25M-$100M; emphasis on capital-efficient SaaS and vertical platforms.',
+      keyPeople: [
+        { name: 'Priya Nair', role: 'Co-founder', tenure: '12 yrs (firm)' },
+        { name: 'Logan Chen', role: 'Partner', tenure: '9 yrs' },
+      ],
+      trackRecord: { ytd: 0.012, oneY: 0.084, threeY: 0.118, fiveY: 0.168, itd: 0.224, benchYtd: 0.014, benchOneY: 0.072, benchThreeY: 0.094, benchFiveY: 0.142, benchItd: 0.182 },
+      holdingsCount: 22, topPositions: ['Vertical SaaS platform', 'Dev-tools leader', 'Fintech infrastructure', 'Healthcare SaaS', 'Cybersecurity scale-up'],
+    },
+    {
+      id: 'tideline-secondaries', name: 'Tideline Secondaries Fund IV', assetClass: 'pe',
+      sleeve: 'PE Secondaries', vehicle: 'PE Fund', firmAum: 22_000_000_000, strategyAum: 7_200_000_000,
+      inception: 2010, hq: 'New York, NY', benchmark: 'Cambridge Associates Secondaries',
+      fee: '1.0% / 12.5% (7% pref)', minimum: 10_000_000, liquidity: '8-year fund',
+      description: 'PE secondaries specialist across LP-led and GP-led continuation vehicles.',
+      strategy: '~60-80 transactions; weighted-average 65-75% of NAV; quick-DPI profile.',
+      keyPeople: [
+        { name: 'Helena Vogel', role: 'Head of Secondaries', tenure: '17 yrs' },
+        { name: 'Ravi Subramanian', role: 'Partner', tenure: '12 yrs' },
+      ],
+      trackRecord: { ytd: 0.024, oneY: 0.118, threeY: 0.142, fiveY: 0.158, itd: 0.172, benchYtd: 0.022, benchOneY: 0.108, benchThreeY: 0.128, benchFiveY: 0.142, benchItd: 0.154 },
+      holdingsCount: 240, topPositions: ['LP portfolio (mega-cap)', 'GP-led continuation vehicle', 'Strip sale — mid-market', 'Tail-end portfolio', 'Single-asset CV'],
+    },
+    // ---- Additional Private Credit ----
+    {
+      id: 'driftwood-mezz', name: 'Driftwood Mezzanine V', assetClass: 'pc',
+      sleeve: 'Mezzanine Debt', vehicle: 'Private Credit Fund', firmAum: 11_000_000_000, strategyAum: 2_600_000_000,
+      inception: 2008, hq: 'Stamford, CT', benchmark: 'Cliffwater Mezzanine',
+      fee: '1.25% / 15% (8% pref)', minimum: 10_000_000, liquidity: '8-year fund',
+      description: 'Mezzanine debt specialist providing junior capital to PE-sponsored middle-market borrowers.',
+      strategy: 'Coupon + warrants; current cash yield ~10-11%; total returns 13-15% net.',
+      keyPeople: [
+        { name: 'Frederick Lang', role: 'Head of Mezz', tenure: '20 yrs' },
+        { name: 'Imani Robinson', role: 'PM', tenure: '11 yrs' },
+      ],
+      trackRecord: { ytd: 0.038, oneY: 0.114, threeY: 0.108, fiveY: 0.098, itd: 0.112, benchYtd: 0.032, benchOneY: 0.102, benchThreeY: 0.094, benchFiveY: 0.088, benchItd: 0.098 },
+      holdingsCount: 42, topPositions: ['Specialty chem mezz', 'Healthcare svcs mezz', 'Industrial mezz', 'Consumer brand mezz', 'B2B services mezz'],
+    },
+    {
+      id: 'havenrock-asset-backed', name: 'Havenrock Asset-Backed Credit', assetClass: 'pc',
+      sleeve: 'Asset-Based Lending', vehicle: 'Private Credit Fund', firmAum: 8_800_000_000, strategyAum: 2_400_000_000,
+      inception: 2016, hq: 'San Francisco, CA', benchmark: 'Cambridge Associates Specialty Finance',
+      fee: '1.25% / 15% (6% pref)', minimum: 10_000_000, liquidity: '7-year fund',
+      description: 'Asset-based lending to consumer-finance, equipment, and specialty-finance originators. Diversified collateral pools.',
+      strategy: 'Senior secured warehouse lines and forward-flow purchases; advance rates 70-85%.',
+      keyPeople: [
+        { name: 'Vikram Joshi', role: 'Co-founder', tenure: '10 yrs (firm)' },
+        { name: 'Bethany Cole', role: 'Partner', tenure: '8 yrs' },
+      ],
+      trackRecord: { ytd: 0.034, oneY: 0.102, threeY: 0.092, fiveY: null, itd: 0.098, benchYtd: 0.028, benchOneY: 0.094, benchThreeY: 0.082, benchFiveY: null, benchItd: 0.088 },
+      holdingsCount: 36, topPositions: ['Auto-finance warehouse', 'Consumer-loan forward flow', 'Equipment finance pool', 'Specialty receivables', 'SMB lender warehouse'],
+    },
+    // ---- Additional Real Assets ----
+    {
+      id: 'goldleaf-timber', name: 'Goldleaf Timberland', assetClass: 'ra',
+      sleeve: 'Timberland', vehicle: 'Private RA Fund', firmAum: 5_200_000_000, strategyAum: 2_100_000_000,
+      inception: 2005, hq: 'Atlanta, GA', benchmark: 'NCREIF Timberland',
+      fee: '1.0% / 10% (6% pref)', minimum: 10_000_000, liquidity: '12-year fund',
+      description: 'US Southern and Pacific Northwest timberland manager with carbon-credit and HBU components.',
+      strategy: 'Operating timber + biological growth + carbon optionality. Long-duration, inflation-linked.',
+      keyPeople: [
+        { name: 'Walter Briggs', role: 'CIO', tenure: '19 yrs' },
+        { name: 'Sara Lindgren', role: 'Partner, Carbon', tenure: '8 yrs' },
+      ],
+      trackRecord: { ytd: 0.014, oneY: 0.064, threeY: 0.078, fiveY: 0.082, itd: 0.084, benchYtd: 0.012, benchOneY: 0.058, benchThreeY: 0.068, benchFiveY: 0.072, benchItd: 0.074 },
+      holdingsCount: 18, topPositions: ['Pacific NW softwood', 'Southern pine plantations', 'Carbon-credit acreage', 'HBU conversion tracts', 'Appalachian hardwood'],
+    },
+    {
+      id: 'cornerstone-farmland', name: 'Cornerstone Farmland', assetClass: 'ra',
+      sleeve: 'Farmland', vehicle: 'Private RA Fund', firmAum: 4_400_000_000, strategyAum: 1_800_000_000,
+      inception: 2012, hq: 'Des Moines, IA', benchmark: 'NCREIF Farmland',
+      fee: '1.0% / 10% (6% pref)', minimum: 5_000_000, liquidity: '10-year fund',
+      description: 'US row-crop and permanent-crop farmland strategy with operator-leaseback structures.',
+      strategy: 'Diversified across Midwest row crops, California permanents, and Pacific NW. Inflation-linked rent.',
+      keyPeople: [
+        { name: 'Edith Carlson', role: 'Managing Partner', tenure: '14 yrs' },
+        { name: 'Hector Salinas', role: 'Partner, Permanents', tenure: '11 yrs' },
+      ],
+      trackRecord: { ytd: 0.012, oneY: 0.058, threeY: 0.068, fiveY: 0.074, itd: 0.078, benchYtd: 0.010, benchOneY: 0.052, benchThreeY: 0.062, benchFiveY: 0.068, benchItd: 0.072 },
+      holdingsCount: 64, topPositions: ['Iowa corn/soy', 'Illinois row crops', 'California almonds', 'Washington apples', 'Mississippi delta cotton'],
+    },
+    {
+      id: 'lighthouse-energy-trans', name: 'Lighthouse Energy Transition', assetClass: 'ra',
+      sleeve: 'Energy Transition', vehicle: 'Private RA Fund', firmAum: 14_000_000_000, strategyAum: 5_400_000_000,
+      inception: 2018, hq: 'Houston, TX', benchmark: 'MSCI Global Quarterly Private Infra',
+      fee: '1.35% / 17.5% (8% pref)', minimum: 10_000_000, liquidity: '10-year fund',
+      description: 'Energy-transition infrastructure including renewables, storage, transmission, and grid-edge technologies.',
+      strategy: 'Operating and development assets; mix of contracted (70%) and merchant (30%) revenue.',
+      keyPeople: [
+        { name: 'Audrey Tomlin', role: 'Managing Partner', tenure: '12 yrs' },
+        { name: 'Mateo Vega', role: 'Partner, Storage', tenure: '9 yrs' },
+      ],
+      trackRecord: { ytd: 0.018, oneY: 0.078, threeY: 0.082, fiveY: null, itd: 0.088, benchYtd: 0.015, benchOneY: 0.074, benchThreeY: 0.068, benchFiveY: null, benchItd: 0.074 },
+      holdingsCount: 28, topPositions: ['MISO transmission line', 'Battery storage portfolio', 'Solar+storage platform', 'Hydrogen pilot', 'EV-charging infra'],
     },
   ];
 
