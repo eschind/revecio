@@ -210,6 +210,9 @@
   /* Research · Manager universe */
   .layout.research-open { grid-template-columns: 232px 1fr 0; }
   .layout.research-open.with-artifact { grid-template-columns: 232px 1fr 720px; }
+  .layout.research-open.with-artifact.expanded { grid-template-columns: 0 380px 1fr; }
+  .layout.sidebar-collapsed.research-open.with-artifact { grid-template-columns: 56px 1fr 720px; }
+  .layout.sidebar-collapsed.research-open.with-artifact.expanded { grid-template-columns: 0 380px 1fr; }
   .mu-head { margin-bottom: 16px; }
   .mu-toolbar { display: flex; gap: 12px; align-items: center; margin-bottom: 10px; flex-wrap: wrap; }
   .mu-search { flex: 1; min-width: 220px; padding: 7px 12px; border: 1px solid var(--line); border-radius: 999px; font: inherit; font-size: 12.5px; background: #fff; color: var(--ink); }
@@ -3330,6 +3333,7 @@
   }
 
   function openManagersView() {
+    const firstEntry = !state.researchIntroShown;
     state.module = 'research-managers';
     state.researchSelected = state.researchSelected || new Set();
     enterResearchMode();
@@ -3337,6 +3341,21 @@
     openArtifact();
     renderManagersList();
     updateUrl();
+    if (firstEntry) {
+      state.researchIntroShown = true;
+      // Adjust the composer hint to reflect the research context
+      if (composerInput) composerInput.placeholder = 'Ask the research agent — search, compare, dig into a manager…';
+      addAgent(`<p>You're in <strong>Manager research</strong>. I can help you navigate the ${MANAGER_UNIVERSE.length} managers we track.</p>
+        <p style="font-size:12.5px;color:var(--muted);margin-top:6px;">Try asking:</p>
+        <ul style="font-size:12.5px;color:var(--ink-2);line-height:1.7;margin:4px 0 4px 22px;padding:0;">
+          <li>"Find me growth-tilted U.S. equity managers with at least $5B in strategy AUM."</li>
+          <li>"Compare Cascade Park and Harbor &amp; Main."</li>
+          <li>"Which private credit managers beat their benchmark over 5 years?"</li>
+          <li>"What's Polaris Global Macro's strategy?"</li>
+          <li>"How many managers do we track across hedge funds?"</li>
+        </ul>
+        <p style="font-size:12.5px;color:var(--muted);margin-top:6px;">You can also click any row to open a full profile or check 2–3 rows to compare side-by-side.</p>`);
+    }
   }
 
   function renderManagersList() {
