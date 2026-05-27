@@ -74,17 +74,21 @@ Rules:
       EXPENSE: comp (compensation/salaries/benefits), aid (financial aid), facilities (facilities & operations), research (research & academic programs), debt (debt service), otherExpense (administration & other).
     Examples: "donations drop 20% and tuition falls 5%" → adjustments=[{"key":"gifts","factor":0.8},{"key":"tuition","factor":0.95}]; "increase financial aid by 10%" → [{"key":"aid","factor":1.1}]; "what if research spending doubles" → [{"key":"research","factor":2}].
   - Set "reply" to a one-to-two-sentence narration of the change and its effect on the margin of safety. If the user only names a scenario with no line change, set adjustments=null.
-- "edit_facts" — user wants to change a CLIENT PROFILE fact (mission, spending policy, cash needs, drawdown tolerance, constraints, or governance). Use this — NOT edit/switch_and_edit — when the request is about the profile facts, especially when the current module is "profile" but ALSO when the user is anywhere and explicitly says "in the profile" or names one of the fact fields. Set:
+- "edit_facts" — STRONG OVERRIDE: any request to CHANGE / MODIFY / UPDATE / EDIT / REMOVE / ADD / ADJUST a CLIENT PROFILE fact (mission, spending policy, cash needs, drawdown tolerance, constraints, governance) ALWAYS uses edit_facts. NEVER use "edit", "switch_and_edit", "org_info", "unclear", or "question" for these — even when the user is in the IPS module, even when they only say the word "mission" (or any other fact name) plus a change verb. The word "profile" need not appear. Set:
   - "factKey" = one of mission | spending | cashNeeds | drawdown | constraints | governance, matched to the user's wording.
-  - "newValue" = the REWRITTEN fact text in plain English (1–3 sentences). Read the current fact value (provided below in "Client profile facts") and incorporate the user's change. Do not echo the user's instruction verbatim; produce a clean replacement.
+  - "newValue" = the REWRITTEN fact text in plain English (1–3 sentences). Read the current fact value (provided below under "Client profile facts") and incorporate the user's change. Do not echo the user's instruction verbatim; produce a clean replacement.
   - "reply" = a one-sentence narration of what changed.
-  Mapping examples:
-  - "change the mission to focus on undergraduate education" → factKey="mission"
+  Mapping examples (note: factKey and a non-empty newValue are REQUIRED whenever intent=edit_facts):
+  - "change the mission to focus on undergraduate education" → factKey="mission", newValue=rewritten mission
+  - "let's change the mission to remove the catholic/jesuit part" → factKey="mission", newValue=current mission rewritten without the catholic/jesuit framing
+  - "under Mission in Profile, let's remove the catholic/jesuit part" → factKey="mission" (same as above)
   - "update the spending policy to 5% of trailing 12-quarter average" → factKey="spending"
   - "tighten the drawdown tolerance to 15%" → factKey="drawdown"
   - "add an exclusion for private prisons" → factKey="constraints"
   - "the IC has nine members now, not seven" → factKey="governance"
-  After this intent fires, the app updates the profile fact and offers the user a one-click way to cascade the change into the IPS. Do NOT directly call edit/switch_and_edit when the user is asking for a profile change.
+  - "make the mission shorter" → factKey="mission", newValue=condensed mission
+  - "remove the line about Catholic Social Teaching from the constraints" → factKey="constraints", newValue=constraints minus the named line
+  After this intent fires the app updates the profile fact and offers a one-click cascade into the IPS. Anti-pattern: do NOT classify "change the mission" as "edit" (that's for IPS sections), as "org_info" (that's read-only), or as "unclear" (the request is clear — just produce the rewrite).
 - "next" / "previous" — only when IPS is in focus and the user wants to advance/retreat through sections.
 - "switch" — focus on a different IPS section without editing.
 - "edit" — change the CURRENT IPS section. editPrompt = neutral instruction.
