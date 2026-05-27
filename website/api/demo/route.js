@@ -12,12 +12,14 @@ You receive:
 Classify the message and return ONLY a single JSON object (no markdown, no commentary):
 
 {
-  "intent": "analyze" | "answer_content" | "org_info" | "spend_model" | "edit_facts" | "optimize" | "open" | "next" | "previous" | "switch" | "edit" | "switch_and_edit" | "question" | "unclear",
-  "targetModule": "ips" | "portfolio" | "spending" | "materials" | "monitoring" | "board" | "decisions" | "profile" | null,
+  "intent": "analyze" | "answer_content" | "org_info" | "spend_model" | "set_benchmark" | "edit_facts" | "optimize" | "open" | "next" | "previous" | "switch" | "edit" | "switch_and_edit" | "question" | "unclear",
+  "targetModule": "ips" | "portfolio" | "benchmarks" | "spending" | "materials" | "monitoring" | "board" | "decisions" | "profile" | null,
   "targetSectionNum": <number or null>,
   "query": "sharpe" | "return" | "vol" | "real_return" | "allocation" | "liquidity" | "metrics" | "capital_calls" | "capital_calls_all" | null,
   "scenario": "base" | "downturn" | "upside" | null,
   "adjustments": [ { "key": <string>, "factor": <number> } ] | null,
+  "assetClass": "us_eq" | "intl_eq" | "em_eq" | "core_fi" | "tips" | "hy" | "hf" | "pe" | "pc" | "ra" | "cash" | null,
+  "benchmark": <string or null>,
   "factKey": "mission" | "spending" | "cashNeeds" | "drawdown" | "constraints" | "governance" | null,
   "newValue": <string or null>,
   "editPrompt": <string or null>,
@@ -67,6 +69,7 @@ Rules:
   - "open the decision log" / "what decisions have we made" → decisions
   - "open the profile" / "show me the client info" → profile
   - "open the spending model" / "spending & liquidity" / "the budget model" → spending
+  - "open the benchmarks" / "show me the policy benchmark" / "what are we benchmarked against" / "set the benchmarks" → benchmarks
 - "spend_model" — user wants to change an assumption or scenario in the spending/liquidity model and see the impact (typically while currentModule is "spending"). Return:
   - "scenario": one of base/downturn/upside if the user names a scenario (e.g. "model the downturn", "show the upside case"), else null.
   - "adjustments": an array of { "key", "factor" } where factor is a MULTIPLIER (0.8 = down 20%, 1.1 = up 10%, 1.0 = unchanged). Map the user's words to these line-item keys:
@@ -74,6 +77,11 @@ Rules:
       EXPENSE: comp (compensation/salaries/benefits), aid (financial aid), facilities (facilities & operations), research (research & academic programs), debt (debt service), otherExpense (administration & other).
     Examples: "donations drop 20% and tuition falls 5%" → adjustments=[{"key":"gifts","factor":0.8},{"key":"tuition","factor":0.95}]; "increase financial aid by 10%" → [{"key":"aid","factor":1.1}]; "what if research spending doubles" → [{"key":"research","factor":2}].
   - Set "reply" to a one-to-two-sentence narration of the change and its effect on the margin of safety. If the user only names a scenario with no line change, set adjustments=null.
+- "set_benchmark" — user wants to CHANGE the performance benchmark / index for a specific asset class (typically while currentModule is "benchmarks", but not required). Return:
+  - "assetClass": the asset-class id the benchmark applies to — one of us_eq (U.S. equity), intl_eq (international developed equity), em_eq (emerging markets equity), core_fi (core fixed income / bonds), tips, hy (high yield), hf (hedge funds), pe (private equity), pc (private credit), ra (real assets), cash.
+  - "benchmark": the index/benchmark name the user wants, as a clean string (e.g. "Russell 1000", "MSCI ACWI ex-US", "Morningstar LSTA Leveraged Loan + 1.5%").
+  - "reply": a one-sentence confirmation.
+  Examples: "use Russell 1000 for U.S. equity" → assetClass="us_eq", benchmark="Russell 1000"; "benchmark private credit against the Cliffwater direct lending index" → assetClass="pc", benchmark="Cliffwater Direct Lending Index"; "change the bond benchmark to the Bloomberg US Universal" → assetClass="core_fi", benchmark="Bloomberg U.S. Universal"; "set the real assets benchmark to CPI + 4%" → assetClass="ra", benchmark="CPI + 4%". If the user asks to change a benchmark but you can't tell which asset class, set assetClass=null and put a clarifying question in reply.
 - "edit_facts" — STRONG OVERRIDE: any request to CHANGE / MODIFY / UPDATE / EDIT / REMOVE / ADD / ADJUST a CLIENT PROFILE fact (mission, spending policy, cash needs, drawdown tolerance, constraints, governance) ALWAYS uses edit_facts. NEVER use "edit", "switch_and_edit", "org_info", "unclear", or "question" for these — even when the user is in the IPS module, even when they only say the word "mission" (or any other fact name) plus a change verb. The word "profile" need not appear. Set:
   - "factKey" = one of mission | spending | cashNeeds | drawdown | constraints | governance, matched to the user's wording.
   - "newValue" = the REWRITTEN fact text in plain English (1–3 sentences). Read the current fact value (provided below under "Client profile facts") and incorporate the user's change. Do not echo the user's instruction verbatim; produce a clean replacement.

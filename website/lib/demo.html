@@ -1594,6 +1594,18 @@
       return;
     }
 
+    if (intent === 'set_benchmark') {
+      const ok = applyBenchmarkChange({ assetClass: route?.assetClass, benchmark: route?.benchmark });
+      if (ok) {
+        openBenchmarksView();
+        const label = CMA_BY[route.assetClass]?.name || route.assetClass;
+        await agentReply(`<p>${escapeHtml(route?.reply || `Set the ${label} benchmark to ${route.benchmark}.`)}</p>`);
+      } else {
+        await agentReply(`<p>${escapeHtml(route?.reply || "I couldn't tell which asset class's benchmark to change — name the asset class and the index, e.g. “use Russell 1000 for U.S. equity.”")}</p>`);
+      }
+      return;
+    }
+
     if (intent === 'answer_content') {
       const num = Number(route?.targetSectionNum);
       const idx = IPS_SECTIONS.findIndex((s) => s.num === num);
@@ -1644,6 +1656,11 @@
       if (target === 'spending') {
         openSpendingView();
         await agentReply(`<p>Pulled up the spending &amp; liquidity model. Ask me to change any assumption or scenario.</p>`);
+        return;
+      }
+      if (target === 'benchmarks') {
+        openBenchmarksView();
+        await agentReply(`<p>Pulled up the benchmarks. Ask me to change any asset class's benchmark — e.g. “use Russell 1000 for U.S. equity.”</p>`);
         return;
       }
       if (target === 'monitoring') {
@@ -2462,6 +2479,10 @@
     } else if (a === 'spend-reset') {
       state.spendOverrides = {};
       openSpendingView();
+    } else if (a === 'bm-reset') {
+      state.benchmarks = {};
+      if (state.clientId && !isSampleId(state.clientId)) persistClient();
+      openBenchmarksView();
     } else if (a === 'spend-new') {
       state.spendModel = newSpendModel(false);
       if (state.clientId && !isSampleId(state.clientId)) persistClient();
@@ -2938,6 +2959,7 @@
       boardNotes: state.boardNotes || [],
       decisions: state.decisions || [],
       spendModel: state.spendModel || null,
+      benchmarks: state.benchmarks || {},
       portfolio: state.portfolio || null,
       savedAt: new Date().toISOString(),
     };
@@ -2974,6 +2996,7 @@
     state.decisions = client.decisions || [];
     state.portfolio = client.portfolio || null;
     state.spendModel = client.spendModel || null;
+    state.benchmarks = client.benchmarks || {};
     // Lazily fill in SAA metrics + IPS §7 override if the sample only has weights
     if (state.saa && state.saa.weights && !state.saa.metrics) {
       state.saa.metrics = portfolioMetrics(state.saa.weights);
@@ -3117,6 +3140,7 @@
         label: 'Investment strategy',
         items: [
           item({ id: 'portfolio', action: 'open-workflow', label: 'Asset allocation', icon: svg('<path d="M3 3v18h18"/><path d="M7 14l3-3 3 3 5-6"/>'), status: saaStatus.text, statusKind: saaStatus.kind }),
+          item({ id: 'benchmarks', action: 'open-workflow', label: 'Benchmarks', icon: svg('<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5"/>'), status: Object.keys(state.benchmarks || {}).length ? 'Custom' : 'Proposed', statusKind: Object.keys(state.benchmarks || {}).length ? 'ok' : 'muted' }),
           item({ id: 'spending', action: 'open-workflow', label: 'Spending & liquidity', icon: svg('<path d="M12 3v18"/><path d="M5 8l-3 5h6z"/><path d="M19 8l-3 5h6z"/><path d="M5 21h14"/>'), status: state.org.name === 'Dream University' ? 'Modeled' : '—', statusKind: state.org.name === 'Dream University' ? 'ok' : 'muted' }),
           (function () {
             const p = state.portfolio;
@@ -5960,6 +5984,64 @@
     openSpendingView();
   }
 
+  // ============ Benchmarks ============
+  function openBenchmarksView() {
+    if (!state.org.name) return;
+    state.module = 'benchmarks';
+    state.benchmarks = state.benchmarks || {};
+    artifactTitle.textContent = 'Benchmarks';
+    enterItemView();
+
+    const w = benchmarkWeights();
+    const wSource = (state.saa && state.saa.weights) ? 'the adopted Strategic Asset Allocation' : 'IPS midpoints (no SAA adopted yet)';
+    const hasOv = Object.keys(state.benchmarks).length > 0;
+
+    // Composite policy benchmark — SAA-weighted blend of the asset-class benchmarks.
+    const comps = CMA.map((c) => ({ id: c.id, name: c.name, weight: w[c.id] || 0, bm: benchmarkFor(c.id) }))
+      .filter((r) => r.weight > 0.0005)
+      .sort((a, b) => b.weight - a.weight);
+    const compositeStr = comps.map((r) => `${pmFmtPct(r.weight, 0)} ${escapeHtml(r.bm)}`).join('&nbsp;&nbsp;·&nbsp;&nbsp;');
+
+    const rows = CMA.map((c) => {
+      const cur = benchmarkFor(c.id);
+      const optList = [...new Set([cur, ...((BENCHMARKS[c.id] && BENCHMARKS[c.id].options) || [])])];
+      const sel = `<select class="bm-select" data-asset="${c.id}" style="font:inherit;font-size:12.5px;padding:5px 8px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--ink);max-width:320px;">`
+        + optList.map((o) => `<option${o === cur ? ' selected' : ''}>${escapeHtml(o)}</option>`).join('') + `</select>`;
+      const isCustom = state.benchmarks[c.id] && state.benchmarks[c.id] !== (BENCHMARKS[c.id] && BENCHMARKS[c.id].default);
+      return `<tr><td>${escapeHtml(c.name)}</td><td class="num">${pmFmtPct(w[c.id] || 0, 1)}</td><td>${sel}${isCustom ? ' <span class="vault-status vk-ok" style="margin-left:6px;">changed</span>' : ''}</td></tr>`;
+    }).join('');
+
+    const resetBtn = hasOv ? `<button class="btn btn-sm add-btn" data-action="bm-reset">Reset to proposed</button>` : '';
+    const head = `${itemHeadHtml('Benchmarks', resetBtn)}
+      <div class="ips-title">${escapeHtml(state.org.name)} · Benchmarks</div>
+      <div class="ips-sub">Proposed performance benchmarks for each asset class, and the portfolio's composite policy benchmark. Weights are from ${wSource}.</div>`;
+
+    artifactBody.innerHTML = `${head}
+      <div class="qr-callout">
+        <div class="qc-label">Policy benchmark (composite)</div>
+        <p style="margin-bottom:6px;">Total-portfolio results are measured against an SAA-weighted blend of the asset-class benchmarks below:</p>
+        <p style="font-family:'JetBrains Mono',monospace;font-size:11.5px;line-height:1.8;color:var(--ink);">${compositeStr || '—'}</p>
+      </div>
+      <div class="qr-exhibit">
+        <div class="qr-exhibit-head"><div class="qx-label">By asset class</div><div class="qx-title">Proposed benchmarks</div></div>
+        <table class="qr-table"><thead><tr><th>Asset class</th><th class="num">Weight</th><th>Benchmark</th></tr></thead><tbody>${rows}</tbody></table>
+        <div class="qr-exhibit-note">Choose an alternative from any dropdown, or ask the agent — e.g. <em>"use Russell 1000 for U.S. equity"</em> or <em>"benchmark private credit against the Morningstar LSTA leveraged loan index + 1.5%."</em> Private-market benchmarks are reported on a one-quarter lag.</div>
+      </div>`;
+    artifactFooter.classList.remove('visible');
+    updateUrl();
+  }
+
+  // Set one asset class's benchmark (from the dropdown or an agent request). Free-text
+  // benchmark allowed so the agent can propose an index that isn't in the preset list.
+  function applyBenchmarkChange({ assetClass, benchmark } = {}) {
+    state.benchmarks = state.benchmarks || {};
+    const id = String(assetClass || '');
+    if (!BENCHMARKS[id] || !benchmark) return false;
+    state.benchmarks[id] = String(benchmark).trim().slice(0, 80);
+    if (state.clientId && !isSampleId(state.clientId)) persistClient();
+    return true;
+  }
+
   function openMaterialsView() {
     if (!state.org.name) return;
     state.module = 'materials';
@@ -6153,6 +6235,24 @@
     { id: 'cash',    name: 'Cash',                        ret: 0.034, vol: 0.005, tier: 1, inc: 0.034 },
   ];
   const CMA_BY = Object.fromEntries(CMA.map((c) => [c.id, c]));
+
+  // Proposed performance benchmark for each asset class, with common institutional
+  // alternatives. The portfolio's composite ("policy benchmark") is the SAA-weighted blend.
+  const BENCHMARKS = {
+    us_eq:   { default: 'S&P 500',                             options: ['S&P 500', 'Russell 1000', 'Russell 3000', 'CRSP US Total Market'] },
+    intl_eq: { default: 'MSCI EAFE',                           options: ['MSCI EAFE', 'MSCI World ex-US', 'MSCI ACWI ex-US'] },
+    em_eq:   { default: 'MSCI Emerging Markets',               options: ['MSCI Emerging Markets', 'MSCI EM IMI', 'FTSE Emerging'] },
+    core_fi: { default: 'Bloomberg U.S. Aggregate Bond',       options: ['Bloomberg U.S. Aggregate Bond', 'Bloomberg U.S. Universal', 'ICE BofA US Broad Market'] },
+    tips:    { default: 'Bloomberg U.S. TIPS',                 options: ['Bloomberg U.S. TIPS', 'ICE BofA US Inflation-Linked Treasury'] },
+    hy:      { default: 'Bloomberg U.S. Corporate High Yield', options: ['Bloomberg U.S. Corporate High Yield', 'ICE BofA US High Yield', 'Morningstar LSTA Leveraged Loan'] },
+    hf:      { default: 'HFRI Fund-Weighted Composite',        options: ['HFRI Fund-Weighted Composite', 'HFRI Fund of Funds Composite', 'ICE BofA 3-Month T-Bill + 3%'] },
+    pe:      { default: 'Cambridge Associates U.S. PE',        options: ['Cambridge Associates U.S. PE', 'Russell 3000 + 3% (lagged)', 'MSCI ACWI + 3% (lagged)'] },
+    pc:      { default: 'Cliffwater Direct Lending Index',     options: ['Cliffwater Direct Lending Index', 'Morningstar LSTA Leveraged Loan + 1.5%', 'S&P/LSTA Leveraged Loan'] },
+    ra:      { default: 'NCREIF ODCE',                         options: ['NCREIF ODCE', 'FTSE EPRA Nareit Developed', 'Bloomberg Commodity', 'CPI + 4%'] },
+    cash:    { default: 'ICE BofA US 3-Month Treasury Bill',   options: ['ICE BofA US 3-Month Treasury Bill', 'FTSE 3-Month T-Bill'] },
+  };
+  function benchmarkFor(id) { return (state.benchmarks && state.benchmarks[id]) || (BENCHMARKS[id] && BENCHMARKS[id].default) || '—'; }
+  function benchmarkWeights() { return (state.saa && state.saa.weights) ? state.saa.weights : defaultMidpointWeights(); }
 
   // IPS policy ranges (alts-forward diversified endowment with growth tilt).
   // The 2025 IPS eased the public-equity floors and widened the alternatives sleeve
@@ -7253,6 +7353,13 @@
     if (!e.target.closest('.spend-input')) return;
     if (state.spendModel && state.clientId && !isSampleId(state.clientId)) { syncSpendModelFromDOM(); persistClient(); }
   });
+  // Benchmark dropdown — change an asset class's benchmark and recompute the composite.
+  artifactBody.addEventListener('change', (e) => {
+    const sel = e.target.closest('.bm-select');
+    if (!sel) return;
+    applyBenchmarkChange({ assetClass: sel.dataset.asset, benchmark: sel.value });
+    openBenchmarksView();
+  });
   // "Upload a spreadsheet" in the spending model — simulated extraction.
   artifactBody.addEventListener('change', (e) => {
     if (e.target.id !== 'spend-upload') return;
@@ -7374,6 +7481,7 @@
     } else if (a === 'open-workflow') {
       const wf = btn.dataset.workflow;
       if (wf === 'portfolio') openPortfolioModule();
+      else if (wf === 'benchmarks') openBenchmarksView();
       else if (wf === 'ips') switchToIpsView();
       else if (wf === 'materials') openMaterialsView();
       else if (wf === 'profile') openClientProfileView();
@@ -7483,6 +7591,7 @@
     const view = params.get('view');
     if (view === 'ips') switchToIpsView();
     else if (view === 'portfolio') openPortfolioModule();
+    else if (view === 'benchmarks') openBenchmarksView();
     else if (view === 'materials') openMaterialsView();
     else if (view === 'profile') openClientProfileView();
     else if (view === 'board') openBoardNotesView();
