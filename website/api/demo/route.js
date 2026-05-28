@@ -162,14 +162,68 @@ export default async function handler(req, res) {
   const history = Array.isArray(body.history) ? body.history.slice(-10) : [];
   const materials = Array.isArray(body.materials) ? body.materials.slice(0, 8) : [];
   const facts = (body.facts && typeof body.facts === 'object') ? body.facts : null;
+  const isResearch = currentModule.startsWith('research');
+  const managers = isResearch && Array.isArray(body.managers) ? body.managers.slice(0, 80) : null;
 
-  if (!userMessage || !sections.length) {
+  if (!userMessage) {
+    res.statusCode = 400;
+    return res.end(JSON.stringify({ error: 'Missing fields.' }));
+  }
+  if (!isResearch && !sections.length) {
     res.statusCode = 400;
     return res.end(JSON.stringify({ error: 'Missing fields.' }));
   }
   if (!process.env.ANTHROPIC_API_KEY) {
     res.statusCode = 500;
     return res.end(JSON.stringify({ error: 'AI not configured (missing ANTHROPIC_API_KEY).' }));
+  }
+
+  // Research mode — dedicated free-form prompt, no intent classification.
+  if (isResearch) {
+    const mgrBlock = (managers || []).map((m) => {
+      const tr = m.tr || {};
+      const pct = (n) => n == null ? '—' : `${(n * 100).toFixed(1)}%`;
+      const aum = (n) => n == null ? '—' : (n >= 1e9 ? `$${(n/1e9).toFixed(1)}B` : `$${(n/1e6).toFixed(0)}M`);
+      let perf;
+      if (Array.isArray(m.vintages) && m.vintages.length) {
+        const total = m.vintages.reduce((s, v) => s + v.sizeM, 0);
+        const uw = m.vintages.reduce((s, v) => s + v.quartile, 0) / m.vintages.length;
+        const w = m.vintages.reduce((s, v) => s + v.quartile * v.sizeM, 0) / total;
+        const vStr = m.vintages.map((v) => `${v.name} (${v.year}, $${v.sizeM}M, Q${v.quartile})`).join('; ');
+        perf = `vintages: ${vStr}; avg quartile unweighted ${uw.toFixed(2)}, size-weighted ${w.toFixed(2)} (1=top, 4=bottom) vs ${m.benchmark}`;
+      } else {
+        perf = `1Y ${pct(tr.oneY)} vs ${pct(tr.benchOneY)}, 3Y ${pct(tr.threeY)} vs ${pct(tr.benchThreeY)}, 5Y ${pct(tr.fiveY)} vs ${pct(tr.benchFiveY)}, ITD ${pct(tr.itd)} vs ${pct(tr.benchItd)} (vs ${m.benchmark})`;
+      }
+      return `- ${m.name} (${m.id}) · ${m.assetClass} · ${m.sleeve} · ${m.vehicle} · HQ ${m.hq} · firm ${aum(m.firmAum)}, strategy ${aum(m.strategyAum)} · inception ${m.inception} · fee ${m.fee} · min ${aum(m.minimum)} · liq ${m.liquidity} · ${perf}\n   ${m.description}`;
+    }).join('\n');
+    const sys = `You are the manager-research agent inside an OCIO product called Reve. You help the user navigate a tracked universe of investment managers. Answer concisely and directly using only the manager facts provided — do not invent funds, AUM, or returns. If the user asks something the data doesn't support, say so plainly.
+
+Style: short paragraphs, no markdown headers, no bullet-point spam (a short list is fine when listing managers). Reference managers by name. Returns are net of fees, annualized for 3Y/5Y/ITD. Use US dollars.
+
+Return ONLY a single JSON object: { "reply": "<your answer in plain text>" }. No markdown fences.`;
+    const historyBlock = history.length
+      ? `\nConversation so far (oldest first):\n${history.map((h) => `  ${h.role === 'user' ? 'USER' : 'AGENT'}: ${String(h.text || '').slice(0, 350)}`).join('\n')}\n`
+      : '';
+    const userBlock = `Manager universe (${(managers || []).length} managers):\n${mgrBlock}\n${historyBlock}\nLatest user message: ${userMessage}\n\nReturn only { "reply": "..." }.`;
+    const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+    try {
+      const response = await anthropic.messages.create({
+        model: 'claude-haiku-4-5',
+        max_tokens: 800,
+        system: sys,
+        messages: [{ role: 'user', content: userBlock }],
+      });
+      let text = '';
+      for (const block of response.content) if (block.type === 'text') text += block.text;
+      const parsed = tryParseJson(text);
+      const reply = parsed?.reply || text.trim();
+      res.statusCode = 200;
+      return res.end(JSON.stringify({ reply }));
+    } catch (err) {
+      console.error('[demo/route research] error:', err?.message);
+      res.statusCode = 500;
+      return res.end(JSON.stringify({ error: 'Research agent failed. Please try again.' }));
+    }
   }
 
   const sectionList = sections.map((s) => `  ${s.num}. ${String(s.title).slice(0, 80)}`).join('\n');
