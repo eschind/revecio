@@ -422,6 +422,19 @@
   .artifact-header .title { font-family: 'Newsreader', serif; font-size: 18px; font-weight: 400; }
   .artifact-close { appearance: none; cursor: pointer; background: transparent; border: none; color: var(--muted); padding: 4px 8px; border-radius: 6px; font: inherit; font-size: 16px; }
   .artifact-close:hover { background: var(--bg-2); color: var(--ink); }
+  /* Re-open caret — sits on the right edge when in Tasks/Managers and the
+     drawer is hidden, lets the user slide the panel back. */
+  .artifact-reopen { display: none; position: fixed; right: 0; top: 50%; transform: translateY(-50%);
+    background: var(--panel); border: 1px solid var(--line); border-right: none;
+    border-top-left-radius: 8px; border-bottom-left-radius: 8px;
+    padding: 14px 8px; cursor: pointer; color: var(--ink-2); z-index: 50;
+    transition: background 0.15s, color 0.15s; }
+  .artifact-reopen:hover { background: var(--bg-2); color: var(--ink); }
+  .layout.tasks-open:not(.with-artifact) .artifact-reopen,
+  .layout.research-open:not(.with-artifact) .artifact-reopen { display: flex; align-items: center; justify-content: center; }
+  /* Hide the "Artifact" eyebrow in Tasks / Research — these aren't artifacts. */
+  .layout.tasks-open #artifact-label,
+  .layout.research-open #artifact-label { display: none; }
   .artifact-body { flex: 1; overflow-y: auto; padding: 28px 32px 60px; }
   .artifact-body h3 { font-family: 'Newsreader', serif; font-weight: 400; font-size: 18px; margin: 22px 0 6px; letter-spacing: -0.01em; }
   .artifact-body h3:first-child { margin-top: 0; }
@@ -1075,7 +1088,7 @@
     <aside class="artifact" id="artifact">
       <div class="artifact-header">
         <div>
-          <div class="label">Artifact</div>
+          <div class="label" id="artifact-label">Artifact</div>
           <div class="title" id="artifact-title">Investment Policy Statement · Draft</div>
         </div>
         <div style="display: flex; gap: 4px; align-items: center;">
@@ -1094,6 +1107,11 @@
         </div>
       </div>
     </aside>
+    <!-- Re-open tab — shows on the right edge when the side drawer is closed
+         while in Tasks or Managers, so the user can pull the panel back. -->
+    <button class="artifact-reopen" id="artifact-reopen" title="Show panel" aria-label="Show panel">
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
   </div>
 
   <div class="modal-backdrop" id="link-modal" role="dialog" aria-hidden="true">
@@ -2254,20 +2272,9 @@
     layout.classList.remove('with-artifact');
     layout.classList.remove('expanded');
     if (artifactExpand) artifactExpand.title = 'Expand';
-    // If we were in research or tasks mode, fully exit so the user can come back
-    // via the sidebar nav (otherwise the layout stayed in research-grid but with
-    // no panel, and nothing in the UI hinted at how to re-open it).
-    if (layout.classList.contains('research-open')) {
-      exitResearchMode();
-      state.module = null;
-      try { updateUrl(); } catch {}
-    }
-    if (state.tasksOpen) {
-      state.tasksOpen = false;
-      document.querySelectorAll('.nav-item').forEach((el) => el.classList.remove('active'));
-      document.getElementById('nav-new-client')?.classList.add('active');
-      try { updateUrl(); } catch {}
-    }
+    // In Tasks / Managers we deliberately do NOT exit the mode — the user
+    // stays on the screen and a re-open caret on the right edge slides the
+    // panel back into view.
   }
   function showArtifactFooter() { artifactFooter.classList.add('visible'); }
   function restoreIpsFooter() {
@@ -2282,6 +2289,7 @@
     `;
   }
   artifactClose.addEventListener('click', closeArtifact);
+  document.getElementById('artifact-reopen')?.addEventListener('click', openArtifact);
 
   async function streamIps() {
     const html = buildIpsHtml();
@@ -3117,8 +3125,10 @@
   function loadClient(id) {
     const client = listClients().find((c) => c.id === id);
     if (!client) return;
-    // If we were in research mode, exit before entering a client workspace
+    // If we were in research or tasks mode, exit before entering a client workspace
     if (layout.classList.contains('research-open')) exitResearchMode();
+    layout.classList.remove('tasks-open');
+    state.tasksOpen = false;
     // Reset state
     state.org = { name: client.name, type: client.type };
     state.aum = client.aum || null;
@@ -3326,6 +3336,7 @@
     }
     layout.classList.remove('client-open');
     layout.classList.remove('expanded');
+    layout.classList.add('tasks-open');
     state.tasksOpen = true;
     state.fromTasks = false;
     state.module = 'tasks';
@@ -3506,6 +3517,7 @@
     // once per session. Internal nav (list → detail → compare) won't re-trigger.
     const wasInResearch = (state.module || '').startsWith('research-');
     state.tasksOpen = false;
+    layout.classList.remove('tasks-open');
     state.module = 'research-managers';
     state.researchSelected = state.researchSelected || new Set();
     enterResearchMode();
@@ -7755,10 +7767,13 @@
     state.ipsDirty = false;
     state.module = 'ips';
     state.fromTasks = false;
+    state.tasksOpen = false;
     state.currentExample = null;
     state.reviewIdx = 0;
     state_pm.weights = null;
     state_pm.mvo = null;
+    layout.classList.remove('tasks-open');
+    if (layout.classList.contains('research-open')) exitResearchMode();
     document.querySelectorAll('.nav-item').forEach((el) => el.classList.remove('active'));
     document.getElementById('nav-new-client').classList.add('active');
     exitClientWorkspace();
