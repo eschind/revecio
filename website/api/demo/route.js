@@ -164,7 +164,8 @@ export default async function handler(req, res) {
   const facts = (body.facts && typeof body.facts === 'object') ? body.facts : null;
   const isResearch = currentModule.startsWith('research');
   const isTasks = currentModule === 'tasks';
-  const managers = isResearch && Array.isArray(body.managers) ? body.managers.slice(0, 80) : null;
+  // Cap large enough to fit the full manager universe (currently ~150) with headroom.
+  const managers = isResearch && Array.isArray(body.managers) ? body.managers.slice(0, 250) : null;
   const tasks = isTasks && Array.isArray(body.tasks) ? body.tasks.slice(0, 60) : null;
 
   if (!userMessage) {
