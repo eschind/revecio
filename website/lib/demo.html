@@ -947,7 +947,9 @@
   .pm-cov-bar-fill.t3 { background: #6b5c8a; }
   .pm-cov-bar-val { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--ink-2); text-align: right; }
   /* Risk exposures (factor / style / FX) */
-  .risk-bars { display: flex; flex-direction: column; gap: 8px; margin: 8px 0 4px; }
+  /* The .qr-exhibit shell has no inner padding (it's table-friendly), so risk content
+     gets its own consistent 14px / 16px padding to sit cleanly off the card borders. */
+  .risk-bars { display: flex; flex-direction: column; gap: 8px; padding: 14px 18px; }
   .risk-row { display: grid; grid-template-columns: minmax(140px, 200px) 1fr 60px; gap: 14px; align-items: center; font-size: 12.5px; padding: 4px 0; }
   .risk-label { color: var(--ink); line-height: 1.25; }
   .risk-unit { font-family: 'JetBrains Mono', monospace; font-size: 9.5px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); margin-top: 2px; }
@@ -959,9 +961,9 @@
   .risk-val { font-family: 'JetBrains Mono', monospace; font-size: 11.5px; text-align: right; }
   .risk-val.pos { color: var(--accent); }
   .risk-val.neg { color: #b13a3a; }
-  .risk-fx-bar { display: flex; height: 28px; border-radius: 6px; overflow: hidden; margin: 8px 0; background: var(--line-soft); border: 1px solid var(--line); }
+  .risk-fx-bar { display: flex; height: 28px; border-radius: 6px; overflow: hidden; margin: 14px 18px 0; background: var(--line-soft); border: 1px solid var(--line); }
   .risk-fx-seg { height: 100%; }
-  .risk-fx-legend { display: flex; flex-wrap: wrap; gap: 10px 16px; font-size: 11.5px; color: var(--ink-2); margin-top: 6px; }
+  .risk-fx-legend { display: flex; flex-wrap: wrap; gap: 10px 16px; font-size: 11.5px; color: var(--ink-2); padding: 8px 18px 14px; }
   .risk-fx-leg { display: inline-flex; align-items: center; }
   .risk-fx-leg i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; flex: none; }
   /* Compact risk summary inside the Asset Allocation page */
@@ -8803,6 +8805,26 @@
     const fxLegend = fxList.map((f) => `<span class="risk-fx-leg"><i style="background:${f.color}"></i>${escapeHtml(f.label)} ${(f.value * 100).toFixed(1)}%</span>`).join('');
     const usdPct = (fx.USD || 0) * 100;
 
+    // USD scenarios — portfolio return impact at various DXY shifts. The macro.usd beta is
+    // calibrated per +5% DXY shock, so impact at +X% ≈ beta · (X / 5).
+    const usdScenarios = [-15, -10, -5, 0, 5, 10, 15].map((pct) => ({
+      pct,
+      impact: (macro.usd || 0) * (pct / 5),
+    }));
+    const usdMaxAbs = Math.max(0.1, ...usdScenarios.map((s) => Math.abs(s.impact))) * 1.15;
+    const usdRows = usdScenarios.map((s) => {
+      const b = bar(s.impact, usdMaxAbs);
+      const label = s.pct === 0 ? 'USD unchanged' : `USD ${s.pct > 0 ? '+' : ''}${s.pct}%`;
+      const sub = s.pct < 0 ? 'weakening' : s.pct > 0 ? 'strengthening' : 'baseline';
+      const sign = s.impact >= 0 ? '+' : '';
+      const cls = s.impact >= 0 ? 'pos' : 'neg';
+      return `<div class="risk-row">
+        <div class="risk-label">${label}<div class="risk-unit">${sub}</div></div>
+        <div class="risk-track"><div class="risk-track-mid"></div><div class="risk-fill ${b.cls}" style="${b.fillStyle}"></div></div>
+        <div class="risk-val ${cls}">${sign}${(s.impact).toFixed(2)}pp</div>
+      </div>`;
+    }).join('');
+
     artifactBody.innerHTML = `${itemHeadHtml('Risk exposures')}
       <div class="ips-title">${escapeHtml(state.org.name)} · Risk exposures</div>
       <div class="ips-sub">Portfolio exposure to macro factors, style tilts, and foreign currency. Each number is the SAA-weighted blend of per-asset-class exposures, computed from ${wSource}.</div>
@@ -8821,6 +8843,11 @@
         <div class="risk-fx-bar">${fxBar}</div>
         <div class="risk-fx-legend">${fxLegend}</div>
         <div class="qr-exhibit-note">Pre-hedge currency exposure. Developed-international uses a representative MSCI EAFE basket; emerging-market equity uses a representative MSCI EM basket. Hedge funds, PE, PC, and Real Assets use industry-typical USD/foreign splits.</div>
+      </div>
+      <div class="qr-exhibit">
+        <div class="qr-exhibit-head"><div class="qx-label">Currency scenarios</div><div class="qx-title">Portfolio return impact at various USD shifts</div></div>
+        <div class="risk-bars">${usdRows}</div>
+        <div class="qr-exhibit-note">Expected first-order impact on the portfolio's annual return at each DXY scenario, holding all else equal. Combines translation effects on foreign holdings with risk-off correlations (US large-cap multinational drag, EM risk-off, etc.). Pre-hedge.</div>
       </div>`;
     artifactFooter.classList.remove('visible');
     updateUrl();
@@ -9229,17 +9256,20 @@
   // Macroeconomic factor sensitivities (change in expected annual return per +1pp
   // shock to the factor). Extends SENSITIVITIES with credit-spread, commodity, USD,
   // and equity-vol betas. Calibrated from historical regressions; rough but defensible.
+  // USD column: per +5% DXY shock. US large caps get hurt via foreign-revenue FX
+  // translation (~30% of S&P 500 revenue is non-USD); developed and EM equity take a
+  // bigger hit from both translation and risk-off correlations with a strong dollar.
   const MACRO_FACTOR_EXPOSURE = {
-    us_eq:   { growth:  1.60, rates: -0.30, inflation: -0.30, credit: -0.20, commodity:  0.05, usd:  0.20, vol: -1.40 },
-    intl_eq: { growth:  1.60, rates: -0.25, inflation: -0.20, credit: -0.20, commodity:  0.15, usd: -0.50, vol: -1.30 },
-    em_eq:   { growth:  1.90, rates: -0.50, inflation:  0.20, credit: -0.30, commodity:  0.25, usd: -0.80, vol: -1.60 },
-    core_fi: { growth: -0.10, rates: -0.60, inflation: -0.50, credit: -0.10, commodity: -0.05, usd:  0.10, vol:  0.20 },
+    us_eq:   { growth:  1.60, rates: -0.30, inflation: -0.30, credit: -0.20, commodity:  0.05, usd: -0.30, vol: -1.40 },
+    intl_eq: { growth:  1.60, rates: -0.25, inflation: -0.20, credit: -0.20, commodity:  0.15, usd: -1.20, vol: -1.30 },
+    em_eq:   { growth:  1.90, rates: -0.50, inflation:  0.20, credit: -0.30, commodity:  0.25, usd: -1.80, vol: -1.60 },
+    core_fi: { growth: -0.10, rates: -0.60, inflation: -0.50, credit: -0.10, commodity: -0.05, usd:  0.15, vol:  0.20 },
     tips:    { growth: -0.05, rates: -0.40, inflation:  1.00, credit: -0.05, commodity:  0.10, usd:  0.05, vol:  0.10 },
-    hy:      { growth:  0.70, rates: -0.30, inflation: -0.20, credit: -0.80, commodity:  0.10, usd:  0.10, vol: -0.70 },
-    hf:      { growth:  0.50, rates: -0.05, inflation:  0.05, credit: -0.20, commodity:  0.05, usd:  0.00, vol:  0.10 },
-    pe:      { growth:  1.70, rates: -0.50, inflation: -0.30, credit: -0.30, commodity:  0.05, usd:  0.15, vol: -1.20 },
-    pc:      { growth:  0.40, rates: -0.10, inflation: -0.05, credit: -0.60, commodity:  0.05, usd:  0.05, vol: -0.40 },
-    ra:      { growth:  1.10, rates: -0.40, inflation:  0.70, credit: -0.10, commodity:  0.40, usd: -0.10, vol: -0.50 },
+    hy:      { growth:  0.70, rates: -0.30, inflation: -0.20, credit: -0.80, commodity:  0.10, usd: -0.40, vol: -0.70 },
+    hf:      { growth:  0.50, rates: -0.05, inflation:  0.05, credit: -0.20, commodity:  0.05, usd: -0.10, vol:  0.10 },
+    pe:      { growth:  1.70, rates: -0.50, inflation: -0.30, credit: -0.30, commodity:  0.05, usd: -0.40, vol: -1.20 },
+    pc:      { growth:  0.40, rates: -0.10, inflation: -0.05, credit: -0.60, commodity:  0.05, usd:  0.00, vol: -0.40 },
+    ra:      { growth:  1.10, rates: -0.40, inflation:  0.70, credit: -0.10, commodity:  0.40, usd: -0.40, vol: -0.50 },
     cash:    { growth:  0.00, rates:  0.90, inflation:  0.30, credit:  0.00, commodity:  0.00, usd:  0.05, vol:  0.30 },
   };
   const MACRO_FACTORS = [
