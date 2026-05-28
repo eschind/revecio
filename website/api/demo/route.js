@@ -235,15 +235,28 @@ Rules for exhibits:
     try {
       const response = await anthropic.messages.create({
         model: 'claude-haiku-4-5',
-        max_tokens: 800,
+        // Headroom for tables — a 25-row exhibit can easily exceed 1500 tokens of JSON,
+        // and a hard cutoff makes the parse fail and dumps raw JSON into the chat.
+        max_tokens: 4000,
         system: sys,
         messages: [{ role: 'user', content: userBlock }],
       });
       let text = '';
       for (const block of response.content) if (block.type === 'text') text += block.text;
       const parsed = tryParseJson(text);
-      const reply = parsed?.reply || text.trim();
-      const exhibit = parsed?.exhibit || null;
+      let reply = parsed?.reply;
+      let exhibit = parsed?.exhibit || null;
+      if (!parsed) {
+        // Malformed or truncated JSON — extract the narrative so the user at least sees a
+        // sentence rather than the raw model output. Code fences and an unclosed exhibit
+        // are common; the reply field is usually intact and at the top of the response.
+        const m = text.match(/"reply"\s*:\s*"((?:[^"\\]|\\.)*)"/);
+        if (m) {
+          reply = m[1].replace(/\\"/g, '"').replace(/\\n/g, '\n').replace(/\\\\/g, '\\');
+        } else {
+          reply = 'Sorry — I had trouble formatting that. Try a more specific question, like “list early-stage VC funds” or “show our private credit funds.”';
+        }
+      }
       res.statusCode = 200;
       return res.end(JSON.stringify({ reply, exhibit }));
     } catch (err) {
