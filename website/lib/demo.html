@@ -946,6 +946,29 @@
   .pm-cov-bar-fill.t2 { background: #c4830d; }
   .pm-cov-bar-fill.t3 { background: #6b5c8a; }
   .pm-cov-bar-val { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--ink-2); text-align: right; }
+  /* Risk exposures (factor / style / FX) */
+  .risk-bars { display: flex; flex-direction: column; gap: 8px; margin: 8px 0 4px; }
+  .risk-row { display: grid; grid-template-columns: minmax(140px, 200px) 1fr 60px; gap: 14px; align-items: center; font-size: 12.5px; padding: 4px 0; }
+  .risk-label { color: var(--ink); line-height: 1.25; }
+  .risk-unit { font-family: 'JetBrains Mono', monospace; font-size: 9.5px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); margin-top: 2px; }
+  .risk-track { position: relative; height: 14px; background: var(--line-soft); border-radius: 7px; }
+  .risk-track-mid { position: absolute; left: 50%; top: -2px; bottom: -2px; width: 1px; background: rgba(20,23,28,0.35); }
+  .risk-fill { position: absolute; top: 1px; bottom: 1px; border-radius: 4px; }
+  .risk-fill.pos { background: var(--accent); }
+  .risk-fill.neg { background: #b13a3a; }
+  .risk-val { font-family: 'JetBrains Mono', monospace; font-size: 11.5px; text-align: right; }
+  .risk-val.pos { color: var(--accent); }
+  .risk-val.neg { color: #b13a3a; }
+  .risk-fx-bar { display: flex; height: 28px; border-radius: 6px; overflow: hidden; margin: 8px 0; background: var(--line-soft); border: 1px solid var(--line); }
+  .risk-fx-seg { height: 100%; }
+  .risk-fx-legend { display: flex; flex-wrap: wrap; gap: 10px 16px; font-size: 11.5px; color: var(--ink-2); margin-top: 6px; }
+  .risk-fx-leg { display: inline-flex; align-items: center; }
+  .risk-fx-leg i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; flex: none; }
+  /* Compact risk summary inside the Asset Allocation page */
+  .saa-risk-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 14px 22px; margin: 4px 0 12px; }
+  .saa-risk-stat .k-label { font-family: 'JetBrains Mono', monospace; font-size: 9.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+  .saa-risk-stat .k-value { font-family: 'Newsreader', serif; font-size: 20px; color: var(--ink); line-height: 1.1; }
+  .saa-risk-stat .k-sub { font-size: 11px; color: var(--muted); margin-top: 3px; }
   .pm-cov-legend { display: flex; flex-wrap: wrap; gap: 12px; font-size: 10.5px; color: var(--ink-2); margin-top: 6px; }
   .pm-cov-legend i { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 6px; vertical-align: 0; }
 
@@ -4366,6 +4389,7 @@
         items: [
           item({ id: 'portfolio', action: 'open-workflow', label: 'Asset allocation', icon: svg('<path d="M3 3v18h18"/><path d="M7 14l3-3 3 3 5-6"/>'), status: saaStatus.text, statusKind: saaStatus.kind }),
           item({ id: 'benchmarks', action: 'open-workflow', label: 'Benchmarks', icon: svg('<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5"/>'), status: Object.keys(state.benchmarks || {}).length ? 'Custom' : 'Proposed', statusKind: Object.keys(state.benchmarks || {}).length ? 'ok' : 'muted' }),
+          item({ id: 'risk', action: 'open-workflow', label: 'Risk', icon: svg('<path d="M12 2L3 7v6c0 5 3.5 8.5 9 11 5.5-2.5 9-6 9-11V7l-9-5z"/><path d="M9 11l2 2 4-4"/>'), status: state.saa ? 'Modeled' : '—', statusKind: state.saa ? 'ok' : 'muted' }),
           item({ id: 'spending', action: 'open-workflow', label: 'Spending & liquidity', icon: svg('<path d="M12 3v18"/><path d="M5 8l-3 5h6z"/><path d="M19 8l-3 5h6z"/><path d="M5 21h14"/>'), status: state.org.name === 'Dream University' ? 'Modeled' : '—', statusKind: state.org.name === 'Dream University' ? 'ok' : 'muted' }),
           (function () {
             const p = state.portfolio;
@@ -8706,6 +8730,102 @@
     return true;
   }
 
+  // ============ Risk exposures ============
+  function riskWeights() { return (state.saa && state.saa.weights) ? state.saa.weights : defaultMidpointWeights(); }
+
+  // Compact risk summary embedded inside the Asset Allocation page (links into the full
+  // Risk view). Headline numbers: growth beta, inflation beta, credit beta, and USD share.
+  function renderSaaRiskSummaryCard() {
+    const w = riskWeights();
+    const macro = aggregateExposure(w, MACRO_FACTOR_EXPOSURE);
+    const fx = aggregateExposure(w, FX_EXPOSURE);
+    const usdPct = (fx.USD || 0) * 100;
+    const fmt = (x) => (x >= 0 ? '+' : '') + x.toFixed(2);
+    return `<div class="pm-card">
+      <div class="pm-card-label">Risk exposures <span style="color: var(--muted); text-transform: none; letter-spacing: 0; font-family: 'Newsreader', serif; font-size: 12px; margin-left: 8px;">— macro factor, style, and currency</span></div>
+      <div class="saa-risk-summary">
+        <div class="saa-risk-stat"><div class="k-label">Growth beta</div><div class="k-value">${fmt(macro.growth || 0)}</div><div class="k-sub">per +1pp GDP shock</div></div>
+        <div class="saa-risk-stat"><div class="k-label">Inflation beta</div><div class="k-value">${fmt(macro.inflation || 0)}</div><div class="k-sub">per +1pp CPI shock</div></div>
+        <div class="saa-risk-stat"><div class="k-label">Credit beta</div><div class="k-value">${fmt(macro.credit || 0)}</div><div class="k-sub">per +100bp HY spread</div></div>
+        <div class="saa-risk-stat"><div class="k-label">USD exposure</div><div class="k-value">${usdPct.toFixed(0)}%</div><div class="k-sub">${(100 - usdPct).toFixed(0)}% foreign</div></div>
+      </div>
+      <div style="display:flex;justify-content:flex-end;">
+        <a class="task-cta secondary" data-action="open-workflow" data-workflow="risk" style="text-decoration:none;">View full risk exposures →</a>
+      </div>
+    </div>`;
+  }
+
+  function openRiskView() {
+    if (!state.org.name) return;
+    state.module = 'risk';
+    artifactTitle.textContent = 'Risk exposures';
+    enterItemView();
+
+    const w = riskWeights();
+    const wSource = (state.saa && state.saa.weights) ? 'the adopted Strategic Asset Allocation' : 'IPS midpoints (no SAA adopted yet)';
+    const macro = aggregateExposure(w, MACRO_FACTOR_EXPOSURE);
+    const style = aggregateExposure(w, STYLE_EXPOSURE);
+    const fx = aggregateExposure(w, FX_EXPOSURE);
+
+    // Auto-scale the factor bars to the largest absolute exposure.
+    const factorMax = Math.max(0.5, ...MACRO_FACTORS.map((f) => Math.abs(macro[f.id] || 0))) * 1.15;
+    const bar = (v, scale, withUnit, unit) => {
+      const half = 50; // % of track to each side of center
+      const pct = Math.min(1, Math.abs(v) / scale) * half;
+      const sign = v >= 0 ? '+' : '';
+      const cls = v >= 0 ? 'pos' : 'neg';
+      const style = v >= 0
+        ? `left:50%; width:${pct.toFixed(2)}%;`
+        : `left:${(50 - pct).toFixed(2)}%; width:${pct.toFixed(2)}%;`;
+      return { fillStyle: style, cls, label: `${sign}${v.toFixed(2)}` };
+    };
+    const factorRows = MACRO_FACTORS.map((f) => {
+      const v = macro[f.id] || 0;
+      const b = bar(v, factorMax);
+      return `<div class="risk-row">
+        <div class="risk-label">${escapeHtml(f.label)}<div class="risk-unit">${escapeHtml(f.unit)}</div></div>
+        <div class="risk-track"><div class="risk-track-mid"></div><div class="risk-fill ${b.cls}" style="${b.fillStyle}"></div></div>
+        <div class="risk-val ${b.cls}">${b.label}</div>
+      </div>`;
+    }).join('');
+    const styleRows = STYLE_FACTORS.map((s) => {
+      const v = style[s.id] || 0;
+      const b = bar(v, 1.0);  // styles on a fixed ±1 scale
+      return `<div class="risk-row">
+        <div class="risk-label">${escapeHtml(s.label)}</div>
+        <div class="risk-track"><div class="risk-track-mid"></div><div class="risk-fill ${b.cls}" style="${b.fillStyle}"></div></div>
+        <div class="risk-val ${b.cls}">${b.label}</div>
+      </div>`;
+    }).join('');
+
+    const fxList = FX_GROUP_ORDER.filter((k) => (fx[k] || 0) > 0.0005).map((k) => ({ key: k, label: FX_LABELS[k], value: fx[k], color: FX_COLORS[k] }));
+    const fxBar = fxList.map((f) => `<div class="risk-fx-seg" style="width:${(f.value * 100).toFixed(2)}%;background:${f.color};" title="${escapeHtml(f.label)} ${(f.value * 100).toFixed(1)}%"></div>`).join('');
+    const fxLegend = fxList.map((f) => `<span class="risk-fx-leg"><i style="background:${f.color}"></i>${escapeHtml(f.label)} ${(f.value * 100).toFixed(1)}%</span>`).join('');
+    const usdPct = (fx.USD || 0) * 100;
+
+    artifactBody.innerHTML = `${itemHeadHtml('Risk exposures')}
+      <div class="ips-title">${escapeHtml(state.org.name)} · Risk exposures</div>
+      <div class="ips-sub">Portfolio exposure to macro factors, style tilts, and foreign currency. Each number is the SAA-weighted blend of per-asset-class exposures, computed from ${wSource}.</div>
+      <div class="qr-exhibit">
+        <div class="qr-exhibit-head"><div class="qx-label">Macro factors</div><div class="qx-title">Expected return change per shock</div></div>
+        <div class="risk-bars">${factorRows}</div>
+        <div class="qr-exhibit-note">Each row shows the SAA-weighted sensitivity of the portfolio's expected annual return to the named shock. Positive (green) = the portfolio benefits; negative (red) = it loses. Sensitivities calibrated from historical regressions and JPM 2025 LTCMA factor work.</div>
+      </div>
+      <div class="qr-exhibit">
+        <div class="qr-exhibit-head"><div class="qx-label">Style tilts</div><div class="qx-title">Value · Size · Momentum · Quality · Low Vol</div></div>
+        <div class="risk-bars">${styleRows}</div>
+        <div class="qr-exhibit-note">Tilt scores on a -1 to +1 scale relative to a broad-market reference (≈0 = neutral). Positive scores indicate a structural overweight to the style; negatives an underweight.</div>
+      </div>
+      <div class="qr-exhibit">
+        <div class="qr-exhibit-head"><div class="qx-label">Currency exposure</div><div class="qx-title">USD ${usdPct.toFixed(1)}% · foreign ${(100 - usdPct).toFixed(1)}%</div></div>
+        <div class="risk-fx-bar">${fxBar}</div>
+        <div class="risk-fx-legend">${fxLegend}</div>
+        <div class="qr-exhibit-note">Pre-hedge currency exposure. Developed-international uses a representative MSCI EAFE basket; emerging-market equity uses a representative MSCI EM basket. Hedge funds, PE, PC, and Real Assets use industry-typical USD/foreign splits.</div>
+      </div>`;
+    artifactFooter.classList.remove('visible');
+    updateUrl();
+  }
+
   function openMaterialsView() {
     if (!state.org.name) return;
     state.module = 'materials';
@@ -9101,6 +9221,90 @@
     ra:      { growth: 1.1, rates: -0.40, inflation:  0.70 },
     cash:    { growth: 0.00, rates:  0.90, inflation:  0.30 },
   };
+
+  // ── Risk exposures (factor / style / FX) ──────────────────────────────────────
+  // Per-asset-class exposures used by the Risk page. The portfolio-level number for
+  // each factor / style / currency is the SAA-weighted sum: Σ wᵢ · exposureᵢ.
+
+  // Macroeconomic factor sensitivities (change in expected annual return per +1pp
+  // shock to the factor). Extends SENSITIVITIES with credit-spread, commodity, USD,
+  // and equity-vol betas. Calibrated from historical regressions; rough but defensible.
+  const MACRO_FACTOR_EXPOSURE = {
+    us_eq:   { growth:  1.60, rates: -0.30, inflation: -0.30, credit: -0.20, commodity:  0.05, usd:  0.20, vol: -1.40 },
+    intl_eq: { growth:  1.60, rates: -0.25, inflation: -0.20, credit: -0.20, commodity:  0.15, usd: -0.50, vol: -1.30 },
+    em_eq:   { growth:  1.90, rates: -0.50, inflation:  0.20, credit: -0.30, commodity:  0.25, usd: -0.80, vol: -1.60 },
+    core_fi: { growth: -0.10, rates: -0.60, inflation: -0.50, credit: -0.10, commodity: -0.05, usd:  0.10, vol:  0.20 },
+    tips:    { growth: -0.05, rates: -0.40, inflation:  1.00, credit: -0.05, commodity:  0.10, usd:  0.05, vol:  0.10 },
+    hy:      { growth:  0.70, rates: -0.30, inflation: -0.20, credit: -0.80, commodity:  0.10, usd:  0.10, vol: -0.70 },
+    hf:      { growth:  0.50, rates: -0.05, inflation:  0.05, credit: -0.20, commodity:  0.05, usd:  0.00, vol:  0.10 },
+    pe:      { growth:  1.70, rates: -0.50, inflation: -0.30, credit: -0.30, commodity:  0.05, usd:  0.15, vol: -1.20 },
+    pc:      { growth:  0.40, rates: -0.10, inflation: -0.05, credit: -0.60, commodity:  0.05, usd:  0.05, vol: -0.40 },
+    ra:      { growth:  1.10, rates: -0.40, inflation:  0.70, credit: -0.10, commodity:  0.40, usd: -0.10, vol: -0.50 },
+    cash:    { growth:  0.00, rates:  0.90, inflation:  0.30, credit:  0.00, commodity:  0.00, usd:  0.05, vol:  0.30 },
+  };
+  const MACRO_FACTORS = [
+    { id: 'growth',    label: 'Real GDP growth',          unit: '+1pp shock' },
+    { id: 'rates',     label: 'Policy rates',             unit: '+1pp shock' },
+    { id: 'inflation', label: 'Inflation',                unit: '+1pp shock' },
+    { id: 'credit',    label: 'Credit spreads',           unit: '+100bp shock' },
+    { id: 'commodity', label: 'Commodity prices',         unit: '+10% shock' },
+    { id: 'usd',       label: 'USD strength (DXY)',       unit: '+5% shock' },
+    { id: 'vol',       label: 'Equity vol (VIX)',         unit: '+5pt shock' },
+  ];
+
+  // Style tilts on a -1 .. +1 scale relative to a broad-market reference (≈0 = neutral).
+  const STYLE_EXPOSURE = {
+    us_eq:   { value:  0.00, size:  0.00, momentum:  0.10, quality:  0.20, lowVol: -0.10 },
+    intl_eq: { value:  0.20, size: -0.10, momentum:  0.00, quality:  0.00, lowVol: -0.10 },
+    em_eq:   { value:  0.10, size:  0.30, momentum:  0.00, quality: -0.20, lowVol: -0.40 },
+    core_fi: { value:  0.00, size:  0.00, momentum:  0.00, quality:  0.30, lowVol:  0.60 },
+    tips:    { value:  0.00, size:  0.00, momentum:  0.00, quality:  0.30, lowVol:  0.50 },
+    hy:      { value:  0.30, size:  0.20, momentum:  0.10, quality: -0.40, lowVol: -0.20 },
+    hf:      { value:  0.00, size:  0.00, momentum:  0.20, quality:  0.20, lowVol:  0.40 },
+    pe:      { value: -0.10, size:  0.20, momentum:  0.20, quality:  0.30, lowVol: -0.30 },
+    pc:      { value:  0.20, size:  0.30, momentum:  0.00, quality:  0.00, lowVol:  0.10 },
+    ra:      { value:  0.40, size:  0.00, momentum:  0.00, quality:  0.00, lowVol:  0.20 },
+    cash:    { value:  0.00, size:  0.00, momentum:  0.00, quality:  0.50, lowVol:  1.00 },
+  };
+  const STYLE_FACTORS = [
+    { id: 'value',    label: 'Value' },
+    { id: 'size',     label: 'Size (small-cap tilt)' },
+    { id: 'momentum', label: 'Momentum' },
+    { id: 'quality',  label: 'Quality' },
+    { id: 'lowVol',   label: 'Low volatility' },
+  ];
+
+  // Currency exposure of each asset class (sums to 1.0 per row).
+  const FX_EXPOSURE = {
+    us_eq:   { USD: 1.00 },
+    intl_eq: { EUR: 0.35, GBP: 0.18, JPY: 0.24, CHF: 0.10, AUD: 0.05, CAD: 0.04, OTHER: 0.04 },
+    em_eq:   { CNY: 0.30, INR: 0.18, KRW: 0.12, TWD: 0.13, BRL: 0.06, ZAR: 0.04, OTHER_EM: 0.17 },
+    core_fi: { USD: 0.95, OTHER: 0.05 },
+    tips:    { USD: 1.00 },
+    hy:      { USD: 1.00 },
+    hf:      { USD: 0.75, EUR: 0.10, GBP: 0.05, JPY: 0.05, OTHER: 0.05 },
+    pe:      { USD: 0.85, EUR: 0.10, GBP: 0.03, OTHER: 0.02 },
+    pc:      { USD: 0.95, EUR: 0.05 },
+    ra:      { USD: 0.80, EUR: 0.10, GBP: 0.04, OTHER: 0.06 },
+    cash:    { USD: 1.00 },
+  };
+  // Ordered currency groups for the FX stacked bar (USD first, then majors, then EM, then OTHER).
+  const FX_GROUP_ORDER = ['USD', 'EUR', 'GBP', 'JPY', 'CHF', 'AUD', 'CAD', 'CNY', 'INR', 'KRW', 'TWD', 'BRL', 'ZAR', 'OTHER_EM', 'OTHER'];
+  const FX_LABELS = { USD: 'USD', EUR: 'EUR', GBP: 'GBP', JPY: 'JPY', CHF: 'CHF', AUD: 'AUD', CAD: 'CAD', CNY: 'CNY', INR: 'INR', KRW: 'KRW', TWD: 'TWD', BRL: 'BRL', ZAR: 'ZAR', OTHER_EM: 'Other EM', OTHER: 'Other DM' };
+  const FX_COLORS = { USD: '#1f7050', EUR: '#3a6b8a', GBP: '#4f8aa8', JPY: '#c4830d', CHF: '#a89060', AUD: '#7a9b6e', CAD: '#8a7050', CNY: '#b13a3a', INR: '#c66a4a', KRW: '#d4954c', TWD: '#a85c5c', BRL: '#6b8a3a', ZAR: '#8a5b3a', OTHER_EM: '#a89060', OTHER: '#8a8275' };
+
+  // Aggregate portfolio exposure for one of the three exhibits. `tableByAsset` is one of
+  // MACRO_FACTOR_EXPOSURE / STYLE_EXPOSURE / FX_EXPOSURE.
+  function aggregateExposure(weights, tableByAsset) {
+    const out = {};
+    for (const id of Object.keys(tableByAsset)) {
+      const w = weights[id] || 0;
+      if (!w) continue;
+      const row = tableByAsset[id] || {};
+      for (const k of Object.keys(row)) out[k] = (out[k] || 0) + w * row[k];
+    }
+    return out;
+  }
 
   // Preset hypothetical scenarios. Shocks expressed in percentage points.
   const HYPOTHETICAL_SCENARIOS = [
@@ -9552,6 +9756,8 @@
           <span><i style="border-radius:50%;background:#bcc4cd;"></i>Individual asset class</span>
         </div>
       </div>
+
+      ${renderSaaRiskSummaryCard()}
 
       <div class="pm-card">
         <div class="pm-card-label" style="display:flex;align-items:center;gap:14px;">
@@ -10219,6 +10425,7 @@
       const wf = btn.dataset.workflow;
       if (wf === 'portfolio') openPortfolioModule();
       else if (wf === 'benchmarks') openBenchmarksView();
+      else if (wf === 'risk') openRiskView();
       else if (wf === 'ips') switchToIpsView();
       else if (wf === 'materials') openMaterialsView();
       else if (wf === 'profile') openClientProfileView();
@@ -10366,6 +10573,7 @@
     if (view === 'ips') switchToIpsView();
     else if (view === 'portfolio') openPortfolioModule();
     else if (view === 'benchmarks') openBenchmarksView();
+    else if (view === 'risk') openRiskView();
     else if (view === 'materials') openMaterialsView();
     else if (view === 'profile') openClientProfileView();
     else if (view === 'board') openBoardNotesView();
