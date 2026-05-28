@@ -198,9 +198,32 @@ export default async function handler(req, res) {
     }).join('\n');
     const sys = `You are the manager-research agent inside an OCIO product called Reve. You help the user navigate a tracked universe of investment managers. Answer concisely and directly using only the manager facts provided — do not invent funds, AUM, or returns. If the user asks something the data doesn't support, say so plainly.
 
-Style: short paragraphs, no markdown headers, no bullet-point spam (a short list is fine when listing managers). Reference managers by name. Returns are net of fees, annualized for 3Y/5Y/ITD. Use US dollars.
+Style: short paragraphs, no markdown headers, no bullet-point spam, NO ASCII tables with pipes. Reference managers by name. Returns are net of fees, annualized for 3Y/5Y/ITD. Use US dollars.
 
-Return ONLY a single JSON object: { "reply": "<your answer in plain text>" }. No markdown fences.`;
+When the user asks for a table, list, or comparison of multiple managers, return a structured exhibit instead of formatting one in plain text — the client will render it as a real table.
+
+Return ONLY a single JSON object with this schema (no markdown fences):
+{
+  "reply": "<short plain-text intro / context, 1-3 sentences>",
+  "exhibit": null | {
+    "type": "table",
+    "title": "<short heading>",
+    "columns": ["<col 1>", "<col 2>", ...],
+    "rows": [["<cell>", "<cell>", ...], ...],
+    "managerIds": ["<id matching column 1, optional, same length as rows>"]
+  } | {
+    "type": "manager_list",
+    "title": "<short heading>",
+    "managerIds": ["<id1>", "<id2>", ...]
+  }
+}
+
+Rules for exhibits:
+- Use "table" for any multi-column / multi-row data: lists of managers with stats, side-by-side metrics, etc. The first column should usually be the manager name. If column 1 is manager names, also fill "managerIds" with their ids so the client can make them clickable.
+- Use "manager_list" only when listing managers with no per-row stats (the client will render them as clickable cards).
+- Set "exhibit": null when the answer is a 1-3 sentence narrative reply, a fact about a single manager, or a meta question. Don't force an exhibit.
+- Keep cell values short (single number, label, or short phrase). Format AUM as "$X.XB" or "$XM". Format percentages as "X.X%". Quartiles as "Q1"-"Q4".
+- The "reply" field is the narrative; the exhibit is the visual. Don't duplicate the table contents in the reply.`;
     const historyBlock = history.length
       ? `\nConversation so far (oldest first):\n${history.map((h) => `  ${h.role === 'user' ? 'USER' : 'AGENT'}: ${String(h.text || '').slice(0, 350)}`).join('\n')}\n`
       : '';
@@ -217,8 +240,9 @@ Return ONLY a single JSON object: { "reply": "<your answer in plain text>" }. No
       for (const block of response.content) if (block.type === 'text') text += block.text;
       const parsed = tryParseJson(text);
       const reply = parsed?.reply || text.trim();
+      const exhibit = parsed?.exhibit || null;
       res.statusCode = 200;
-      return res.end(JSON.stringify({ reply }));
+      return res.end(JSON.stringify({ reply, exhibit }));
     } catch (err) {
       console.error('[demo/route research] error:', err?.message);
       res.statusCode = 500;

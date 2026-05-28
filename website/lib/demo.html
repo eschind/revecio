@@ -251,6 +251,19 @@
   .mu-vintage-stat-label { font-family: 'JetBrains Mono', monospace; font-size: 9.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
   .mu-vintage-stat-value { font-family: 'Newsreader', serif; font-size: 22px; color: var(--ink); margin-top: 2px; }
   .mu-vintage-stat-sub { font-size: 11.5px; color: var(--muted); margin-top: 2px; }
+  /* Inline research exhibits rendered inside a chat agent message */
+  .rx-card { margin-top: 10px; border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; background: var(--panel); }
+  .rx-title { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+  .rx-table { width: 100%; font-size: 12.5px; }
+  .rx-table th, .rx-table td { padding: 6px 8px; }
+  .rx-table th.num, .rx-table td.num { text-align: right; font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+  .rx-mgr-link { color: var(--ink); border-bottom: 1px dotted var(--muted); cursor: pointer; text-decoration: none; }
+  .rx-mgr-link:hover { color: var(--accent); border-bottom-color: var(--accent); }
+  .rx-mgr-list { display: flex; flex-direction: column; gap: 4px; }
+  .rx-mgr-card { display: block; padding: 8px 10px; border: 1px solid var(--line-soft); border-radius: 6px; text-decoration: none; color: inherit; cursor: pointer; transition: border-color 0.15s, background 0.15s; }
+  .rx-mgr-card:hover { border-color: var(--ink); background: rgba(20,23,28,0.025); }
+  .rx-mgr-name { font-size: 13px; color: var(--ink); }
+  .rx-mgr-meta { font-size: 11px; color: var(--muted); margin-top: 2px; }
 
   /* Sidebar tasks — sits under Active clients in the home view */
   .sidebar-tasks-label .sidebar-tasks-counts { font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 0.04em; text-transform: none; color: var(--muted); font-weight: 400; }
@@ -3457,6 +3470,46 @@
     }));
   }
 
+  // Render a structured research exhibit (table or manager list) inline in a
+  // chat message. Manager names in the first column become clickable if the
+  // agent provided a managerIds array.
+  function renderResearchExhibit(ex) {
+    if (!ex || typeof ex !== 'object') return '';
+    const title = ex.title ? `<div class="rx-title">${escapeHtml(String(ex.title))}</div>` : '';
+    if (ex.type === 'table' && Array.isArray(ex.columns) && Array.isArray(ex.rows)) {
+      const ids = Array.isArray(ex.managerIds) ? ex.managerIds : [];
+      const headHtml = ex.columns.map((c, i) =>
+        `<th${i === 0 ? '' : ' class="num"'}>${escapeHtml(String(c))}</th>`
+      ).join('');
+      const bodyHtml = ex.rows.map((row, ri) => {
+        if (!Array.isArray(row)) return '';
+        const mgrId = ids[ri];
+        const cells = row.map((cell, ci) => {
+          const v = cell == null ? '—' : String(cell);
+          if (ci === 0 && mgrId && MANAGER_UNIVERSE.some((m) => m.id === mgrId)) {
+            return `<td><a class="rx-mgr-link" data-action="mu-open-mgr" data-mgr-id="${escapeHtml(mgrId)}">${escapeHtml(v)}</a></td>`;
+          }
+          return `<td${ci === 0 ? '' : ' class="num"'}>${escapeHtml(v)}</td>`;
+        }).join('');
+        return `<tr>${cells}</tr>`;
+      }).join('');
+      return `<div class="rx-card">${title}<table class="pm-table rx-table"><thead><tr>${headHtml}</tr></thead><tbody>${bodyHtml}</tbody></table></div>`;
+    }
+    if (ex.type === 'manager_list' && Array.isArray(ex.managerIds)) {
+      const rows = ex.managerIds.map((id) => {
+        const m = MANAGER_UNIVERSE.find((x) => x.id === id);
+        if (!m) return '';
+        const aum = m.strategyAum >= 1e9 ? `$${(m.strategyAum/1e9).toFixed(1)}B` : `$${(m.strategyAum/1e6).toFixed(0)}M`;
+        return `<a class="rx-mgr-card" data-action="mu-open-mgr" data-mgr-id="${escapeHtml(m.id)}">
+          <div class="rx-mgr-name">${escapeHtml(m.name)}</div>
+          <div class="rx-mgr-meta">${escapeHtml(MGR_ASSET_LABELS[m.assetClass] || m.assetClass)} · ${escapeHtml(m.sleeve)} · ${aum}</div>
+        </a>`;
+      }).join('');
+      return `<div class="rx-card">${title}<div class="rx-mgr-list">${rows}</div></div>`;
+    }
+    return '';
+  }
+
   async function routeResearchMessage(text) {
     if (!text.trim()) return;
     const myToken = feedToken;
@@ -3482,8 +3535,13 @@
         return;
       }
       const reply = data?.reply || data?.answer;
-      if (reply) {
-        addAgent(`<p>${escapeHtml(reply).replace(/\n\n/g, '</p><p>').replace(/\n/g, '<br>')}</p>`);
+      const exhibit = data?.exhibit || null;
+      const replyHtml = reply
+        ? `<p>${escapeHtml(reply).replace(/\n\n/g, '</p><p>').replace(/\n/g, '<br>')}</p>`
+        : '';
+      const exhibitHtml = renderResearchExhibit(exhibit);
+      if (replyHtml || exhibitHtml) {
+        addAgent(`${replyHtml}${exhibitHtml}`);
       } else {
         addAgent(`<p>I'm here, but didn't catch a clear question. Try asking me to find, compare, or describe specific managers — e.g. "show me growth-tilted U.S. equity managers" or "compare Foundry Lane and Driftwood."</p>`);
       }
