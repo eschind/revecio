@@ -183,9 +183,18 @@ export default async function handler(req, res) {
     const mgrBlock = (managers || []).map((m) => {
       const tr = m.tr || {};
       const pct = (n) => n == null ? '—' : `${(n * 100).toFixed(1)}%`;
-      const trS = `1Y ${pct(tr.oneY)} vs ${pct(tr.benchOneY)}, 3Y ${pct(tr.threeY)} vs ${pct(tr.benchThreeY)}, 5Y ${pct(tr.fiveY)} vs ${pct(tr.benchFiveY)}, ITD ${pct(tr.itd)} vs ${pct(tr.benchItd)}`;
       const aum = (n) => n == null ? '—' : (n >= 1e9 ? `$${(n/1e9).toFixed(1)}B` : `$${(n/1e6).toFixed(0)}M`);
-      return `- ${m.name} (${m.id}) · ${m.assetClass} · ${m.sleeve} · ${m.vehicle} · HQ ${m.hq} · firm ${aum(m.firmAum)}, strategy ${aum(m.strategyAum)} · inception ${m.inception} · bench ${m.benchmark} · fee ${m.fee} · min ${aum(m.minimum)} · liq ${m.liquidity} · ${trS}\n   ${m.description}`;
+      let perf;
+      if (Array.isArray(m.vintages) && m.vintages.length) {
+        const total = m.vintages.reduce((s, v) => s + v.sizeM, 0);
+        const uw = m.vintages.reduce((s, v) => s + v.quartile, 0) / m.vintages.length;
+        const w = m.vintages.reduce((s, v) => s + v.quartile * v.sizeM, 0) / total;
+        const vStr = m.vintages.map((v) => `${v.name} (${v.year}, $${v.sizeM}M, Q${v.quartile})`).join('; ');
+        perf = `vintages: ${vStr}; avg quartile unweighted ${uw.toFixed(2)}, size-weighted ${w.toFixed(2)} (1=top, 4=bottom) vs ${m.benchmark}`;
+      } else {
+        perf = `1Y ${pct(tr.oneY)} vs ${pct(tr.benchOneY)}, 3Y ${pct(tr.threeY)} vs ${pct(tr.benchThreeY)}, 5Y ${pct(tr.fiveY)} vs ${pct(tr.benchFiveY)}, ITD ${pct(tr.itd)} vs ${pct(tr.benchItd)} (vs ${m.benchmark})`;
+      }
+      return `- ${m.name} (${m.id}) · ${m.assetClass} · ${m.sleeve} · ${m.vehicle} · HQ ${m.hq} · firm ${aum(m.firmAum)}, strategy ${aum(m.strategyAum)} · inception ${m.inception} · fee ${m.fee} · min ${aum(m.minimum)} · liq ${m.liquidity} · ${perf}\n   ${m.description}`;
     }).join('\n');
     const sys = `You are the manager-research agent inside an OCIO product called Reve. You help the user navigate a tracked universe of investment managers. Answer concisely and directly using only the manager facts provided — do not invent funds, AUM, or returns. If the user asks something the data doesn't support, say so plainly.
 
