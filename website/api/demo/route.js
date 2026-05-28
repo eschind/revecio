@@ -162,17 +162,19 @@ export default async function handler(req, res) {
   const history = Array.isArray(body.history) ? body.history.slice(-10) : [];
   const materials = Array.isArray(body.materials) ? body.materials.slice(0, 8) : [];
   const facts = (body.facts && typeof body.facts === 'object') ? body.facts : null;
-  const isResearch = currentModule.startsWith('research');
+  const isMarket = currentModule === 'research-market';
+  const isResearch = currentModule.startsWith('research') && !isMarket;
   const isTasks = currentModule === 'tasks';
   // Cap large enough to fit the full manager universe (currently ~150) with headroom.
   const managers = isResearch && Array.isArray(body.managers) ? body.managers.slice(0, 250) : null;
   const tasks = isTasks && Array.isArray(body.tasks) ? body.tasks.slice(0, 60) : null;
+  const market = isMarket && body.market && typeof body.market === 'object' ? body.market : null;
 
   if (!userMessage) {
     res.statusCode = 400;
     return res.end(JSON.stringify({ error: 'Missing fields.' }));
   }
-  if (!isResearch && !isTasks && !sections.length) {
+  if (!isResearch && !isTasks && !isMarket && !sections.length) {
     res.statusCode = 400;
     return res.end(JSON.stringify({ error: 'Missing fields.' }));
   }
@@ -263,6 +265,68 @@ Rules for exhibits:
       console.error('[demo/route research] error:', err?.message);
       res.statusCode = 500;
       return res.end(JSON.stringify({ error: 'Research agent failed. Please try again.' }));
+    }
+  }
+
+  // Market mode — dashboard of indices, macro prints, and news, with share-with-client suggestions.
+  if (isMarket) {
+    const m = market || {};
+    const indices = Array.isArray(m.indices) ? m.indices.slice(0, 30) : [];
+    const macros = Array.isArray(m.macro) ? m.macro.slice(0, 30) : [];
+    const news = Array.isArray(m.news) ? m.news.slice(0, 30) : [];
+    const clients = Array.isArray(m.clients) ? m.clients.slice(0, 20) : [];
+    const idxBlock = indices.map((i) => `- ${i.name} (${i.region}): ${i.value} · today ${i.todayPct >= 0 ? '+' : ''}${i.todayPct}% · YTD ${i.ytdPct >= 0 ? '+' : ''}${i.ytdPct}%`).join('\n');
+    const macroBlock = macros.map((x) => `- ${x.name}: ${x.value} (Δ ${x.delta}) — ${x.context}`).join('\n');
+    const newsBlock = news.map((n) => `- id "${n.id}" [${n.tag}] (${n.time}, ${n.source})\n  Headline: ${n.headline}\n  Summary: ${n.summary}\n  Topics: ${(n.topics || []).join(', ')}`).join('\n');
+    const clientBlock = clients.map((c) => `- id "${c.id}" — ${c.name} (${c.type || 'client'})${c.missionHints ? ` · mission: ${c.missionHints}` : ''}`).join('\n');
+    const sys = `You are the market-research agent inside an OCIO product called Reve. The user is looking at a dashboard of market indices, macro prints, and news items. Your job is to help them (a) understand what matters today, and (b) decide which items to share with which client, given each client's mission and mandate.
+
+Today's date: ${new Date().toISOString().slice(0, 10)}. The market snapshot is for ${m.asOf || 'today'}.
+
+Style: short paragraphs, no markdown headers, no ASCII tables. Use US dollars. Be concrete — name indices, numbers, and news items directly. Never invent data outside the snapshot.
+
+Return ONLY a single JSON object (no markdown fences):
+{
+  "reply": "<your short answer, 1-3 sentences>",
+  "exhibit": null | { ...table or manager_list as in research mode... },
+  "shareSuggestions": null | [
+    { "newsId": "<id from the news list>", "clientIds": ["<client id>", ...], "reason": "<1-2 sentence rationale tying the news to that client's mandate>" },
+    ...
+  ]
+}
+
+Rules:
+- When the user asks "what should I share with <client>?" or "anything that matters for <client>?" — return shareSuggestions with 1-3 items most relevant to that client.
+- When the user asks "what's worth sharing today?" without specifying a client — return shareSuggestions tying each suggested item to the right client(s).
+- When the user asks for a summary, narrative, or single fact — return a "reply" only.
+- When the user asks for a table (e.g. "show me today's top movers"), use an "exhibit" of type "table".
+- Match news ids and client ids EXACTLY as provided. If no good match exists, say so in "reply" and skip shareSuggestions.
+- The reason field should connect the item to the client's mandate/mission specifically — not just describe the news.`;
+    const historyBlock = history.length
+      ? `\nConversation so far (oldest first):\n${history.map((h) => `  ${h.role === 'user' ? 'USER' : 'AGENT'}: ${String(h.text || '').slice(0, 350)}`).join('\n')}\n`
+      : '';
+    const userBlock = `INDICES:\n${idxBlock}\n\nMACRO:\n${macroBlock}\n\nNEWS:\n${newsBlock}\n\nCLIENTS (use these ids for shareSuggestions):\n${clientBlock || '(no saved clients yet)'}\n${historyBlock}\nLatest user message: ${userMessage}\n\nReturn only the JSON object.`;
+    const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+    try {
+      const response = await anthropic.messages.create({
+        model: 'claude-haiku-4-5',
+        max_tokens: 900,
+        system: sys,
+        messages: [{ role: 'user', content: userBlock }],
+      });
+      let text = '';
+      for (const block of response.content) if (block.type === 'text') text += block.text;
+      const parsed = tryParseJson(text);
+      res.statusCode = 200;
+      return res.end(JSON.stringify({
+        reply: parsed?.reply || (parsed?.shareSuggestions || parsed?.exhibit ? null : text.trim()),
+        exhibit: parsed?.exhibit || null,
+        shareSuggestions: Array.isArray(parsed?.shareSuggestions) ? parsed.shareSuggestions : null,
+      }));
+    } catch (err) {
+      console.error('[demo/route market] error:', err?.message);
+      res.statusCode = 500;
+      return res.end(JSON.stringify({ error: 'Market agent failed. Please try again.' }));
     }
   }
 

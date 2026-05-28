@@ -264,6 +264,34 @@
   .rx-mgr-card:hover { border-color: var(--ink); background: rgba(20,23,28,0.025); }
   .rx-mgr-name { font-size: 13px; color: var(--ink); }
   .rx-mgr-meta { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  /* Market dashboard */
+  .mk-section-label { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+  .mk-idx-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 8px; }
+  .mk-idx-card { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; background: var(--panel); }
+  .mk-idx-name { font-size: 12.5px; color: var(--ink); }
+  .mk-idx-region { font-family: 'JetBrains Mono', monospace; font-size: 9.5px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); margin-top: 1px; }
+  .mk-idx-value { font-family: 'Newsreader', serif; font-size: 22px; color: var(--ink); margin: 6px 0 4px; line-height: 1.1; }
+  .mk-idx-row { display: flex; justify-content: space-between; font-family: 'JetBrains Mono', monospace; font-size: 11px; padding: 1px 0; }
+  .mk-idx-label { color: var(--muted); }
+  .mk-pos { color: #1f7050; }
+  .mk-neg { color: #b13a3a; }
+  .mk-flat { color: var(--muted); }
+  .mk-macro-table { width: 100%; font-size: 12.5px; }
+  .mk-macro-table th, .mk-macro-table td { padding: 8px 12px; }
+  .mk-macro-table th.num, .mk-macro-table td.num { text-align: right; font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+  .mk-news-list { display: flex; flex-direction: column; gap: 10px; }
+  .mk-news-card { border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; background: var(--panel); }
+  .mk-news-meta { display: flex; gap: 10px; align-items: baseline; margin-bottom: 6px; }
+  .mk-news-tag { display: inline-block; font-family: 'JetBrains Mono', monospace; font-size: 9.5px; letter-spacing: 0.06em; text-transform: uppercase; padding: 2px 6px; border-radius: 4px; background: rgba(31,112,80,0.10); color: #1f7050; }
+  .mk-news-time { font-family: 'JetBrains Mono', monospace; font-size: 10.5px; color: var(--muted); }
+  .mk-news-headline { font-family: 'Newsreader', serif; font-size: 15px; color: var(--ink); line-height: 1.35; margin-bottom: 4px; }
+  .mk-news-summary { font-size: 12.5px; color: var(--ink-2); line-height: 1.55; margin-bottom: 8px; }
+  .mk-news-share-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .mk-share-btn { appearance: none; cursor: pointer; background: transparent; border: 1px solid var(--line); color: var(--ink-2); border-radius: 999px; padding: 3px 10px; font: inherit; font-size: 11px; }
+  .mk-share-btn:hover { border-color: var(--ink); color: var(--ink); background: var(--bg-2); }
+  .mk-share-confirm { display: inline-block; font-family: 'JetBrains Mono', monospace; font-size: 10.5px; padding: 3px 10px; border-radius: 999px; background: rgba(31,112,80,0.10); color: #1f7050; }
+  .mk-share-empty { font-size: 11.5px; color: var(--muted); font-style: italic; }
+  .mk-share-reason { font-size: 12.5px; color: var(--ink-2); line-height: 1.55; margin-top: 4px; }
 
   /* Sidebar tasks — sits under Active clients in the home view */
   .sidebar-tasks-label .sidebar-tasks-counts { font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 0.04em; text-transform: none; color: var(--muted); font-weight: 400; }
@@ -1062,6 +1090,10 @@
             <span class="nav-text">Managers</span>
             <span class="badge" id="nav-research-mgr-count"></span>
           </div>
+          <div class="nav-item" id="nav-research-market" data-action="open-research" data-research="market" title="Market data &amp; news">
+            <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 17 9 11 13 15 21 7"/><polyline points="15 7 21 7 21 13"/></svg></span>
+            <span class="nav-text">Market</span>
+          </div>
         </div>
       </div>
 
@@ -1581,6 +1613,10 @@
   async function routeAgentResponse(text, dropped) {
     // Research mode bypasses the IPS phase machine — messages go to the
     // research-agent endpoint which answers using MANAGER_UNIVERSE as context.
+    if (state.module === 'research-market') {
+      await routeMarketMessage(text);
+      return;
+    }
     if ((state.module || '').startsWith('research-')) {
       await routeResearchMessage(text);
       return;
@@ -3638,14 +3674,300 @@
     }
   }
 
-  function enterResearchMode() {
+  // ============================================================
+  // Research · Market data & news
+  // ============================================================
+  // Snapshot date is the demo's "today" — values are illustrative.
+  const MARKET_AS_OF = '2026-05-28';
+  const MARKET_INDICES = [
+    { name: 'S&P 500',            value: 5832.10, chgPct: 0.0107, ytdPct: 0.092, region: 'US' },
+    { name: 'Nasdaq Composite',   value: 19124.5, chgPct: 0.0142, ytdPct: 0.118, region: 'US' },
+    { name: 'Russell 2000',       value: 2218.4,  chgPct: -0.0048, ytdPct: 0.034, region: 'US' },
+    { name: 'MSCI EAFE',          value: 2398.7,  chgPct: 0.0064, ytdPct: 0.084, region: 'Intl' },
+    { name: 'MSCI Emerging Mkts', value: 1187.5,  chgPct: -0.0021, ytdPct: 0.054, region: 'EM' },
+    { name: 'Bloomberg US Agg',   value: 102.18,  chgPct: 0.0014, ytdPct: 0.022, region: 'Fixed income' },
+    { name: 'Bloomberg US HY',    value: 28.45,   chgPct: 0.0009, ytdPct: 0.038, region: 'Fixed income' },
+    { name: 'WTI Crude ($/bbl)',  value: 78.42,   chgPct: 0.0185, ytdPct: 0.092, region: 'Commodities' },
+    { name: 'Gold ($/oz)',        value: 2645.30, chgPct: 0.0042, ytdPct: 0.146, region: 'Commodities' },
+    { name: 'BTC ($USD)',         value: 95820,   chgPct: -0.0231, ytdPct: 0.182, region: 'Crypto' },
+  ];
+  const MARKET_MACRO = [
+    { name: 'US 10Y Treasury yield',          value: '4.21%',       delta: '−3 bps',  context: 'YTD: −38 bps · YoY: −12 bps' },
+    { name: 'US 2Y Treasury yield',           value: '3.74%',       delta: '−1 bp',   context: '2s10s curve: +47 bps (steepening)' },
+    { name: 'Fed funds target (upper)',       value: '4.25%',       delta: 'unch',    context: 'Last 25 bp cut: April FOMC · Next FOMC: June 18' },
+    { name: 'CPI YoY (April release)',        value: '2.4%',        delta: '−0.1 pp', context: 'Core CPI 3.0% · Below 2010-19 trend' },
+    { name: 'Core PCE YoY',                   value: '2.6%',        delta: 'unch',    context: "Fed's preferred gauge · Above 2% target" },
+    { name: 'US unemployment',                value: '4.1%',        delta: '+0.1 pp', context: 'Payrolls +148k (May) · Wage growth 3.9% YoY' },
+    { name: 'US GDP (Q1 advance, q/q SAAR)',  value: '2.1%',        delta: '−0.7 pp', context: 'Atlanta Fed nowcast for Q2: 2.6%' },
+    { name: 'ISM Manufacturing PMI',          value: '49.2',        delta: '+0.6',    context: 'Still in contraction (<50) · 5th month' },
+    { name: 'USD index (DXY)',                value: '102.4',       delta: '−0.3%',   context: 'YTD −2.1% · Dollar softness on rate cut path' },
+    { name: 'VIX',                            value: '14.8',        delta: '−0.6',    context: 'Below 1Y average of 15.4 · Subdued vol regime' },
+  ];
+  // News items each carry a `topics` array — the agent uses these to match items
+  // to client mandates (mission-aligned, EM exposure, fixed-income duration, etc).
+  const MARKET_NEWS = [
+    {
+      id: 'fed-jun-cut-odds', headline: 'Fed swaps now price 62% odds of a June 25bp cut after softer CPI', source: 'Bloomberg',
+      time: 'today · 7:14 AM ET', tag: 'Macro · Rates',
+      summary: 'Two-year yields fell 6 bps to 3.74% after April CPI printed 2.4% YoY vs 2.5% consensus. Powell\'s May 21 speech kept "data-dependent" framing but markets read it as a green light.',
+      topics: ['rates', 'fixed_income', 'duration'],
+    },
+    {
+      id: 'oil-mideast', headline: 'Brent climbs above $82 on renewed Mideast supply concerns', source: 'Reuters',
+      time: 'today · 6:42 AM ET', tag: 'Commodities · Energy',
+      summary: 'WTI +1.9% to $78.42 and Brent +2.1% to $82.30 after reports of shipping disruptions in the Strait of Hormuz. Oil sector ETFs (XLE +1.4% pre-market) leading futures.',
+      topics: ['commodities', 'inflation', 'energy'],
+    },
+    {
+      id: 'nvda-earnings', headline: 'Nvidia beats on Q1 — guides Q2 revenue $46B (consensus $44B)', source: 'CNBC',
+      time: 'yesterday · 4:30 PM ET', tag: 'Equity · Earnings',
+      summary: 'Q1 revenue $43.2B (+62% YoY). Data center segment +71%. Q2 guide $46B ±2% implies +52% YoY. Stock +5.8% after hours; Nasdaq futures +0.9%.',
+      topics: ['us_equity', 'tech', 'mega_cap'],
+    },
+    {
+      id: 'em-fx-rally', headline: 'EM currencies rally on dollar softness; MXN, BRL lead', source: 'FT',
+      time: 'today · 5:20 AM ET', tag: 'EM · FX',
+      summary: 'JPMorgan EM Currency Index +0.8% on the week, the best stretch since January. Brazilian real +1.4% MTD, Mexican peso +1.1% as carry trades return. EM local-currency bond funds saw $1.4B in weekly inflows.',
+      topics: ['em_equity', 'em_debt', 'fx'],
+    },
+    {
+      id: 'climate-transition-finance', headline: 'Mission-aligned issuance hits Q1 record: $112B in green/sustainability-linked bonds', source: 'Climate Bonds Initiative',
+      time: '2 days ago', tag: 'ESG · Fixed income',
+      summary: 'Q1 2026 sustainable bond issuance reached $112B, up 14% YoY. Highlights: $4.5B EU green sovereign, $3B World Bank sustainability-linked, $1.8B Apple green corporate. EM issuance grew 22% to $18B.',
+      topics: ['esg', 'mission_aligned', 'fixed_income'],
+    },
+    {
+      id: 'pe-secondaries-record', headline: 'PE secondaries volume on pace for $145B in 2026, surpassing 2021 record', source: 'PitchBook',
+      time: '3 days ago', tag: 'Private markets',
+      summary: 'YTD secondaries volume of $58B implies a full-year pace of $145B vs 2021\'s $132B record. GP-led continuation vehicles now 56% of volume. Pricing firmed to 92% of NAV for high-quality LP portfolios (vs 84% a year ago).',
+      topics: ['pe', 'secondaries', 'private_markets'],
+    },
+    {
+      id: 'fa-vol-private-credit', headline: 'Cliffwater: direct lending defaults tick up to 1.8% (TTM)', source: 'Cliffwater',
+      time: '4 days ago', tag: 'Private credit',
+      summary: 'The Cliffwater Direct Lending Index reported a TTM loss rate of 1.8%, up from 1.4% a year ago, driven by software-services and consumer-discretionary borrowers. Recoveries averaged 67¢ — in line with the 10-year mean.',
+      topics: ['private_credit', 'credit_quality'],
+    },
+    {
+      id: 'reit-recovery', headline: 'Public REITs +6.2% in May as 10Y yields ease; office still lagging', source: 'NAREIT',
+      time: 'this week', tag: 'Real assets',
+      summary: 'FTSE Nareit All Equity REIT Index +6.2% in May. Industrial and data center sub-sectors led (+8.5% and +7.9%). Office sub-sector lagged at +1.2% on continued vacancy concerns.',
+      topics: ['real_assets', 'real_estate'],
+    },
+  ];
+
+  function fmtIndexValue(n) {
+    if (n >= 10000) return n.toLocaleString('en-US', { maximumFractionDigits: 0 });
+    if (n >= 100) return n.toLocaleString('en-US', { maximumFractionDigits: 1, minimumFractionDigits: 1 });
+    return n.toLocaleString('en-US', { maximumFractionDigits: 2, minimumFractionDigits: 2 });
+  }
+  function fmtPctSigned(p, dp = 2) {
+    const sign = p >= 0 ? '+' : '';
+    return `${sign}${(p * 100).toFixed(dp)}%`;
+  }
+
+  function openMarketView() {
+    const wasInResearch = (state.module || '').startsWith('research-');
+    state.tasksOpen = false;
+    layout.classList.remove('tasks-open');
+    state.module = 'research-market';
+    enterResearchMode('market');
+    artifactTitle.textContent = 'Market data & news';
+    openArtifact();
+    renderMarketDashboard();
+    updateUrl();
+    if (!wasInResearch || state._prevResearch !== 'market') {
+      if (composerInput) composerInput.placeholder = 'Ask the market agent — what should I share with clients today?';
+      clearFeed();
+      addAgent(`<p>You're in <strong>Market data &amp; news</strong>. I can summarize what's moving, dig into any index or macro print, and — most useful day-to-day — suggest items worth sharing with specific clients given their mandates.</p>
+        <p style="font-size:12.5px;color:var(--muted);margin-top:6px;">Try asking:</p>
+        <ul style="font-size:12.5px;color:var(--ink-2);line-height:1.7;margin:4px 0 4px 22px;padding:0;">
+          <li>"What's the most important thing today?"</li>
+          <li>"What should I share with Dream University?"</li>
+          <li>"Anything that affects our EM exposure?"</li>
+          <li>"Summarize the Fed-cut story for an IC memo."</li>
+        </ul>`);
+    }
+    state._prevResearch = 'market';
+  }
+
+  function renderMarketDashboard() {
+    const idxRows = MARKET_INDICES.map((idx) => {
+      const cls = idx.chgPct >= 0 ? 'mk-pos' : 'mk-neg';
+      const ytdCls = idx.ytdPct >= 0 ? 'mk-pos' : 'mk-neg';
+      return `<div class="mk-idx-card">
+        <div class="mk-idx-name">${escapeHtml(idx.name)}</div>
+        <div class="mk-idx-region">${escapeHtml(idx.region)}</div>
+        <div class="mk-idx-value">${fmtIndexValue(idx.value)}</div>
+        <div class="mk-idx-row"><span class="mk-idx-label">Today</span> <span class="${cls}">${fmtPctSigned(idx.chgPct)}</span></div>
+        <div class="mk-idx-row"><span class="mk-idx-label">YTD</span> <span class="${ytdCls}">${fmtPctSigned(idx.ytdPct, 1)}</span></div>
+      </div>`;
+    }).join('');
+
+    const macroRows = MARKET_MACRO.map((m) => {
+      const cls = /^[−-]/.test(m.delta) ? 'mk-neg' : (/^\+/.test(m.delta) ? 'mk-pos' : 'mk-flat');
+      return `<tr>
+        <td>${escapeHtml(m.name)}</td>
+        <td class="num">${escapeHtml(m.value)}</td>
+        <td class="num ${cls}">${escapeHtml(m.delta)}</td>
+        <td style="color:var(--muted);">${escapeHtml(m.context)}</td>
+      </tr>`;
+    }).join('');
+
+    const newsCards = MARKET_NEWS.map((n) => `
+      <div class="mk-news-card" data-news-id="${escapeHtml(n.id)}">
+        <div class="mk-news-meta">
+          <span class="mk-news-tag">${escapeHtml(n.tag)}</span>
+          <span class="mk-news-time">${escapeHtml(n.time)} · ${escapeHtml(n.source)}</span>
+        </div>
+        <div class="mk-news-headline">${escapeHtml(n.headline)}</div>
+        <div class="mk-news-summary">${escapeHtml(n.summary)}</div>
+        <div class="mk-news-share-row">${buildShareButtons(n.id)}</div>
+      </div>
+    `).join('');
+
+    artifactBody.innerHTML = `
+      <div class="mu-head">
+        <div class="ips-title">Market data &amp; news</div>
+        <div class="ips-sub">As of <strong>${fmtDate(MARKET_AS_OF)}</strong>. Ask the agent for cuts of the data, or which items to share with which clients.</div>
+      </div>
+
+      <div class="mk-section-label">Indices</div>
+      <div class="mk-idx-grid">${idxRows}</div>
+
+      <div class="mk-section-label" style="margin-top:18px;">Macro</div>
+      <div class="pm-card" style="padding:0;">
+        <table class="pm-table mk-macro-table">
+          <thead><tr><th>Indicator</th><th class="num">Latest</th><th class="num">Δ</th><th>Context</th></tr></thead>
+          <tbody>${macroRows}</tbody>
+        </table>
+      </div>
+
+      <div class="mk-section-label" style="margin-top:18px;">News</div>
+      <div class="mk-news-list">${newsCards}</div>
+    `;
+    artifactFooter.classList.remove('visible');
+  }
+
+  // Build a row of "Share with [client]" buttons for a news item, scoped to clients
+  // currently in the workspace. Each button slides into a confirmation pill on click.
+  function buildShareButtons(newsId) {
+    const clients = listClients();
+    if (!clients.length) return '<span class="mk-share-empty">No clients to share with yet.</span>';
+    const btns = clients.map((c) => {
+      const shared = (state.sharedNews || {})[`${newsId}:${c.id}`];
+      if (shared) {
+        return `<span class="mk-share-confirm">Shared with ${escapeHtml(c.name)} ✓</span>`;
+      }
+      return `<button class="mk-share-btn" data-action="share-news" data-news-id="${escapeHtml(newsId)}" data-client-id="${escapeHtml(c.id)}">Share with ${escapeHtml(c.name)}</button>`;
+    }).join('');
+    return btns;
+  }
+
+  function shareNewsItem(newsId, clientId, btnEl) {
+    if (!newsId || !clientId) return;
+    state.sharedNews = state.sharedNews || {};
+    state.sharedNews[`${newsId}:${clientId}`] = Date.now();
+    const client = listClients().find((c) => c.id === clientId);
+    const item = MARKET_NEWS.find((n) => n.id === newsId);
+    if (btnEl && btnEl.parentElement) {
+      btnEl.outerHTML = `<span class="mk-share-confirm">Shared with ${escapeHtml(client?.name || 'client')} ✓</span>`;
+    }
+    // Also acknowledge in the chat so the user sees it in their conversation stream.
+    if (state.module === 'research-market' && item && client) {
+      addAgent(`<p style="font-size:12.5px;color:var(--muted);"><strong>Shared</strong> "${escapeHtml(item.headline)}" with <strong>${escapeHtml(client.name)}</strong>. They'll see it in their next comms digest.</p>`);
+    }
+  }
+
+  // Compact, model-friendly snapshot of today's market state for the agent.
+  function buildMarketCorpus() {
+    return {
+      asOf: MARKET_AS_OF,
+      indices: MARKET_INDICES.map((i) => ({
+        name: i.name, value: i.value, todayPct: +(i.chgPct * 100).toFixed(2), ytdPct: +(i.ytdPct * 100).toFixed(1), region: i.region,
+      })),
+      macro: MARKET_MACRO.map((m) => ({ name: m.name, value: m.value, delta: m.delta, context: m.context })),
+      news: MARKET_NEWS.map((n) => ({ id: n.id, headline: n.headline, source: n.source, time: n.time, tag: n.tag, summary: n.summary, topics: n.topics })),
+      clients: listClients().map((c) => ({ id: c.id, name: c.name, type: c.type, missionHints: (c.facts?.mission || '').slice(0, 300) })),
+    };
+  }
+
+  async function routeMarketMessage(text) {
+    if (!text.trim()) return;
+    const myToken = feedToken;
+    const typing = addTyping();
+    try {
+      const r = await fetch('/api/demo/route', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userMessage: text,
+          currentModule: 'research-market',
+          market: buildMarketCorpus(),
+          history: (state.chatHistory || []).slice(0, -1).slice(-10),
+          sections: [{ num: 0, title: 'research' }],
+        }),
+      });
+      const data = await r.json().catch(() => ({}));
+      if (myToken !== feedToken) { try { typing.remove(); } catch {} return; }
+      typing.remove();
+      if (!r.ok) {
+        await agentReply(`<p>${escapeHtml(data?.error || 'Could not reach the market agent.')}</p>`);
+        return;
+      }
+      const reply = data?.reply;
+      const exhibit = data?.exhibit;
+      const shareSuggestions = Array.isArray(data?.shareSuggestions) ? data.shareSuggestions : [];
+      const replyHtml = reply
+        ? `<p>${escapeHtml(reply).replace(/\n\n/g, '</p><p>').replace(/\n/g, '<br>')}</p>`
+        : '';
+      const exhibitHtml = renderResearchExhibit(exhibit);
+      const shareHtml = shareSuggestions.length ? renderShareSuggestions(shareSuggestions) : '';
+      if (replyHtml || exhibitHtml || shareHtml) {
+        addAgent(`${replyHtml}${exhibitHtml}${shareHtml}`);
+      } else {
+        addAgent(`<p>I can summarize today's market action, dig into any index or macro print, or suggest items to share with specific clients. Try "what's the headline today?" or "what should I share with Dream?"</p>`);
+      }
+    } catch (err) {
+      try { typing.remove(); } catch {}
+      console.error('Market route failed:', err);
+      if (myToken === feedToken) await agentReply(`<p>I couldn't reach the market agent. Try again in a moment.</p>`);
+    }
+  }
+
+  // Render a "share suggestion" card: news item + reason + Share buttons per client.
+  function renderShareSuggestions(suggestions) {
+    return suggestions.map((s) => {
+      const item = MARKET_NEWS.find((n) => n.id === s.newsId);
+      if (!item) return '';
+      const clientIds = Array.isArray(s.clientIds) && s.clientIds.length ? s.clientIds : listClients().map((c) => c.id);
+      const btns = clientIds.map((cid) => {
+        const c = listClients().find((x) => x.id === cid);
+        if (!c) return '';
+        const already = (state.sharedNews || {})[`${item.id}:${c.id}`];
+        if (already) return `<span class="mk-share-confirm">Shared with ${escapeHtml(c.name)} ✓</span>`;
+        return `<button class="mk-share-btn" data-action="share-news" data-news-id="${escapeHtml(item.id)}" data-client-id="${escapeHtml(c.id)}">Share with ${escapeHtml(c.name)}</button>`;
+      }).join('');
+      const reason = s.reason ? `<div class="mk-share-reason">${escapeHtml(s.reason)}</div>` : '';
+      return `<div class="rx-card">
+        <div class="rx-title">Share suggestion</div>
+        <div class="mk-news-tag" style="margin-bottom:4px;">${escapeHtml(item.tag)}</div>
+        <div class="mk-news-headline" style="font-size:13.5px;">${escapeHtml(item.headline)}</div>
+        ${reason}
+        <div class="mk-news-share-row" style="margin-top:8px;">${btns}</div>
+      </div>`;
+    }).join('');
+  }
+
+  function enterResearchMode(which) {
     layout.classList.add('research-open');
     // Hide client-open if it was set
     layout.classList.remove('client-open');
     layout.classList.remove('expanded');
     // Mark the nav item active
     document.querySelectorAll('.nav-item').forEach((el) => el.classList.remove('active'));
-    document.getElementById('nav-research-managers')?.classList.add('active');
+    const id = which === 'market' ? 'nav-research-market' : 'nav-research-managers';
+    document.getElementById(id)?.classList.add('active');
     // Sidebar tasks list (if rendered) keeps its state — no need to refresh here
   }
   function exitResearchMode() {
@@ -3664,7 +3986,7 @@
     layout.classList.remove('tasks-open');
     state.module = 'research-managers';
     state.researchSelected = state.researchSelected || new Set();
-    enterResearchMode();
+    enterResearchMode('managers');
     artifactTitle.textContent = 'Manager universe';
     openArtifact();
     renderManagersList();
@@ -9789,6 +10111,10 @@
     } else if (a === 'open-research') {
       e.preventDefault();
       if (btn.dataset.research === 'managers') openManagersView();
+      else if (btn.dataset.research === 'market') openMarketView();
+    } else if (a === 'share-news') {
+      e.preventDefault();
+      shareNewsItem(btn.dataset.newsId, btn.dataset.clientId, btn);
     } else if (a === 'mu-filter-asset') {
       e.preventDefault();
       state.researchFilter = { ...(state.researchFilter || {}), asset: btn.dataset.asset, search: state.researchFilter?.search || '' };
@@ -9985,6 +10311,7 @@
     if (state.module === 'research-managers') { params.set('research', 'managers'); }
     else if (state.module === 'research-manager') { params.set('research', 'managers'); if (state.researchManagerId) params.set('mgr', state.researchManagerId); }
     else if (state.module === 'research-compare') { params.set('research', 'managers'); params.set('compare', Array.from(state.researchSelected || []).join(',')); }
+    else if (state.module === 'research-market') { params.set('research', 'market'); }
     if (state.clientId) params.set('client', state.clientId);
     if (state.module && !state.module.startsWith('research-') && state.module !== 'vault') params.set('view', state.module);
     if (state.module === 'reports' && qrSelected) params.set('report', qrSelected);
@@ -9999,6 +10326,10 @@
     let params;
     try { params = new URLSearchParams(window.location.search); } catch { return false; }
     // Research mode (no client required)
+    if (params.get('research') === 'market') {
+      openMarketView();
+      return true;
+    }
     if (params.get('research') === 'managers') {
       const mgr = params.get('mgr');
       const compare = params.get('compare');
