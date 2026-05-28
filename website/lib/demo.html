@@ -292,6 +292,22 @@
   .mk-share-confirm { display: inline-block; font-family: 'JetBrains Mono', monospace; font-size: 10.5px; padding: 3px 10px; border-radius: 999px; background: rgba(31,112,80,0.10); color: #1f7050; }
   .mk-share-empty { font-size: 11.5px; color: var(--muted); font-style: italic; }
   .mk-share-reason { font-size: 12.5px; color: var(--ink-2); line-height: 1.55; margin-top: 4px; }
+  .mk-share-cta { font-weight: 500; }
+  /* Share modal */
+  .share-modal-inner { max-width: 520px; }
+  .share-modal-news { background: var(--bg-2); border-radius: 8px; padding: 10px 12px; margin: 6px 0 14px; }
+  .share-modal-news-headline { font-family: 'Newsreader', serif; font-size: 14.5px; color: var(--ink); line-height: 1.4; margin: 4px 0; }
+  .share-modal-news-summary { font-size: 12px; color: var(--ink-2); line-height: 1.5; }
+  .share-modal-clients { display: flex; flex-direction: column; gap: 4px; border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; max-height: 180px; overflow-y: auto; }
+  .share-modal-row { display: flex; align-items: center; gap: 8px; padding: 5px 6px; border-radius: 4px; cursor: pointer; font-size: 13px; color: var(--ink); }
+  .share-modal-row:hover { background: var(--bg-2); }
+  .share-modal-row input[type="checkbox"] { accent-color: #1f7050; cursor: pointer; }
+  .share-modal-row-done { color: var(--muted); cursor: default; }
+  .share-modal-row-done:hover { background: transparent; }
+  .share-modal-client { flex: 1; }
+  .share-modal-draft-status { font-size: 11px; color: var(--muted); font-style: italic; margin-bottom: 6px; }
+  #share-modal-commentary { width: 100%; box-sizing: border-box; font: inherit; font-size: 13px; line-height: 1.5; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); color: var(--ink); resize: vertical; min-height: 100px; }
+  #share-modal-commentary:focus { outline: none; border-color: var(--accent); }
 
   /* Sidebar tasks — sits under Active clients in the home view */
   .sidebar-tasks-label .sidebar-tasks-counts { font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 0.04em; text-transform: none; color: var(--muted); font-weight: 400; }
@@ -1218,6 +1234,30 @@
       <div class="modal-actions">
         <button id="delete-cancel">Cancel</button>
         <button class="danger" id="delete-confirm">Delete client</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="share-modal" role="dialog" aria-hidden="true" data-news-id="">
+    <div class="modal share-modal-inner">
+      <h3>Share with clients</h3>
+      <div class="share-modal-news">
+        <div class="mk-news-tag share-modal-news-tag"></div>
+        <div class="share-modal-news-headline"></div>
+        <div class="share-modal-news-summary"></div>
+      </div>
+      <div class="modal-field">
+        <label>Clients</label>
+        <div class="share-modal-clients"></div>
+      </div>
+      <div class="modal-field">
+        <label for="share-modal-commentary">Commentary</label>
+        <div id="share-modal-draft-status" class="share-modal-draft-status">Drafting commentary…</div>
+        <textarea id="share-modal-commentary" rows="5" placeholder="What you want to say alongside this item…"></textarea>
+      </div>
+      <div class="modal-actions">
+        <button data-action="share-modal-cancel">Cancel</button>
+        <button class="primary" data-action="share-modal-confirm">Send</button>
       </div>
     </div>
   </div>
@@ -3872,34 +3912,129 @@
     artifactFooter.classList.remove('visible');
   }
 
-  // Build a row of "Share with [client]" buttons for a news item, scoped to clients
-  // currently in the workspace. Each button slides into a confirmation pill on click.
+  // Build the share row for a news card — a single "Share with clients →" CTA
+  // that opens the share modal. If the item has already been shared with at
+  // least one client, show those confirmations alongside the CTA.
   function buildShareButtons(newsId) {
     const clients = listClients();
     if (!clients.length) return '<span class="mk-share-empty">No clients to share with yet.</span>';
-    const btns = clients.map((c) => {
-      const shared = (state.sharedNews || {})[`${newsId}:${c.id}`];
-      if (shared) {
-        return `<span class="mk-share-confirm">Shared with ${escapeHtml(c.name)} ✓</span>`;
-      }
-      return `<button class="mk-share-btn" data-action="share-news" data-news-id="${escapeHtml(newsId)}" data-client-id="${escapeHtml(c.id)}">Share with ${escapeHtml(c.name)}</button>`;
-    }).join('');
-    return btns;
+    const shared = clients.filter((c) => (state.sharedNews || {})[`${newsId}:${c.id}`]);
+    const sharedPills = shared.map((c) => `<span class="mk-share-confirm">Shared with ${escapeHtml(c.name)} ✓</span>`).join('');
+    const cta = `<button class="mk-share-btn mk-share-cta" data-action="share-news-open" data-news-id="${escapeHtml(newsId)}">Share with clients →</button>`;
+    return `${sharedPills}${cta}`;
   }
 
-  function shareNewsItem(newsId, clientId, btnEl) {
-    if (!newsId || !clientId) return;
-    state.sharedNews = state.sharedNews || {};
-    state.sharedNews[`${newsId}:${clientId}`] = Date.now();
-    const client = listClients().find((c) => c.id === clientId);
+  // Open the share modal for a news item, optionally pre-checked clients and
+  // pre-filled commentary (when the agent suggested the share in chat).
+  function openShareModal(newsId, opts = {}) {
     const item = MARKET_NEWS.find((n) => n.id === newsId);
-    if (btnEl && btnEl.parentElement) {
-      btnEl.outerHTML = `<span class="mk-share-confirm">Shared with ${escapeHtml(client?.name || 'client')} ✓</span>`;
+    if (!item) return;
+    const allClients = listClients();
+    if (!allClients.length) return;
+    const preCheckedIds = new Set((opts.suggestedClientIds && opts.suggestedClientIds.length ? opts.suggestedClientIds : allClients.map((c) => c.id)));
+    const prefillCommentary = opts.commentary || '';
+
+    const rows = allClients.map((c) => {
+      const already = (state.sharedNews || {})[`${newsId}:${c.id}`];
+      const checked = preCheckedIds.has(c.id) && !already;
+      const disabled = already ? ' disabled' : '';
+      const tag = already ? ' <span class="mk-share-confirm" style="margin-left:6px;">Shared ✓</span>' : '';
+      return `<label class="share-modal-row${already ? ' share-modal-row-done' : ''}">
+        <input type="checkbox" data-client-id="${escapeHtml(c.id)}"${checked ? ' checked' : ''}${disabled} />
+        <span class="share-modal-client">${escapeHtml(c.name)}</span>
+        ${tag}
+      </label>`;
+    }).join('');
+
+    const modal = document.getElementById('share-modal');
+    modal.querySelector('.share-modal-news-tag').textContent = item.tag;
+    modal.querySelector('.share-modal-news-headline').textContent = item.headline;
+    modal.querySelector('.share-modal-news-summary').textContent = item.summary;
+    modal.querySelector('.share-modal-clients').innerHTML = rows;
+    const ta = modal.querySelector('#share-modal-commentary');
+    const draftStatus = modal.querySelector('#share-modal-draft-status');
+    modal.dataset.newsId = newsId;
+
+    if (prefillCommentary) {
+      ta.value = prefillCommentary;
+      draftStatus.textContent = 'Drafted by the agent — edit before sending if you like.';
+    } else {
+      ta.value = '';
+      draftStatus.textContent = 'Drafting commentary…';
+      // Fetch an agent-drafted commentary in the background.
+      const selectedIds = Array.from(preCheckedIds);
+      draftShareCommentary(newsId, selectedIds).then((draft) => {
+        if (modal.dataset.newsId !== newsId) return; // user closed/changed
+        if (ta.value) return; // user already typed something
+        ta.value = draft || '';
+        draftStatus.textContent = draft ? 'Drafted by the agent — edit before sending if you like.' : 'Add any context you want to share alongside the item.';
+      }).catch(() => {
+        if (modal.dataset.newsId !== newsId) return;
+        draftStatus.textContent = 'Add any context you want to share alongside the item.';
+      });
     }
-    // Also acknowledge in the chat so the user sees it in their conversation stream.
-    if (state.module === 'research-market' && item && client) {
-      addAgent(`<p style="font-size:12.5px;color:var(--muted);"><strong>Shared</strong> "${escapeHtml(item.headline)}" with <strong>${escapeHtml(client.name)}</strong>. They'll see it in their next comms digest.</p>`);
+
+    modal.classList.add('active');
+    modal.setAttribute('aria-hidden', 'false');
+    setTimeout(() => ta.focus(), 60);
+  }
+
+  function closeShareModal() {
+    const modal = document.getElementById('share-modal');
+    modal.classList.remove('active');
+    modal.setAttribute('aria-hidden', 'true');
+    modal.dataset.newsId = '';
+  }
+
+  async function draftShareCommentary(newsId, clientIds) {
+    try {
+      const r = await fetch('/api/demo/route', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userMessage: '__draft_share_commentary__',
+          currentModule: 'research-market',
+          market: buildMarketCorpus(),
+          draftShare: { newsId, clientIds: Array.isArray(clientIds) ? clientIds : [] },
+          sections: [{ num: 0, title: 'research' }],
+        }),
+      });
+      const data = await r.json().catch(() => ({}));
+      return data?.commentary || '';
+    } catch {
+      return '';
     }
+  }
+
+  function confirmShareFromModal() {
+    const modal = document.getElementById('share-modal');
+    const newsId = modal.dataset.newsId;
+    const item = MARKET_NEWS.find((n) => n.id === newsId);
+    if (!item) return closeShareModal();
+    const checked = Array.from(modal.querySelectorAll('.share-modal-clients input[type="checkbox"]:checked'));
+    const clientIds = checked.map((el) => el.dataset.clientId);
+    if (!clientIds.length) return; // nothing selected
+    const commentary = modal.querySelector('#share-modal-commentary').value.trim();
+    state.sharedNews = state.sharedNews || {};
+    const clientNames = [];
+    clientIds.forEach((cid) => {
+      state.sharedNews[`${newsId}:${cid}`] = Date.now();
+      const c = listClients().find((x) => x.id === cid);
+      if (c) clientNames.push(c.name);
+    });
+    closeShareModal();
+
+    // Re-render the dashboard so the news card reflects the new shared state.
+    if (state.module === 'research-market') renderMarketDashboard();
+
+    // Acknowledge in the chat so it shows in the conversation stream.
+    const namesStr = clientNames.length === 1 ? clientNames[0]
+      : clientNames.length === 2 ? `${clientNames[0]} and ${clientNames[1]}`
+      : `${clientNames.slice(0, -1).join(', ')}, and ${clientNames[clientNames.length - 1]}`;
+    const noteHtml = commentary
+      ? `<div style="margin-top:6px;padding:8px 10px;background:var(--bg-2);border-radius:6px;font-size:12px;color:var(--ink-2);line-height:1.55;">${escapeHtml(commentary)}</div>`
+      : '';
+    addAgent(`<p><strong>Shared</strong> "${escapeHtml(item.headline)}" with <strong>${escapeHtml(namesStr)}</strong>.${commentary ? ' Your note:' : ''}</p>${noteHtml}`);
   }
 
   // Compact, model-friendly snapshot of today's market state for the agent.
@@ -3958,26 +4093,29 @@
     }
   }
 
-  // Render a "share suggestion" card: news item + reason + Share buttons per client.
+  // Render a "share suggestion" card: news item + reason + a single CTA that
+  // opens the share modal with the agent's suggested clients pre-checked and
+  // the rationale pre-filled as commentary (user can still edit before sending).
   function renderShareSuggestions(suggestions) {
+    // Stash suggestions by newsId so the modal can read pre-fill on click.
+    state._shareSuggestionCache = state._shareSuggestionCache || {};
     return suggestions.map((s) => {
       const item = MARKET_NEWS.find((n) => n.id === s.newsId);
       if (!item) return '';
-      const clientIds = Array.isArray(s.clientIds) && s.clientIds.length ? s.clientIds : listClients().map((c) => c.id);
-      const btns = clientIds.map((cid) => {
-        const c = listClients().find((x) => x.id === cid);
-        if (!c) return '';
-        const already = (state.sharedNews || {})[`${item.id}:${c.id}`];
-        if (already) return `<span class="mk-share-confirm">Shared with ${escapeHtml(c.name)} ✓</span>`;
-        return `<button class="mk-share-btn" data-action="share-news" data-news-id="${escapeHtml(item.id)}" data-client-id="${escapeHtml(c.id)}">Share with ${escapeHtml(c.name)}</button>`;
-      }).join('');
+      const clientIds = Array.isArray(s.clientIds) && s.clientIds.length
+        ? s.clientIds
+        : listClients().map((c) => c.id);
+      state._shareSuggestionCache[item.id] = { clientIds, reason: s.reason || '' };
       const reason = s.reason ? `<div class="mk-share-reason">${escapeHtml(s.reason)}</div>` : '';
+      const sharedAny = clientIds.some((cid) => (state.sharedNews || {})[`${item.id}:${cid}`]);
+      const ctaLabel = sharedAny ? 'Share with more clients →' : 'Share with clients →';
+      const cta = `<button class="mk-share-btn mk-share-cta" data-action="share-news-open" data-news-id="${escapeHtml(item.id)}">${ctaLabel}</button>`;
       return `<div class="rx-card">
         <div class="rx-title">Share suggestion</div>
         <div class="mk-news-tag" style="margin-bottom:4px;">${escapeHtml(item.tag)}</div>
         <div class="mk-news-headline" style="font-size:13.5px;">${escapeHtml(item.headline)}</div>
         ${reason}
-        <div class="mk-news-share-row" style="margin-top:8px;">${btns}</div>
+        <div class="mk-news-share-row" style="margin-top:8px;">${cta}</div>
       </div>`;
     }).join('');
   }
@@ -10318,9 +10456,17 @@
       e.preventDefault();
       if (btn.dataset.research === 'managers') openManagersView();
       else if (btn.dataset.research === 'market') openMarketView();
-    } else if (a === 'share-news') {
+    } else if (a === 'share-news-open') {
       e.preventDefault();
-      shareNewsItem(btn.dataset.newsId, btn.dataset.clientId, btn);
+      const newsId = btn.dataset.newsId;
+      const cached = (state._shareSuggestionCache || {})[newsId];
+      openShareModal(newsId, cached ? { suggestedClientIds: cached.clientIds, commentary: cached.reason } : {});
+    } else if (a === 'share-modal-confirm') {
+      e.preventDefault();
+      confirmShareFromModal();
+    } else if (a === 'share-modal-cancel') {
+      e.preventDefault();
+      closeShareModal();
     } else if (a === 'mu-filter-asset') {
       e.preventDefault();
       state.researchFilter = { ...(state.researchFilter || {}), asset: btn.dataset.asset, search: state.researchFilter?.search || '' };

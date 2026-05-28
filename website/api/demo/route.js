@@ -275,6 +275,40 @@ Rules for exhibits:
     const macros = Array.isArray(m.macro) ? m.macro.slice(0, 30) : [];
     const news = Array.isArray(m.news) ? m.news.slice(0, 30) : [];
     const clients = Array.isArray(m.clients) ? m.clients.slice(0, 20) : [];
+
+    // Draft-commentary sub-route: when the user clicks "Share with clients" on a
+    // news card the frontend asks for a one-paragraph note to send alongside.
+    const draftShare = body.draftShare && typeof body.draftShare === 'object' ? body.draftShare : null;
+    if (draftShare && draftShare.newsId) {
+      const item = news.find((n) => n.id === draftShare.newsId);
+      const clientIds = Array.isArray(draftShare.clientIds) ? draftShare.clientIds : [];
+      const targets = clientIds.length ? clients.filter((c) => clientIds.includes(c.id)) : clients;
+      const clientStr = targets.length ? targets.map((c) => `${c.name}${c.missionHints ? ` (mission: ${c.missionHints})` : ''}`).join('; ') : 'your clients';
+      const sys = `You are the market-research agent at an OCIO product called Reve. The user is about to share a market/news item with one or more clients. Draft a SHORT note (2-4 sentences, conversational, no greetings, no signoff) that the user can send alongside the item. Reference what's happening, then tie it to why it matters for the client(s) given their mandate. Avoid jargon and never invent numbers or facts beyond what's in the item / dashboard. Return ONLY a JSON object: { "commentary": "<the draft>" }. No markdown.`;
+      const userBlock = item
+        ? `News item:\n[${item.tag}] ${item.headline}\n${item.summary}\nTopics: ${(item.topics || []).join(', ')}\n\nClient(s): ${clientStr}\n\nDraft the commentary.`
+        : `Draft a brief commentary for sharing a market update with: ${clientStr}.`;
+      const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+      try {
+        const response = await anthropic.messages.create({
+          model: 'claude-haiku-4-5',
+          max_tokens: 350,
+          system: sys,
+          messages: [{ role: 'user', content: userBlock }],
+        });
+        let text = '';
+        for (const block of response.content) if (block.type === 'text') text += block.text;
+        const parsed = tryParseJson(text);
+        const commentary = (parsed?.commentary || text.trim()).replace(/^"|"$/g, '').slice(0, 1200);
+        res.statusCode = 200;
+        return res.end(JSON.stringify({ commentary }));
+      } catch (err) {
+        console.error('[demo/route market draftShare] error:', err?.message);
+        res.statusCode = 200;
+        return res.end(JSON.stringify({ commentary: '' }));
+      }
+    }
+
     const idxBlock = indices.map((i) => `- ${i.name} (${i.region}): ${i.value} · today ${i.todayPct >= 0 ? '+' : ''}${i.todayPct}% · YTD ${i.ytdPct >= 0 ? '+' : ''}${i.ytdPct}%`).join('\n');
     const macroBlock = macros.map((x) => `- ${x.name}: ${x.value} (Δ ${x.delta}) — ${x.context}`).join('\n');
     const newsBlock = news.map((n) => `- id "${n.id}" [${n.tag}] (${n.time}, ${n.source})\n  Headline: ${n.headline}\n  Summary: ${n.summary}\n  Topics: ${(n.topics || []).join(', ')}`).join('\n');
