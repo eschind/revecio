@@ -4468,11 +4468,21 @@
     // Encode points + mapping so the hover handler can recompute Y without re-running this fn
     const pointsJson = JSON.stringify(rebased.map((d, i) => ({ q: d.q, p: +d.portfolio.toFixed(2), b: +d.benchmark.toFixed(2), x: +sx(i).toFixed(1) })));
 
+    // Build a composition string so the legend can show what the policy
+    // benchmark is actually made of (driven by the Benchmarks tool).
+    const compW = benchmarkWeights();
+    const compStr = CMA
+      .map((c) => ({ name: c.name, weight: compW[c.id] || 0, bm: benchmarkFor(c.id) }))
+      .filter((r) => r.weight > 0.0005)
+      .sort((a, b) => b.weight - a.weight)
+      .map((r) => `${(r.weight * 100).toFixed(0)}% ${r.bm}`)
+      .join(' · ');
+
     return `<div class="pm-card">
       <div class="pm-card-label" style="display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;">
         <span>Performance · ${escapeHtml(periodLabel)}</span>
         <span style="font-family:'Newsreader',serif;font-size:13px;color:var(--ink-2);text-transform:none;letter-spacing:0;">
-          Portfolio <strong style="color:var(--accent);">${(annPort*100).toFixed(1)}%</strong> ${years >= 1 ? 'annualized' : 'total'} vs. 60/40 <strong style="color:var(--muted);">${(annBench*100).toFixed(1)}%</strong>
+          Portfolio <strong style="color:var(--accent);">${(annPort*100).toFixed(1)}%</strong> ${years >= 1 ? 'annualized' : 'total'} vs. policy benchmark <strong style="color:var(--muted);">${(annBench*100).toFixed(1)}%</strong>
           <span style="color:${headlineColor};margin-left:6px;">(${headlineSign}${(delta*100).toFixed(1)}pp)</span>
         </span>
         <div class="pm-tabs" style="margin-left:auto;">
@@ -4496,9 +4506,10 @@
       </div>
       <div class="pm-legend">
         <span><i style="background:#1f7050;"></i>Portfolio (net of fees)</span>
-        <span><svg width="22" height="6" style="vertical-align:middle;margin-right:6px;"><line x1="0" y1="3" x2="22" y2="3" stroke="#7c7468" stroke-width="1.5" stroke-dasharray="4,3"/></svg>60/40 benchmark (U.S. Equity / Core FI)</span>
+        <span title="${escapeHtml(compStr || '')}"><svg width="22" height="6" style="vertical-align:middle;margin-right:6px;"><line x1="0" y1="3" x2="22" y2="3" stroke="#7c7468" stroke-width="1.5" stroke-dasharray="4,3"/></svg>Policy benchmark (composite)</span>
         <span style="margin-left:auto;color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:0.04em;">Indexed to 100 at ${escapeHtml(rebased[0].q)}</span>
       </div>
+      ${compStr ? `<div style="margin-top:4px;font-size:11px;color:var(--muted);line-height:1.5;">Composition (SAA-weighted): ${escapeHtml(compStr)}</div>` : ''}
     </div>`;
   }
 
