@@ -1585,9 +1585,9 @@
       await routeResearchMessage(text);
       return;
     }
-    // Tasks home: no agent yet, just acknowledge so the user isn't stuck silent.
+    // Tasks home: route to the tasks agent for summarize / filter / open intents.
     if (state.module === 'tasks') {
-      await agentReply(`<p>Click any task on the right to jump straight into it. A natural-language tasks agent is on the roadmap — for now I can only open tasks, not summarize or filter them through chat.</p>`);
+      await routeTasksMessage(text);
       return;
     }
     // First time materials arrive → infer + propose
@@ -3470,24 +3470,95 @@
     }));
   }
 
+  // Compact, model-friendly snapshot of every open task across clients.
+  function buildTasksCorpus() {
+    return buildAllClientTasks().map((t) => ({
+      id: t.id,
+      title: t.title,
+      detail: (t.detail || '').slice(0, 240),
+      status: t.status,
+      agentLabel: t.agentLabel || null,
+      kind: t.kind,
+      view: t.view,
+      sectionLabel: t.sectionLabel,
+      due: t.due || null,
+      clientId: t.clientId,
+      clientName: t.clientName,
+    }));
+  }
+
+  async function routeTasksMessage(text) {
+    if (!text.trim()) return;
+    const myToken = feedToken;
+    const typing = addTyping();
+    try {
+      const r = await fetch('/api/demo/route', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userMessage: text,
+          currentModule: 'tasks',
+          tasks: buildTasksCorpus(),
+          history: (state.chatHistory || []).slice(0, -1).slice(-10),
+          sections: [{ num: 0, title: 'tasks' }],
+        }),
+      });
+      const data = await r.json().catch(() => ({}));
+      if (myToken !== feedToken) { try { typing.remove(); } catch {} return; }
+      typing.remove();
+      if (!r.ok) {
+        await agentReply(`<p>${escapeHtml(data?.error || 'Could not reach the tasks agent.')}</p>`);
+        return;
+      }
+      // Action: surface a specific task in the chat (uses existing surfaceTask UI).
+      if (data?.action?.type === 'surface_task' && data.action.taskId) {
+        const reply = data.reply ? `<p>${escapeHtml(data.reply).replace(/\n\n/g, '</p><p>').replace(/\n/g, '<br>')}</p>` : '';
+        if (reply) addAgent(reply);
+        surfaceTask(data.action.taskId);
+        return;
+      }
+      const reply = data?.reply || data?.answer;
+      const exhibit = data?.exhibit || null;
+      const replyHtml = reply
+        ? `<p>${escapeHtml(reply).replace(/\n\n/g, '</p><p>').replace(/\n/g, '<br>')}</p>`
+        : '';
+      const exhibitHtml = renderResearchExhibit(exhibit);
+      if (replyHtml || exhibitHtml) {
+        addAgent(`${replyHtml}${exhibitHtml}`);
+      } else {
+        addAgent(`<p>I can summarize, filter, or open any task. Try "what's due this week?", "show me Dream's open items," or "open the FY27 spending analysis."</p>`);
+      }
+    } catch (err) {
+      try { typing.remove(); } catch {}
+      console.error('Tasks route failed:', err);
+      if (myToken === feedToken) await agentReply(`<p>I couldn't reach the tasks agent. Try again in a moment.</p>`);
+    }
+  }
+
   // Render a structured research exhibit (table or manager list) inline in a
   // chat message. Manager names in the first column become clickable if the
-  // agent provided a managerIds array.
+  // agent provided a managerIds array. Also supports task_list / task table
+  // exhibits coming back from the tasks agent.
   function renderResearchExhibit(ex) {
     if (!ex || typeof ex !== 'object') return '';
     const title = ex.title ? `<div class="rx-title">${escapeHtml(String(ex.title))}</div>` : '';
     if (ex.type === 'table' && Array.isArray(ex.columns) && Array.isArray(ex.rows)) {
-      const ids = Array.isArray(ex.managerIds) ? ex.managerIds : [];
+      const mgrIds = Array.isArray(ex.managerIds) ? ex.managerIds : [];
+      const taskIds = Array.isArray(ex.taskIds) ? ex.taskIds : [];
       const headHtml = ex.columns.map((c, i) =>
         `<th${i === 0 ? '' : ' class="num"'}>${escapeHtml(String(c))}</th>`
       ).join('');
       const bodyHtml = ex.rows.map((row, ri) => {
         if (!Array.isArray(row)) return '';
-        const mgrId = ids[ri];
+        const mgrId = mgrIds[ri];
+        const taskId = taskIds[ri];
         const cells = row.map((cell, ci) => {
           const v = cell == null ? '—' : String(cell);
           if (ci === 0 && mgrId && MANAGER_UNIVERSE.some((m) => m.id === mgrId)) {
             return `<td><a class="rx-mgr-link" data-action="mu-open-mgr" data-mgr-id="${escapeHtml(mgrId)}">${escapeHtml(v)}</a></td>`;
+          }
+          if (ci === 0 && taskId) {
+            return `<td><a class="rx-mgr-link" data-action="surface-task" data-task="${escapeHtml(taskId)}">${escapeHtml(v)}</a></td>`;
           }
           return `<td${ci === 0 ? '' : ' class="num"'}>${escapeHtml(v)}</td>`;
         }).join('');
@@ -3503,6 +3574,20 @@
         return `<a class="rx-mgr-card" data-action="mu-open-mgr" data-mgr-id="${escapeHtml(m.id)}">
           <div class="rx-mgr-name">${escapeHtml(m.name)}</div>
           <div class="rx-mgr-meta">${escapeHtml(MGR_ASSET_LABELS[m.assetClass] || m.assetClass)} · ${escapeHtml(m.sleeve)} · ${aum}</div>
+        </a>`;
+      }).join('');
+      return `<div class="rx-card">${title}<div class="rx-mgr-list">${rows}</div></div>`;
+    }
+    if (ex.type === 'task_list' && Array.isArray(ex.taskIds)) {
+      const allTasks = buildAllClientTasks();
+      const rows = ex.taskIds.map((tid) => {
+        const t = allTasks.find((x) => x.id === tid);
+        if (!t) return '';
+        const dueStr = t.due ? ` · due ${fmtDate(t.due)}` : '';
+        const pillLabel = t.agentLabel || TASK_STATUS_LABEL[t.status] || t.status;
+        return `<a class="rx-mgr-card" data-action="surface-task" data-task="${escapeHtml(t.id)}">
+          <div class="rx-mgr-name">${escapeHtml(t.title)} <span class="tk-pill k-${escapeHtml(t.status)}" style="margin-left:6px;">${escapeHtml(pillLabel)}</span></div>
+          <div class="rx-mgr-meta">${escapeHtml(t.clientName)} · ${escapeHtml(t.sectionLabel || t.kind)}${escapeHtml(dueStr)}</div>
         </a>`;
       }).join('');
       return `<div class="rx-card">${title}<div class="rx-mgr-list">${rows}</div></div>`;

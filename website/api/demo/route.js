@@ -163,13 +163,15 @@ export default async function handler(req, res) {
   const materials = Array.isArray(body.materials) ? body.materials.slice(0, 8) : [];
   const facts = (body.facts && typeof body.facts === 'object') ? body.facts : null;
   const isResearch = currentModule.startsWith('research');
+  const isTasks = currentModule === 'tasks';
   const managers = isResearch && Array.isArray(body.managers) ? body.managers.slice(0, 80) : null;
+  const tasks = isTasks && Array.isArray(body.tasks) ? body.tasks.slice(0, 60) : null;
 
   if (!userMessage) {
     res.statusCode = 400;
     return res.end(JSON.stringify({ error: 'Missing fields.' }));
   }
-  if (!isResearch && !sections.length) {
+  if (!isResearch && !isTasks && !sections.length) {
     res.statusCode = 400;
     return res.end(JSON.stringify({ error: 'Missing fields.' }));
   }
@@ -247,6 +249,64 @@ Rules for exhibits:
       console.error('[demo/route research] error:', err?.message);
       res.statusCode = 500;
       return res.end(JSON.stringify({ error: 'Research agent failed. Please try again.' }));
+    }
+  }
+
+  // Tasks mode — natural-language agent over the cross-client task list.
+  if (isTasks) {
+    const taskBlock = (tasks || []).map((t) => {
+      const due = t.due ? ` · due ${t.due}` : '';
+      const agent = t.status === 'agent' ? ` [agent: ${t.agentLabel || 'queued'}]` : '';
+      return `- (id ${t.id}) [${t.status}]${agent} ${t.title} — ${t.clientName} · ${t.sectionLabel || t.kind}${due}\n    ${(t.detail || '').slice(0, 200)}`;
+    }).join('\n');
+    const sys = `You are the tasks agent inside an OCIO product called Reve. The user has a cross-client task list. Answer concisely and ground every answer strictly in the task list provided — do not invent tasks or details. The current date is ${new Date().toISOString().slice(0, 10)}.
+
+Statuses: "action" = needs the user to do something, "review" = waiting on user review, "pending" = waiting on someone else, "agent" = Reve's agent is handling it. When summarizing, the user usually cares about "action" and "review" items (the ones for them) more than "agent" items.
+
+Style: short paragraphs, no markdown headers, no ASCII tables. Refer to tasks by their title. Dates in plain English (e.g. "May 17", "next week").
+
+You can return one of three response shapes (return ONLY a JSON object, no markdown fences):
+
+1. Narrative summary / filter — use when the user asks a question, wants a summary, or asks to filter:
+   { "reply": "<your answer>", "exhibit": null }
+
+2. Task list — use when listing more than ~2 tasks (each row will be clickable):
+   { "reply": "<short context, 1-2 sentences>", "exhibit": { "type": "task_list", "title": "<heading>", "taskIds": ["<id>", "<id>", ...] } }
+
+3. Open / surface a specific task — use when the user says "open X", "let's open the FY27 spending policy", "show me the EM manager item", etc. The frontend will render the task with action buttons:
+   { "reply": "<optional 1-sentence lead-in>", "action": { "type": "surface_task", "taskId": "<id>" } }
+
+Pick the right shape:
+- "what's due this week?" / "what should I focus on?" / "summarize Dream's open items" → narrative with possible task_list exhibit
+- "show me everything pending" / "list the capital calls" → task_list exhibit
+- "open the FY27 analysis" / "let's look at the EM manager decision" / "pull up the attestation" → surface_task action
+- "how many tasks are agent-handled?" / "anything overdue?" / "what's the status of X?" → narrative reply
+
+Match task ids EXACTLY as given. If no task matches a surface request, return a narrative reply explaining you couldn't find it.`;
+    const historyBlock = history.length
+      ? `\nConversation so far (oldest first):\n${history.map((h) => `  ${h.role === 'user' ? 'USER' : 'AGENT'}: ${String(h.text || '').slice(0, 350)}`).join('\n')}\n`
+      : '';
+    const userBlock = `Task list (${(tasks || []).length} open tasks across all clients):\n${taskBlock}\n${historyBlock}\nLatest user message: ${userMessage}\n\nReturn only the JSON object.`;
+    const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+    try {
+      const response = await anthropic.messages.create({
+        model: 'claude-haiku-4-5',
+        max_tokens: 800,
+        system: sys,
+        messages: [{ role: 'user', content: userBlock }],
+      });
+      let text = '';
+      for (const block of response.content) if (block.type === 'text') text += block.text;
+      const parsed = tryParseJson(text);
+      const reply = parsed?.reply || (parsed?.action ? null : text.trim());
+      const exhibit = parsed?.exhibit || null;
+      const action = parsed?.action || null;
+      res.statusCode = 200;
+      return res.end(JSON.stringify({ reply, exhibit, action }));
+    } catch (err) {
+      console.error('[demo/route tasks] error:', err?.message);
+      res.statusCode = 500;
+      return res.end(JSON.stringify({ error: 'Tasks agent failed. Please try again.' }));
     }
   }
 
