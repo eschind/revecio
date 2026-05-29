@@ -3267,7 +3267,7 @@
     }
     state.ipsDirty = false;
     state.module = 'ips';
-    state.fromTasks = false;
+    state.fromTasks = false; state.fromSaa = false;
     state_pm.weights = null;
     state_pm.mvo = null;
     state.phase = 'reviewing-done';
@@ -3452,7 +3452,7 @@
     layout.classList.remove('expanded');
     layout.classList.add('tasks-open');
     state.tasksOpen = true;
-    state.fromTasks = false;
+    state.fromTasks = false; state.fromSaa = false;
     state.module = 'tasks';
     document.querySelectorAll('.nav-item').forEach((el) => el.classList.remove('active'));
     document.getElementById('nav-tasks')?.classList.add('active');
@@ -3497,7 +3497,7 @@
 
   // Return from a client's workspace to the global Tasks overview.
   function backToTasks() {
-    state.fromTasks = false;
+    state.fromTasks = false; state.fromSaa = false;
     exitClientWorkspace();
     openTasksView();
   }
@@ -4576,8 +4576,9 @@
 
   function itemHeadHtml(label, rightHtml = '') {
     if (!layout.classList.contains('client-open')) return '';
+    const backSaa = state.fromSaa ? `<button class="item-tasks-btn" data-action="back-to-saa" title="Back to Asset allocation">← Asset allocation</button>` : '';
     const backTasks = state.fromTasks ? `<button class="item-tasks-btn" data-action="back-to-tasks" title="Back to tasks">← Tasks</button>` : '';
-    return `<div class="item-head"><span style="color: var(--muted); font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;">${escapeHtml(label)}</span><span style="flex: 1;"></span>${rightHtml}${backTasks}<button class="item-close-btn" data-action="back-to-vault" title="Close (Esc)" aria-label="Close"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>`;
+    return `<div class="item-head"><span style="color: var(--muted); font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;">${escapeHtml(label)}</span><span style="flex: 1;"></span>${rightHtml}${backSaa}${backTasks}<button class="item-close-btn" data-action="back-to-vault" title="Close (Esc)" aria-label="Close"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>`;
   }
   function enterItemView() {
     if (layout.classList.contains('client-open')) layout.classList.add('expanded');
@@ -8890,7 +8891,7 @@
         <div class="saa-risk-stat"><div class="k-label">USD exposure</div><div class="k-value">${usdPct.toFixed(0)}%</div><div class="k-sub">${(100 - usdPct).toFixed(0)}% foreign</div></div>
       </div>
       <div style="display:flex;justify-content:flex-end;">
-        <a class="task-cta secondary" data-action="open-workflow" data-workflow="risk" style="text-decoration:none;">View full risk exposures →</a>
+        <a class="task-cta secondary" data-action="open-risk-from-saa" style="text-decoration:none;">View full risk exposures →</a>
       </div>
     </div>`;
   }
@@ -9139,7 +9140,7 @@
     state.saa = null;
     state.ipsDirty = false;
     state.module = 'ips';
-    state.fromTasks = false;
+    state.fromTasks = false; state.fromSaa = false;
     state.tasksOpen = false;
     state.currentExample = null;
     state.reviewIdx = 0;
@@ -10479,6 +10480,15 @@
     } else if (a === 'back-to-tasks') {
       e.preventDefault();
       backToTasks();
+    } else if (a === 'open-risk-from-saa') {
+      e.preventDefault();
+      state.fromTasks = false;
+      state.fromSaa = true;
+      openRiskView();
+    } else if (a === 'back-to-saa') {
+      e.preventDefault();
+      state.fromSaa = false;
+      openPortfolioModule();
     } else if (a === 'open-task') {
       e.preventDefault();
       openTaskFor(btn.dataset.client, btn.dataset.view);
