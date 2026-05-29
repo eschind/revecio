@@ -15,7 +15,7 @@ Classify the message and return ONLY a single JSON object (no markdown, no comme
   "intent": "analyze" | "answer_content" | "org_info" | "spend_model" | "set_benchmark" | "edit_facts" | "optimize" | "open" | "next" | "previous" | "switch" | "edit" | "switch_and_edit" | "question" | "unclear",
   "targetModule": "ips" | "portfolio" | "benchmarks" | "spending" | "materials" | "monitoring" | "board" | "decisions" | "profile" | null,
   "targetSectionNum": <number or null>,
-  "query": "sharpe" | "return" | "vol" | "real_return" | "allocation" | "liquidity" | "metrics" | "capital_calls" | "capital_calls_all" | null,
+  "query": "sharpe" | "return" | "vol" | "real_return" | "allocation" | "liquidity" | "metrics" | "capital_calls" | "capital_calls_all" | "factor_exposure" | "style_exposure" | "currency_exposure" | "risk_exposure" | null,
   "scenario": "base" | "downturn" | "upside" | null,
   "adjustments": [ { "key": <string>, "factor": <number> } ] | null,
   "assetClass": "us_eq" | "intl_eq" | "em_eq" | "core_fi" | "tips" | "hy" | "hf" | "pe" | "pc" | "ra" | "cash" | null,
@@ -38,6 +38,11 @@ Rules:
   - "summarize the portfolio" / "give me the key metrics" / "headline numbers" → query="metrics"
   - "outstanding capital calls" / "any capital calls due" / "what capital calls do we have" / "upcoming capital calls" → query="capital_calls" (returns only pending)
   - "show me all the capital calls" / "capital call history" → query="capital_calls_all"
+  - "factor exposure" / "macro factor sensitivities" / "what's our rate sensitivity?" / "what factors are we exposed to?" / "show me the factor exposure for the current asset allocation" / "what's the factor exposure for it?" / "growth / rates / inflation exposure" → query="factor_exposure"
+  - "style tilts" / "value tilt" / "size factor" / "are we tilted toward quality?" / "style exposure" → query="style_exposure"
+  - "currency exposure" / "FX exposure" / "USD exposure" / "what's our foreign-currency weight?" / "are we long the dollar?" → query="currency_exposure"
+  - "risk exposures" / "show me the risk profile" / "what are the portfolio's risk exposures?" / "open risk" — when the user wants a SUMMARY across all three (factor, style, currency) → query="risk_exposure"
+  Critical: "factor exposure" is NOT the same as "allocation". Allocation is the asset-class weights. Factor exposure is the SAA-weighted macro-factor sensitivity (growth, rates, inflation, credit, commodity, USD, vol). If the question mentions "factor", "tilt", "currency", "FX", "rate sensitivity", "USD strength", "risk exposure", "style", do NOT pick query="allocation".
   If a question mentions a metric word (Sharpe, vol, allocation, weights, return, real return, liquidity, coverage, cushion), it is almost always analyze.
   If a question is about capital calls — outstanding, upcoming, due, history — it is ALWAYS analyze with a capital_calls query, NEVER open with targetModule=monitoring.
 - "answer_content" — a factual question about what the IPS DOCUMENT TEXT says: its provisions, rules, requirements, definitions, or whether the IPS addresses a given topic. This is about the written policy, NOT a portfolio number. Set "targetSectionNum" to the single most relevant IPS section (use the section list to pick it), and set "reply" to a one-sentence direct lead-in answer. Examples:
