@@ -10312,6 +10312,43 @@
         </table>`)}
         ${sourceLine}`;
     }
+    if (query === 'factor_exposure' || query === 'style_exposure' || query === 'currency_exposure' || query === 'risk_exposure') {
+      const macro = aggregateExposure(weights, MACRO_FACTOR_EXPOSURE);
+      const style = aggregateExposure(weights, STYLE_EXPOSURE);
+      const fx = aggregateExposure(weights, FX_EXPOSURE);
+      const numCell = (n, dp = 2) => `<td style="padding:3px 0;text-align:right;font-family:'JetBrains Mono',monospace;color:${n >= 0 ? 'var(--ink)' : '#b13a3a'};">${n >= 0 ? '+' : ''}${n.toFixed(dp)}</td>`;
+      const factorRows = MACRO_FACTORS.map((f) => {
+        const v = macro[f.id] || 0;
+        return `<tr><td style="padding:3px 8px 3px 0;color:var(--ink-2);">${escapeHtml(f.label)}</td>${numCell(v)}<td style="padding:3px 0 3px 12px;color:var(--muted);font-size:11px;">${escapeHtml(f.unit)} → pp impact on annual return</td></tr>`;
+      }).join('');
+      const styleRows = STYLE_FACTORS.map((s) => {
+        const v = style[s.id] || 0;
+        const tilt = Math.abs(v) < 0.05 ? 'neutral' : (v > 0 ? 'tilt toward' : 'tilt away');
+        return `<tr><td style="padding:3px 8px 3px 0;color:var(--ink-2);">${escapeHtml(s.label)}</td>${numCell(v)}<td style="padding:3px 0 3px 12px;color:var(--muted);font-size:11px;">${tilt} (−1 to +1)</td></tr>`;
+      }).join('');
+      const fxList = FX_GROUP_ORDER
+        .map((k) => ({ key: k, label: FX_LABELS[k] || k, value: fx[k] || 0 }))
+        .filter((x) => x.value > 0.0005)
+        .sort((a, b) => b.value - a.value);
+      const fxRows = fxList.map((f) => `<tr><td style="padding:3px 8px 3px 0;color:var(--ink-2);">${escapeHtml(f.label)}</td><td style="padding:3px 0;text-align:right;font-family:'JetBrains Mono',monospace;color:var(--ink);">${(f.value * 100).toFixed(1)}%</td></tr>`).join('');
+      const openLink = `<p style="font-size:12px;"><a href="?client=${escapeHtml(state.clientId || '')}&view=risk" data-action="open-workflow" data-workflow="risk" style="color:var(--ink);border-bottom:1px dotted var(--muted);text-decoration:none;cursor:pointer;">Open the Risk page →</a></p>`;
+      // Slice the response by which exposure was asked for.
+      if (query === 'style_exposure') {
+        return `<p>Style tilts (SAA-weighted, −1 to +1):</p>${card('Style factors', `<table style="width:100%;border-collapse:collapse;font-size:12.5px;">${styleRows}</table>`)}${openLink}${sourceLine}`;
+      }
+      if (query === 'currency_exposure') {
+        return `<p>Currency exposure (SAA-weighted):</p>${card('Currency mix', `<table style="width:100%;border-collapse:collapse;font-size:12.5px;">${fxRows}</table>`)}${openLink}${sourceLine}`;
+      }
+      if (query === 'factor_exposure') {
+        return `<p>Macro factor exposures (SAA-weighted):</p>${card('Macro factors', `<table style="width:100%;border-collapse:collapse;font-size:12.5px;">${factorRows}</table>`)}${openLink}${sourceLine}`;
+      }
+      // 'risk_exposure' — show all three
+      return `<p>Risk exposures (SAA-weighted):</p>
+        ${card('Macro factors', `<table style="width:100%;border-collapse:collapse;font-size:12.5px;">${factorRows}</table>`)}
+        ${card('Style tilts', `<table style="width:100%;border-collapse:collapse;font-size:12.5px;">${styleRows}</table>`)}
+        ${card('Currency mix', `<table style="width:100%;border-collapse:collapse;font-size:12.5px;">${fxRows}</table>`)}
+        ${openLink}${sourceLine}`;
+    }
     if (query === 'capital_calls' || query === 'capital_calls_outstanding' || query === 'capital_calls_all') {
       const all = (typeof clientCapitalCalls === 'function') ? clientCapitalCalls() : [];
       if (!all.length) return `<p>No private-fund capital calls on record for this client.</p>`;
