@@ -3832,7 +3832,10 @@
   }
 
   function openMarketView() {
-    const wasInResearch = (state.module || '').startsWith('research-');
+    // Re-fire the intro any time we enter the Market sub-mode from outside it
+    // (home, client workspace, tasks, or even research-managers). Internal
+    // dashboard re-renders don't go through openMarketView.
+    const wasInMarketSubmode = state.module === 'research-market';
     state.tasksOpen = false;
     layout.classList.remove('tasks-open');
     state.module = 'research-market';
@@ -3841,7 +3844,7 @@
     openArtifact();
     renderMarketDashboard();
     updateUrl();
-    if (!wasInResearch || state._prevResearch !== 'market') {
+    if (!wasInMarketSubmode) {
       if (composerInput) composerInput.placeholder = 'Ask the market agent — what should I share with clients today?';
       clearFeed();
       addAgent(`<p>You're in <strong>Market data &amp; news</strong>. I can summarize what's moving, dig into any index or macro print, and — most useful day-to-day — suggest items worth sharing with specific clients given their mandates.</p>
@@ -3853,7 +3856,6 @@
           <li>"Summarize the Fed-cut story for an IC memo."</li>
         </ul>`);
     }
-    state._prevResearch = 'market';
   }
 
   function renderMarketDashboard() {
@@ -4142,9 +4144,14 @@
   }
 
   function openManagersView() {
-    // Fire the agent intro any time we ENTER research from outside it — not just
-    // once per session. Internal nav (list → detail → compare) won't re-trigger.
-    const wasInResearch = (state.module || '').startsWith('research-');
+    // Fire the agent intro any time we ENTER from outside the manager sub-mode.
+    // "Inside manager research" = list ↔ detail ↔ compare (those preserve the
+    // conversation). Coming from research-market (a different research tool)
+    // should re-fire the manager intro, otherwise the market chat lingers.
+    const prevModule = state.module || '';
+    const wasInManagerSubmode = prevModule === 'research-managers'
+      || prevModule === 'research-manager'
+      || prevModule === 'research-compare';
     state.tasksOpen = false;
     layout.classList.remove('tasks-open');
     state.module = 'research-managers';
@@ -4154,7 +4161,7 @@
     openArtifact();
     renderManagersList();
     updateUrl();
-    if (!wasInResearch) {
+    if (!wasInManagerSubmode) {
       // Adjust the composer hint to reflect the research context
       if (composerInput) composerInput.placeholder = 'Ask the research agent — search, compare, dig into a manager…';
       // Clear any prior chat (onboarding greeting, tasks message, client load) so
