@@ -1781,6 +1781,75 @@
     }
   }
 
+  // Rich portfolio snapshot — sent on every chat request so the agent can answer
+  // ANY question grounded in the app's live computed state, without us having
+  // to enumerate every possible query type. Used by the freeform_data_answer
+  // intent path; bespoke intents still pull from the same numbers.
+  function buildPortfolioSnapshot() {
+    if (!state.org?.name) return null;
+    try {
+      const { weights, source } = activePortfolioForAnswers();
+      const m = portfolioMetrics(weights);
+      const spendingRate = inferSpendingRate(state.facts?.spending);
+      const t1 = m.tiers[1], t2 = m.tiers[2], t3 = m.tiers[3];
+      const need = spendingRate + t3 * CALL_RATE;
+      const avail = t1 + t2 * T2_ACCESS + t3 * T3_DISTRIB;
+      const macro = aggregateExposure(weights, MACRO_FACTOR_EXPOSURE);
+      const style = aggregateExposure(weights, STYLE_EXPOSURE);
+      const fx = aggregateExposure(weights, FX_EXPOSURE);
+      const fxNonZero = Object.fromEntries(Object.entries(fx).filter(([, v]) => v > 0.0005).map(([k, v]) => [k, +(v * 100).toFixed(2)]));
+      const allocByClass = {};
+      for (const c of CMA) if ((weights[c.id] || 0) > 0.0005) allocByClass[c.name] = +((weights[c.id] || 0) * 100).toFixed(2);
+      const bmW = benchmarkWeights();
+      const benchByClass = {};
+      for (const c of CMA) if ((bmW[c.id] || 0) > 0.0005) benchByClass[c.name] = { weight: +((bmW[c.id] || 0) * 100).toFixed(2), benchmark: benchmarkFor(c.id) };
+      const calls = (typeof clientCapitalCalls === 'function') ? clientCapitalCalls() : [];
+      const pendingCalls = calls.filter((c) => c.status === 'pending');
+      return {
+        org: { name: state.org.name, type: state.org.type, aum: state.aum, source },
+        facts: state.facts || {},
+        spendingRatePct: +(spendingRate * 100).toFixed(2),
+        allocation: { byAssetClassPct: allocByClass, source },
+        metrics: {
+          expectedReturn10yPct: +(m.ret * 100).toFixed(2),
+          realReturn10yPct: +(m.realRet * 100).toFixed(2),
+          volPct: +(m.vol * 100).toFixed(2),
+          sharpe: +m.sharpe.toFixed(3),
+          inflationAssumptionPct: +(INFLATION * 100).toFixed(1),
+          riskFreePct: +(RF * 100).toFixed(1),
+        },
+        liquidity: {
+          tier1Pct: +(t1 * 100).toFixed(2),
+          tier2Pct: +(t2 * 100).toFixed(2),
+          tier3Pct: +(t3 * 100).toFixed(2),
+          spendingNeed1yPct: +(need * 100).toFixed(2),
+          accessible1yPct: +(avail * 100).toFixed(2),
+          coverageCushion: +(need > 0 ? avail / need : 0).toFixed(2),
+        },
+        // Factor sensitivities (pp impact on annual return per unit shock listed in `unit`).
+        macroFactors: MACRO_FACTORS.map((f) => ({ id: f.id, label: f.label, unit: f.unit, ppImpact: +(macro[f.id] || 0).toFixed(3) })),
+        styleTilts: STYLE_FACTORS.map((s) => ({ id: s.id, label: s.label, tilt: +(style[s.id] || 0).toFixed(3) })),
+        currencyExposurePct: fxNonZero,
+        benchmarks: { composition: benchByClass },
+        capitalCalls: {
+          pendingCount: pendingCalls.length,
+          pendingTotalUsdM: +pendingCalls.reduce((s, c) => s + c.amount, 0).toFixed(1),
+          totalOnRecord: calls.length,
+          items: calls.slice(0, 20).map((c) => ({ id: c.id, fund: c.fund, callNum: c.callNum, kind: c.kind, amountUsdM: c.amount, due: c.due, status: c.status })),
+        },
+        monitoring: state.portfolio ? {
+          asOf: state.portfolio.asOf,
+          newUpdates: (state.portfolio.updates || []).filter((u) => u.isNew).length,
+          managers: (state.portfolio.managers || []).slice(0, 40).map((mg) => ({ name: mg.name, assetClass: mg.assetClass, vehicle: mg.vehicle, aumUsd: mg.aum, ytdPct: mg.ytd != null ? +(mg.ytd * 100).toFixed(2) : null, oneYPct: mg.oneY != null ? +(mg.oneY * 100).toFixed(2) : null, since: mg.since, status: mg.status })),
+        } : null,
+        ipsStatus: state.ipsStatus || 'Draft',
+      };
+    } catch (e) {
+      console.warn('buildPortfolioSnapshot failed:', e);
+      return null;
+    }
+  }
+
   async function routeUserMessage(text) {
     const activeEl = artifactBody.querySelector('.ips-section.active');
     const activeId = activeEl?.dataset.sectionId || IPS_SECTIONS[state.reviewIdx]?.id;
@@ -1803,6 +1872,9 @@
           materials: buildMaterialsCorpus(),
           // Current profile facts so the agent can rewrite them on edit_facts intents
           facts: state.facts || {},
+          // Rich computed snapshot so the freeform_data_answer fallback can
+          // answer anything from this data without a bespoke renderer.
+          snapshot: buildPortfolioSnapshot(),
           // Exclude the current message (already pushed into history by addUser)
           history: (state.chatHistory || []).slice(0, -1).slice(-10),
         }),
@@ -1989,6 +2061,23 @@
         highlightSection(IPS_SECTIONS[targetIdx].id);
       }
       await applyAiEdit(IPS_SECTIONS[targetIdx].id, route.editPrompt || text);
+      return;
+    }
+
+    // Freeform fallback — the router has freeform_data_answer for any question
+    // that doesn't fit a bespoke intent. The model has already read the
+    // portfolio snapshot and produced reply + optional table exhibit.
+    if (intent === 'freeform_data_answer') {
+      const reply = route.reply || route.answer || '';
+      const replyHtml = reply
+        ? `<p>${escapeHtml(reply).replace(/\n\n/g, '</p><p>').replace(/\n/g, '<br>')}</p>`
+        : '';
+      const exhibitHtml = renderResearchExhibit(route.exhibit || null);
+      if (replyHtml || exhibitHtml) {
+        addAgent(`${replyHtml}${exhibitHtml}`);
+      } else {
+        await agentReply(`<p>I don't have that one yet — could you rephrase?</p>`);
+      }
       return;
     }
 
@@ -10316,10 +10405,13 @@
       const macro = aggregateExposure(weights, MACRO_FACTOR_EXPOSURE);
       const style = aggregateExposure(weights, STYLE_EXPOSURE);
       const fx = aggregateExposure(weights, FX_EXPOSURE);
-      const numCell = (n, dp = 2) => `<td style="padding:3px 0;text-align:right;font-family:'JetBrains Mono',monospace;color:${n >= 0 ? 'var(--ink)' : '#b13a3a'};">${n >= 0 ? '+' : ''}${n.toFixed(dp)}</td>`;
+      const numCell = (n, dp = 2, suffix = '') => `<td style="padding:3px 0;text-align:right;font-family:'JetBrains Mono',monospace;color:${n >= 0 ? 'var(--ink)' : '#b13a3a'};">${n >= 0 ? '+' : ''}${n.toFixed(dp)}${suffix}</td>`;
+      // Factor exposures are pp-impacts-on-annual-return per unit shock — so the
+      // values themselves are in percentage points. Label them explicitly so the
+      // reader doesn't have to infer the unit from the explainer column.
       const factorRows = MACRO_FACTORS.map((f) => {
         const v = macro[f.id] || 0;
-        return `<tr><td style="padding:3px 8px 3px 0;color:var(--ink-2);">${escapeHtml(f.label)}</td>${numCell(v)}<td style="padding:3px 0 3px 12px;color:var(--muted);font-size:11px;">${escapeHtml(f.unit)} → pp impact on annual return</td></tr>`;
+        return `<tr><td style="padding:3px 8px 3px 0;color:var(--ink-2);">${escapeHtml(f.label)}</td>${numCell(v, 2, 'pp')}<td style="padding:3px 0 3px 12px;color:var(--muted);font-size:11px;">per ${escapeHtml(f.unit)}</td></tr>`;
       }).join('');
       const styleRows = STYLE_FACTORS.map((s) => {
         const v = style[s.id] || 0;
@@ -10340,7 +10432,7 @@
         return `<p>Currency exposure (SAA-weighted):</p>${card('Currency mix', `<table style="width:100%;border-collapse:collapse;font-size:12.5px;">${fxRows}</table>`)}${openLink}${sourceLine}`;
       }
       if (query === 'factor_exposure') {
-        return `<p>Macro factor exposures (SAA-weighted):</p>${card('Macro factors', `<table style="width:100%;border-collapse:collapse;font-size:12.5px;">${factorRows}</table>`)}${openLink}${sourceLine}`;
+        return `<p>Macro factor exposures (SAA-weighted) — change in expected annual return per unit shock to each factor:</p>${card('Macro factors', `<table style="width:100%;border-collapse:collapse;font-size:12.5px;">${factorRows}</table>`)}${openLink}${sourceLine}`;
       }
       // 'risk_exposure' — show all three
       return `<p>Risk exposures (SAA-weighted):</p>

@@ -12,7 +12,7 @@ You receive:
 Classify the message and return ONLY a single JSON object (no markdown, no commentary):
 
 {
-  "intent": "analyze" | "answer_content" | "org_info" | "spend_model" | "set_benchmark" | "edit_facts" | "optimize" | "open" | "next" | "previous" | "switch" | "edit" | "switch_and_edit" | "question" | "unclear",
+  "intent": "analyze" | "answer_content" | "org_info" | "spend_model" | "set_benchmark" | "edit_facts" | "optimize" | "open" | "next" | "previous" | "switch" | "edit" | "switch_and_edit" | "freeform_data_answer" | "question" | "unclear",
   "targetModule": "ips" | "portfolio" | "benchmarks" | "spending" | "materials" | "monitoring" | "board" | "decisions" | "profile" | null,
   "targetSectionNum": <number or null>,
   "query": "sharpe" | "return" | "vol" | "real_return" | "allocation" | "liquidity" | "metrics" | "capital_calls" | "capital_calls_all" | "factor_exposure" | "style_exposure" | "currency_exposure" | "risk_exposure" | null,
@@ -106,8 +106,18 @@ Rules:
 - "switch" — focus on a different IPS section without editing.
 - "edit" — change the CURRENT IPS section. editPrompt = neutral instruction.
 - "switch_and_edit" — change a DIFFERENT IPS section. Set targetSectionNum and editPrompt.
-- "question" — a question that is neither an analyze metric nor an answer_content policy question, and doesn't change focus. Set reply.
-- "unclear" — you can't tell. Set reply to a follow-up question.
+- "freeform_data_answer" — DEFAULT fallback for any data question that doesn't cleanly map to one of the bespoke intents above. Use this any time the user asks about the portfolio, exposures, managers, allocation, benchmarks, capital calls, liquidity, monitoring, or anything else that can be answered from the "Portfolio snapshot" block (when present). Read the snapshot directly — it has the live numbers — and produce:
+    - "reply": 2-5 sentence answer in plain text, no markdown headers, no ASCII tables with pipes. Cite numbers from the snapshot (e.g. "Sharpe is 0.42", "USD exposure is 81%"). Never invent values.
+    - "exhibit": optional structured object for tabular cuts, same schema as the research agent:
+        { "type": "table", "title": "...", "columns": [...], "rows": [[...]], "managerIds"?: [...] }
+        or { "type": "manager_list", "title": "...", "managerIds": [...] }
+        Use a table whenever the answer is best read as rows (multi-asset breakdowns, side-by-side comparisons, lists of managers/calls). Keep cells short. Quartiles as "Q1"-"Q4", percentages as "X.X%", AUM as "$X.XB" or "$XM".
+    - All other fields can be null.
+  Prefer freeform_data_answer over "question" or "unclear" when the snapshot has the data. Examples that should go to freeform_data_answer when the snapshot is present:
+    - "which manager has the longest tenure?" / "what's our biggest country exposure?" / "show me a table of pending calls" / "compare us to a 60/40" / "what's our duration?" / "are we tilted toward small-cap?" / "which factor are we most exposed to?" / any "show me X across Y" cut.
+  Use a bespoke intent (analyze with a known query, optimize, open, etc.) ONLY when the question matches that intent's pattern set above. Otherwise, freeform_data_answer.
+- "question" — only when there is NO snapshot data to ground an answer in (e.g. before a client is loaded). Set reply.
+- "unclear" — you genuinely can't tell what the user wants. Set reply to a follow-up question.
 
 Important:
 - Prefer "analyze" over "open" when the user is asking a specific numeric question. "What's the Sharpe?" is analyze. "Open the SAA" is open.
@@ -167,6 +177,7 @@ export default async function handler(req, res) {
   const history = Array.isArray(body.history) ? body.history.slice(-10) : [];
   const materials = Array.isArray(body.materials) ? body.materials.slice(0, 8) : [];
   const facts = (body.facts && typeof body.facts === 'object') ? body.facts : null;
+  const snapshot = (body.snapshot && typeof body.snapshot === 'object') ? body.snapshot : null;
   const isMarket = currentModule === 'research-market';
   const isResearch = currentModule.startsWith('research') && !isMarket;
   const isTasks = currentModule === 'tasks';
@@ -437,12 +448,15 @@ Match task ids EXACTLY as given. If no task matches a surface request, return a 
   const factsBlock = facts
     ? `\nClient profile facts (the CURRENT values — read these when an edit_facts intent fires, and produce a clean rewritten replacement):\n${['mission','spending','cashNeeds','drawdown','constraints','governance'].map((k) => `  ${k}: ${String(facts[k] || '(none)').slice(0, 600)}`).join('\n')}\n`
     : '';
+  const snapshotBlock = snapshot
+    ? `\nPortfolio snapshot (live computed numbers — the source of truth for freeform_data_answer responses; do NOT invent values beyond what's here):\n${JSON.stringify(snapshot, null, 2).slice(0, 9000)}\n`
+    : '';
   const userBlock = `Current module: ${currentModule}
 Current IPS section in focus: ${currentSectionNum}. ${currentSectionTitle}
 
 All IPS sections:
 ${sectionList}
-${materialsBlock}${factsBlock}${historyBlock}
+${materialsBlock}${factsBlock}${snapshotBlock}${historyBlock}
 Latest user message: ${userMessage}
 
 Use the conversation so far to resolve references like "it", "that", "what about", "what if". For example, if the user asked about Sharpe and then says "what would it be with MVO", the intent is "optimize" with query="sharpe".
