@@ -42,7 +42,7 @@ export default async function handler(req, res) {
   if (!session) {
     res.statusCode = 200;
     htmlHeaders(res);
-    return res.end(renderGate({ title: 'Reve CIO - Demo', redirectTo: '/demo' }));
+    return res.end(renderGate({ title: 'Reve CIO - Demo', redirectTo: '/demo', eyebrow: 'Interactive Demo' }));
   }
 
   // Per-user demo access. Fail open if the DB is unavailable so a transient

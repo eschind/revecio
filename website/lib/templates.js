@@ -30,7 +30,7 @@ const BASE_VARS = `
 // ============================================================
 // Gate page
 // ============================================================
-function renderGate({ error, prefillEmail, title = 'Reve CIO - Investors', redirectTo = '' } = {}) {
+function renderGate({ error, prefillEmail, title = 'Reve CIO - Investors', redirectTo = '', eyebrow = 'Investor Materials' } = {}) {
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -163,7 +163,7 @@ ${FONTS}
 <body>
   <div class="card">
     <div class="brand">Reve</div>
-    <p class="eyebrow">Investor Memo</p>
+    <p class="eyebrow">${escapeHtml(eyebrow)}</p>
     <h1>A private overview.</h1>
     <p class="intro">Please enter the access code shared with you, along with your email.</p>
     ${error ? `<div class="error">${escapeHtml(error)}</div>` : ''}
