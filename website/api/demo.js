@@ -1,9 +1,9 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { readSession } from '../lib/session.js';
+import { readSession, clientIp } from '../lib/session.js';
 import { renderGate } from '../lib/templates.js';
-import { ensureSchema, canEmailAccessDemo } from '../lib/db.js';
+import { ensureSchema, canEmailAccessDemo, recordVisit } from '../lib/db.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const DEMO_PATH = join(__dirname, '..', 'lib', 'demo.html');
@@ -61,6 +61,21 @@ export default async function handler(req, res) {
     res.statusCode = 403;
     htmlHeaders(res);
     return res.end(renderNoDemoAccess());
+  }
+
+  // Log the demo view so it shows up in admin → Activity (internal emails are
+  // skipped inside recordVisit). Never let a logging failure block the demo.
+  try {
+    await recordVisit({
+      email: session.email,
+      ip: clientIp(req),
+      userAgent: req.headers['user-agent'] || '',
+      action: 'view',
+      documentSlug: 'demo',
+      documentTitle: 'Interactive demo',
+    });
+  } catch (err) {
+    console.error('[demo] view log failed:', err?.message);
   }
 
   res.statusCode = 200;
