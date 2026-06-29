@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reve — Overview</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,500;1,6..72,300;1,6..72,400&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f7f5f0;
+    --bg-2: #efece4;
+    --ink: #14171c;
+    --ink-2: #2b3038;
+    --muted: #6a6f78;
+    --line: #d9d4c7;
+    --accent: #1f7050;
+    --accent-2: #3d6b58;
+    --accent-3: #6b9684;
+    --sand: #b8b09a;
+    --dark-bg: #14171c;
+    --dark-ink: #f4f1ea;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: var(--bg); }
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    color: var(--ink);
+    display: flex;
+    justify-content: center;
+  }
+
+  .page {
+    width: 850px;
+    min-height: 1100px;
+    background: var(--bg);
+    padding: 40px 58px 32px;
+    position: relative;
+  }
+
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--line);
+    margin-bottom: 25px;
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .brand .word {
+    font-family: 'Newsreader', serif;
+    font-size: 24px;
+    font-weight: 400;
+    letter-spacing: -0.01em;
+  }
+  .header .tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  h1.title {
+    font-family: 'Newsreader', serif;
+    font-weight: 300;
+    font-size: 28px;
+    line-height: 1.08;
+    letter-spacing: -0.02em;
+    max-width: 32ch;
+    margin-bottom: 6px;
+  }
+  .italic { font-family: 'Newsreader', serif; font-style: italic; font-weight: 400; }
+  .accent { color: var(--accent); }
+
+  h2.section-title {
+    font-family: 'Newsreader', serif;
+    font-weight: 300;
+    font-size: 19px;
+    letter-spacing: -0.01em;
+    line-height: 1.2;
+    margin-bottom: 3px;
+  }
+  h3.kicker {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10.5px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 7px;
+  }
+
+  p.body {
+    font-size: 12.5px;
+    line-height: 1.48;
+    color: var(--ink-2);
+  }
+  p.lede {
+    font-family: 'Newsreader', serif;
+    font-size: 15px;
+    font-weight: 400;
+    line-height: 1.38;
+    color: var(--ink-2);
+    margin-bottom: 10px;
+    max-width: 64ch;
+  }
+  strong { font-weight: 600; color: var(--ink); }
+  em { font-family: 'Newsreader', serif; font-style: italic; font-weight: 400; color: var(--ink); }
+
+  section { margin-bottom: 15px; break-inside: avoid; page-break-inside: avoid; }
+
+  ul.dots { list-style: none; }
+  ul.dots li {
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--ink-2);
+    padding-left: 18px;
+    position: relative;
+    margin-bottom: 9px;
+  }
+  ul.dots li::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0.6em;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+  }
+  ul.dots li strong { font-weight: 600; }
+
+  .capability-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  .capability {
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 13px 14px;
+    background: var(--bg-2);
+  }
+  .capability .name {
+    font-family: 'Newsreader', serif;
+    font-size: 14px;
+    font-weight: 400;
+    letter-spacing: -0.01em;
+    color: var(--accent);
+    margin-bottom: 6px;
+    line-height: 1.2;
+  }
+  .capability .desc {
+    font-size: 11px;
+    line-height: 1.45;
+    color: var(--ink-2);
+  }
+
+  .timeline {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+    margin-top: 10px;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  .phase {
+    border-top: 2px solid var(--accent);
+    padding-top: 8px;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  .phase .when {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 4px;
+  }
+  .phase .what {
+    font-family: 'Newsreader', serif;
+    font-size: 15px;
+    font-weight: 400;
+    letter-spacing: -0.01em;
+    margin-bottom: 4px;
+    line-height: 1.15;
+  }
+  .phase .desc {
+    font-size: 11.5px;
+    line-height: 1.38;
+    color: var(--ink-2);
+  }
+
+  .team-pane {
+    display: grid;
+    grid-template-columns: 1.1fr 1fr;
+    gap: 40px;
+    margin-top: 7px;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  .team-list {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+  }
+  .team-member {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 16px;
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 6px;
+  }
+  .team-member .name {
+    font-family: 'Newsreader', serif;
+    font-size: 16px;
+    font-weight: 400;
+  }
+  .team-member .role {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent);
+    text-align: right;
+    white-space: nowrap;
+  }
+  .logo-wall {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 16px;
+    border-left: 1px solid var(--line);
+    padding-left: 32px;
+  }
+  .logo-wall .label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 4px;
+  }
+  .logo-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px 20px;
+    color: var(--ink-2);
+  }
+  .logo-cell {
+    display: flex;
+    align-items: center;
+    height: 22px;
+  }
+  .logo-cell svg { display: block; height: auto; }
+
+  .closing {
+    background: var(--dark-bg);
+    color: var(--dark-ink);
+    border-radius: 12px;
+    padding: 13px 22px;
+    margin-top: 26px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 24px;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  .closing .closing-title {
+    font-family: 'Newsreader', serif;
+    font-weight: 300;
+    font-size: 16px;
+    line-height: 1.3;
+    max-width: 38ch;
+  }
+  .closing .cta {
+    text-align: right;
+    flex-shrink: 0;
+  }
+  .closing .cta a {
+    color: var(--dark-ink);
+    text-decoration: none;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.06em;
+  }
+  .closing .cta .label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent-3);
+    margin-bottom: 6px;
+  }
+
+  .footer {
+    margin-top: 14px;
+    padding-top: 6px;
+    border-top: 1px solid var(--line);
+    display: flex;
+    justify-content: space-between;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10.5px;
+    color: var(--muted);
+    letter-spacing: 0.02em;
+  }
+
+  .rule { height: 1px; background: var(--line); margin: 6px 0; }
+
+  @media print {
+    body { background: #fff; }
+    .page { width: 100%; min-height: 0; padding: 0.22in 0.4in; }
+    @page { size: letter; margin: 0; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="header">
+    <div class="brand">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" style="width: 28px; height: 28px; display: block;" aria-label="Reve">
+        <rect width="32" height="32" rx="6" fill="#14171c"/>
+        <line x1="2" y1="22" x2="30" y2="22" stroke="#f4f1ea" stroke-width="1"/>
+        <path d="M 10 8 L 10 22" stroke="#f4f1ea" stroke-width="2.4" stroke-linecap="square"/>
+        <path d="M 10 8 L 17 8 A 4 4 0 0 1 17 16 L 10 16" stroke="#f4f1ea" stroke-width="2.4" fill="none"/>
+        <path d="M 14.5 16 L 22 22" stroke="#f4f1ea" stroke-width="2.4" stroke-linecap="square"/>
+      </svg>
+      <span class="word">Reve</span>
+    </div>
+    <span class="tag">The agentic AI layer for institutional investing</span>
+  </div>
+
+  <section>
+    <h1 class="title">A unified, <span class="italic accent">agentic</span> system for institutional investment management.</h1>
+    <p class="lede">Reve is building the AI-native platform where allocation, risk, manager diligence, monitoring, reporting, and operations connect as one intelligent system — with agents that work alongside your team as analysts.</p>
+    <p class="body">
+      On that foundation, we deploy agents that research managers, stress-test portfolios, draft IC memos, monitor underlying holdings, and model look-through exposures — giving you a new level of visibility, insight, and efficiency across your portfolio, while your team remains in control of every decision. Our team has built investment platforms at <strong>Addepar</strong>, <strong>Opto</strong>, and <strong>PDT Partners</strong>; we know the domain, and we ship production-grade investment software.
+    </p>
+  </section>
+
+  <section>
+    <h3 class="kicker">What the agents do</h3>
+    <div class="capability-grid">
+      <div class="capability">
+        <div class="name">Asset allocation &amp; risk modeling</div>
+        <div class="desc">Capital market assumptions, factor models, portfolio optimization, scenario analysis, and cash flow and liquidity projections.</div>
+      </div>
+      <div class="capability">
+        <div class="name">Manager tracking &amp; selection</div>
+        <div class="desc">Continuous manager tracking, investment due diligence, and manager selection based on your evaluation criteria.</div>
+      </div>
+      <div class="capability">
+        <div class="name">Continuous portfolio monitoring</div>
+        <div class="desc">Real-time performance and risk attribution, drift detection, and proactive rebalancing signals.</div>
+      </div>
+      <div class="capability">
+        <div class="name">Memos, reporting &amp; research</div>
+        <div class="desc">Drafting IC memos and board materials, generating stakeholder reporting, and answering ad-hoc research requests on demand.</div>
+      </div>
+    </div>
+  </section>
+
+  <div class="rule"></div>
+
+  <section>
+    <h3 class="kicker">Design partner engagement · 3–4 months</h3>
+    <h2 class="section-title">We build agents around your hardest workflows — together.</h2>
+    <p class="body" style="margin-top: 6px; margin-bottom: 0;">We're partnering with a small number of allocators to design and implement agents against their hardest workflows. You bring your portfolio goals and the processes you want to improve; we bring the engineering and investment fluency to quickly turn them into real capabilities, with every agent shaped around your unique investment objectives and frameworks.</p>
+    <div class="timeline">
+      <div class="phase">
+        <div class="when">Weeks 1–2</div>
+        <div class="what">Discovery</div>
+        <div class="desc">Deep dive on your workflows, data, and systems. Identify the highest-leverage agents to build first.</div>
+      </div>
+      <div class="phase">
+        <div class="when">Weeks 3–8</div>
+        <div class="what">Build</div>
+        <div class="desc">Design and ship agents against your priority workflows, integrated with your existing data and tools.</div>
+      </div>
+      <div class="phase">
+        <div class="when">Weeks 9–12</div>
+        <div class="what">Deploy &amp; validate</div>
+        <div class="desc">Agents run alongside your team on real work, refined continuously based on usage and feedback.</div>
+      </div>
+      <div class="phase">
+        <div class="when">Weeks 13–16</div>
+        <div class="what">Expand</div>
+        <div class="desc">Extend to additional workflows and formalize potential ongoing partnership and roadmap.</div>
+      </div>
+    </div>
+  </section>
+
+  <div class="rule"></div>
+
+  <section>
+    <h3 class="kicker">Key team members</h3>
+    <div class="team-pane">
+      <div class="team-list">
+        <div class="team-member">
+          <div class="name">Eytan Schindelhaim</div>
+          <div class="role">Chief Executive Officer</div>
+        </div>
+        <div class="team-member">
+          <div class="name">Sreenath Are</div>
+          <div class="role">Chief Technology Officer</div>
+        </div>
+        <div class="team-member" style="border-bottom: none; padding-bottom: 0;">
+          <div class="name">Bryan Pham</div>
+          <div class="role">Lead Investment Engineer</div>
+        </div>
+      </div>
+      <div class="logo-wall">
+        <div class="label">Previously at</div>
+        <div class="logo-row">
+          <div class="logo-cell"><svg xmlns="http://www.w3.org/2000/svg" style="width:82px" viewBox="0 0 137 24" fill="none"><path fill="currentColor" d="M51.023 6.944h-2.688L44.175 18h2.688l.784-2.224h3.936L52.367 18h2.816l-4.16-11.056zM48.24 13.76l1.376-3.968 1.376 3.968H48.24zm20.235-1.28c0-2.144-.864-3.424-1.792-4.192-.912-.784-2.336-1.328-4.256-1.328h-3.744V18h3.744c1.92 0 3.344-.544 4.256-1.312.928-.784 1.792-2.064 1.792-4.208zm-2.624 0c0 1.36-.512 2.096-.976 2.528-.464.448-1.232.8-2.304.8h-1.312V9.104h1.312c1.072 0 1.84.352 2.304.784.464.448.976 1.232.976 2.592zm16.434 0c0-2.144-.864-3.424-1.792-4.192-.912-.784-2.336-1.328-4.256-1.328h-3.744V18h3.744c1.92 0 3.344-.544 4.256-1.312.928-.784 1.792-2.064 1.792-4.208zm-2.624 0c0 1.36-.512 2.096-.976 2.528-.464.448-1.232.8-2.304.8h-1.312V9.104h1.312c1.072 0 1.84.352 2.304.784.464.448.976 1.232.976 2.592zm13.938 3.424h-4.72v-2.56h4.32V11.28h-4.32V9.024h4.576V6.96h-7.152V18h7.296v-2.096zm12.139-5.472c0-1.184-.416-2.032-1.152-2.64-.736-.608-1.744-.832-2.88-.832h-3.952V18h2.592v-4.08h1.36c1.136 0 2.144-.224 2.88-.832.736-.624 1.152-1.472 1.152-2.656zm-2.624 0c0 .56-.224.96-.528 1.184-.32.224-.688.304-1.248.304h-1.008V8.96h1.008c.56 0 .928.08 1.248.304.304.224.528.608.528 1.168zm11.429-3.488h-2.688L107.694 18h2.688l.784-2.224h3.936l.784 2.224h2.816l-4.16-11.056zm-2.784 6.816l1.376-3.968 1.376 3.968h-2.752zm16.379-.32c.816-.256 2.16-1.072 2.16-3.168 0-1.104-.48-1.984-1.216-2.528-.72-.528-1.68-.784-2.912-.784h-3.968V18h2.592v-4.224h.816l2.32 4.224h3.008l-2.8-4.56zm-.448-3.072c0 .576-.224.88-.56 1.12-.32.24-.736.304-1.328.304h-1.024V8.96h1.024c.592 0 1.008.048 1.328.288.336.24.56.56.56 1.12zM15.107 0L.5 24h11.44L26.547 0h-11.44z"/><path fill="currentColor" d="M36.085 24h-11.44l-6.857-11.269h11.444l6.853 11.27z"/></svg></div>
+          <div class="logo-cell"><svg xmlns="http://www.w3.org/2000/svg" style="width:62px" viewBox="0 0 83 20" fill="none"><path d="M38.7388 4.56532H31.2039C29.6633 4.56532 28.4028 5.8258 28.4028 7.36639V12.6324C28.4028 14.173 29.6633 15.4335 31.2039 15.4335H38.7388C40.2793 15.4335 41.5398 14.173 41.5398 12.6324V7.36639C41.5398 5.8258 40.2793 4.56532 38.7388 4.56532ZM39.0469 12.6324C39.0469 12.8005 38.9068 12.9405 38.7388 12.9405H31.2039C31.0358 12.9405 30.8958 12.8005 30.8958 12.6324V7.36639C30.8958 7.19832 31.0358 7.05827 31.2039 7.05827H38.7388C38.9068 7.05827 39.0469 7.19832 39.0469 7.36639V12.6324Z" fill="currentColor"/><path d="M63.0241 0.616836H60.5312V4.56633H58.9346V7.05928H60.5592V7.3674V12.6334C60.5592 14.174 61.8197 15.4345 63.3602 15.4345H67.842V12.9415H63.3602C63.1922 12.9415 63.0521 12.8015 63.0521 12.6334V7.3674V7.05928H67.87V4.56633H63.0521V0.616836H63.0241Z" fill="currentColor"/><path d="M80.0547 4.56532H72.5198C70.9792 4.56532 69.7188 5.8258 69.7188 7.36639V12.6324C69.7188 14.173 70.9792 15.4335 72.5198 15.4335H80.0547C81.5953 15.4335 82.8557 14.173 82.8557 12.6324V7.36639C82.8277 5.8258 81.5953 4.56532 80.0547 4.56532ZM80.3628 12.6324C80.3628 12.8005 80.2227 12.9405 80.0547 12.9405H72.5198C72.3518 12.9405 72.2117 12.8005 72.2117 12.6324V7.36639C72.2117 7.19832 72.3518 7.05827 72.5198 7.05827H80.0547C80.2227 7.05827 80.3628 7.19832 80.3628 7.36639V12.6324Z" fill="currentColor"/><path d="M54.3965 4.56532H46.8616H44.0605V7.36639V12.6324V19.3829H46.5535V15.4054C46.6655 15.4054 46.7496 15.4335 46.8616 15.4335H54.3965C55.9371 15.4335 57.1975 14.173 57.1975 12.6324V7.36639C57.1695 5.8258 55.9371 4.56532 54.3965 4.56532ZM54.7046 12.6324C54.7046 12.8005 54.5645 12.9405 54.3965 12.9405H46.8616C46.8336 12.9405 46.8056 12.9405 46.7776 12.9125H46.7496C46.6375 12.8565 46.5535 12.7444 46.5535 12.6324V7.36639C46.5535 7.22633 46.6375 7.11429 46.7496 7.08628H46.7776C46.8056 7.08628 46.8336 7.05827 46.8616 7.05827H54.3965C54.5645 7.05827 54.7046 7.19832 54.7046 7.36639V12.6324Z" fill="currentColor"/><path d="M7.479 0.000324249H17.7029C18.9634 0.000324249 19.9998 1.03672 19.9998 2.2972V12.5211H15.434V5.12627C15.434 4.81815 15.1819 4.56606 14.8738 4.56606H7.479V0.000324249Z" fill="currentColor"/><path d="M4.56573 14.8737V0.420238L0 4.98597V17.7028C0 18.9633 1.03639 19.9997 2.29687 19.9997H15.0137L19.5794 15.4339H5.12595C4.81783 15.4339 4.56573 15.1818 4.56573 14.8737Z" fill="currentColor"/></svg></div>
+          <div class="logo-cell"><svg xmlns="http://www.w3.org/2000/svg" style="width:84px" viewBox="0 0 131 20" fill="none"><path d="M58.2105 19.528V0.473427H65.4007C68.5954 0.473427 70.6925 1.13341 72.3891 2.26539C74.8855 3.96335 76.4829 6.79329 76.4829 10.0012C76.4829 13.2082 74.9859 16.0381 72.4895 17.736C70.7918 18.868 68.6947 19.528 65.5 19.528H58.2105ZM71.0928 4.62434C69.7945 3.58636 68.0968 2.92637 65.3014 2.92637H61.008V16.9801H65.3014C68.1961 16.9801 69.7945 16.3201 71.0928 15.2821C72.5898 13.9621 73.5882 12.0752 73.5882 9.90522C73.5882 7.83027 72.5898 5.94431 71.0928 4.62434ZM131 3.11437V0.474427H115.424V19.623H131V16.9801H118.419V11.2262H126.207V8.58625H118.419V3.11437H131ZM105.239 19.528L98.6493 11.2282C100.152 11.189 101.579 10.5943 102.624 9.57156C103.669 8.54878 104.25 7.17925 104.241 5.75631C104.241 2.73738 101.644 0.284431 98.4497 0.284431H86.8678V19.434H89.7625V11.1332H95.0553L101.644 19.434C101.745 19.528 105.239 19.528 105.239 19.528ZM89.7625 3.02037H98.4497C100.147 3.02037 101.445 4.24635 101.445 5.85031C101.445 7.45427 100.147 8.68025 98.4497 8.68025H89.7635L89.7625 3.02037ZM16.974 14.1511C15.5763 16.0381 13.2796 17.2641 10.6839 17.2641C6.39048 17.2641 2.99504 13.9631 2.99504 10.0012C2.99504 6.03931 6.48978 2.73738 10.6839 2.73738C13.2796 2.73738 15.5753 3.96335 16.974 5.85031L19.37 4.24634C18.386 2.93324 17.0837 1.86253 15.5724 1.12395C14.0611 0.385375 12.3847 0.000450494 10.6839 0.00143755C4.79312 -0.0925604 0 4.43534 0 10.0012C0 15.5661 4.79312 20 10.5835 20C14.1786 20 17.3733 18.302 19.2707 15.7551L16.974 14.1511ZM46.3296 19.528H49.3247L39.8388 0.378429H36.5448L26.9585 19.528H29.9546L32.75 13.8681H43.4339L46.3296 19.528ZM34.1487 11.3212L38.1421 3.30337L42.1355 11.3212H34.1487Z" fill="currentColor"/></svg></div>
+          <div class="logo-cell"><svg xmlns="http://www.w3.org/2000/svg" style="width:58px" viewBox="0 0 288.27 96.67"><defs><style>.cls-1{fill:currentColor;}</style></defs><g><path class="cls-1" d="M97.11,24.02h3.05c2.97,0,5.73-.54,8.19-1.61,2.47-1.07,4.43-2.57,5.84-4.45,1.41-1.89,2.12-4.03,2.12-6.37s-.69-4.25-2.04-6.01c-1.35-1.76-3.25-3.14-5.65-4.12-2.39-.97-5.15-1.47-8.19-1.47h-10.28v38.77h6.96v-14.76ZM97.11,3.17h2.99c2.82,0,5.05.78,6.61,2.33,1.57,1.55,2.36,3.73,2.36,6.48s-.81,5.03-2.41,6.56c-1.6,1.53-3.9,2.31-6.84,2.31h-2.72V3.17Z"/><path class="cls-1" d="M183.56,34.07c-.5-.43-1.23-.38-1.73.05-.3.26-.63.48-.99.68-.72.39-1.51.58-2.35.58-1.3,0-2.26-.46-2.92-1.4-.67-.95-1.01-2.35-1.01-4.17v-15.55h8.67v-3.45h-8.67V2.96h-1.52l-.05.12c-.96,2.5-3.61,5.91-5.39,6.67-1.54.65-6.54.44-7.43.44-2.12,0-4.08.68-5.84,2.01-1.57,1.19-2.87,3.17-3.89,5.24v-6.64h-5.64v27.97h6.36v-15.44c0-2.53.78-4.46,2.32-5.75,1.55-1.3,3.39-3.33,9.81-3.33h4.94v15.39c0,2.78.79,5.08,2.35,6.84,1.57,1.77,3.64,2.67,6.17,2.67,1.63,0,3.14-.4,4.48-1.18.96-.56,1.79-1.26,2.49-2.09.45-.54.39-1.35-.15-1.81h0Z"/><path class="cls-1" d="M201.86,13.81c1.71,0,2.99.65,3.93,1.98.94,1.33,1.42,3.23,1.42,5.62v17.36h6.3v-17.08c0-3.47-.88-6.28-2.62-8.38-1.75-2.1-4.12-3.17-7.05-3.17-2.26,0-4.35.63-6.22,1.87-1.68,1.12-3.1,2.68-4.23,4.65v-5.87h-5.64v27.97h6.36v-16.53c0-1.42.37-2.8,1.1-4.1.73-1.3,1.71-2.36,2.9-3.14,1.19-.78,2.46-1.18,3.76-1.18Z"/><path class="cls-1" d="M263.35,10.53c-2.12,0-4.08.68-5.84,2.01-1.57,1.19-2.87,2.83-3.89,4.9v-6.64h-5.64v27.97h6.36v-15.44c0-2.53.78-4.46,2.32-5.75,1.55-1.3,3.59-1.96,6.05-1.96.78,0,1.5.09,2.14.27l.2.06.83-4.96-.14-.06c-.64-.26-1.44-.4-2.38-.4Z"/><path class="cls-1" d="M287.03,26.79c-.82-1.11-1.82-2.03-2.99-2.74-1.16-.7-2.67-1.44-4.49-2.21-2.1-.91-3.66-1.73-4.63-2.45-.94-.7-1.4-1.56-1.4-2.65s.43-1.96,1.3-2.68c.87-.72,1.98-1.08,3.28-1.08,1.56,0,2.97.5,4.19,1.49,1.23,1,2.14,2.39,2.71,4.14l.04.13h.89l1.18-5.3.02-.11-.08-.07c-1.07-.96-2.45-1.73-4.1-2.29-1.64-.55-3.35-.83-5.08-.83-1.88,0-3.6.34-5.1,1-1.51.67-2.7,1.62-3.56,2.83-.86,1.21-1.3,2.61-1.3,4.14s.4,2.79,1.19,3.84c.78,1.04,1.73,1.89,2.82,2.54,1.08.64,2.51,1.37,4.27,2.17,1.48.69,2.66,1.27,3.5,1.75.82.46,1.51,1.03,2.06,1.68.54.64.81,1.4.81,2.27,0,1.15-.44,2.11-1.31,2.88-.87.77-2.03,1.16-3.44,1.16-1.74,0-3.39-.64-4.9-1.9-1.52-1.27-2.62-2.96-3.26-5.04l-.04-.13h-.95l-1.37,6.4.08.07c1.15,1,2.72,1.86,4.67,2.56,1.95.7,3.97,1.05,5.99,1.05s3.73-.36,5.29-1.06c1.56-.71,2.79-1.72,3.65-3,.86-1.29,1.29-2.77,1.29-4.41s-.42-3.04-1.24-4.17Z"/><path class="cls-1" d="M121.3,76.51c-2.84,3.74-6.55,5.63-11.04,5.63-2.8,0-5.34-.73-7.55-2.16-2.21-1.44-3.96-3.46-5.2-6.01-1.24-2.56-1.87-5.48-1.87-8.69,0-2.99.55-5.72,1.63-8.1,1.08-2.37,2.61-4.26,4.54-5.6,1.93-1.34,4.17-2.02,6.64-2.02s4.8.7,6.8,2.08c2.01,1.38,3.49,3.31,4.43,5.75l.05.12h.94l1.46-6.51.02-.11-.08-.07c-1.59-1.4-3.63-2.52-6.07-3.33-2.44-.81-4.98-1.22-7.54-1.22-3.82,0-7.34.88-10.46,2.63-3.12,1.74-5.6,4.17-7.37,7.2-1.76,3.03-2.66,6.47-2.66,10.21s.9,7.18,2.69,10.22c1.78,3.03,4.27,5.45,7.39,7.2,3.12,1.75,6.64,2.63,10.46,2.63,6.43,0,11.56-2.63,15.24-7.81l.1-.14-2.42-2.05-.12.16Z"/><path class="cls-1" d="M176.76,59c-1.91-1.28-4.07-1.92-6.44-1.92s-4.49.66-6.31,1.96c-1.6,1.14-2.88,2.69-3.82,4.6v-5.9h-5.64v38.94h6.36v-15.45c.93,1.5,2.16,2.71,3.66,3.61,1.7,1.02,3.62,1.53,5.69,1.53,2.44,0,4.64-.64,6.55-1.9,1.9-1.26,3.41-3.02,4.48-5.23,1.07-2.21,1.61-4.73,1.61-7.49s-.55-5.28-1.64-7.49c-1.09-2.21-2.6-3.98-4.51-5.26ZM168.4,60.36c1.45,0,2.77.5,3.94,1.49,1.18,1,2.11,2.4,2.77,4.17.66,1.78,1,3.82,1,6.05s-.32,4.1-.95,5.78c-.62,1.66-1.5,2.96-2.6,3.87-1.09.9-2.38,1.36-3.83,1.36s-2.84-.5-4.02-1.49c-1.19-1-2.14-2.4-2.8-4.17-.66-1.78-1-3.8-1-6s.33-4.05.97-5.72c.64-1.66,1.55-2.98,2.69-3.93,1.13-.94,2.42-1.41,3.83-1.41Z"/><rect class="cls-1" x="187.74" y="57.73" width="6.19" height="27.97"/><path class="cls-1" d="M217.51,80.99c-.5-.43-1.23-.38-1.73.05-.3.26-.63.48-.99.68-.72.39-1.51.58-2.35.58-1.3,0-2.26-.46-2.92-1.4-.67-.95-1.01-2.35-1.01-4.17v-15.55h8.67v-3.45h-8.67v-7.84h-1.52l-.05.12c-.61,1.61-1.43,3.14-2.54,4.45-2.35,2.78-4.72,4.31-7.01,4.54l-.17.02v2.17h4.94v15.39c0,2.78.79,5.08,2.35,6.84,1.57,1.77,3.64,2.67,6.17,2.67,1.63,0,3.14-.4,4.48-1.18.96-.56,1.79-1.26,2.49-2.09.45-.54.39-1.35-.15-1.81h0Z"/><rect class="cls-1" x="247.97" y="46.38" width="6.36" height="39.32"/><ellipse class="cls-1" cx="190.83" cy="50.28" rx="4.09" ry="3.38"/><path class="cls-1" d="M134.42,33.72v5.05h5.48v-17.3c0-2.21-.45-4.2-1.34-5.9-.89-1.71-2.16-3.05-3.77-4-1.61-.95-3.5-1.42-5.61-1.42-2.22,0-4.27.54-6.12,1.53s-3.23,2.49-4.04,3.48c-.43.52-.37,1.29.13,1.74l.03.03c.5.45,1.26.42,1.74-.06.69-.7,1.72-1.65,2.67-2.16,1.23-.66,2.52-.99,3.83-.99,1.94,0,3.48.69,4.57,2.04,1.1,1.37,1.66,3.28,1.66,5.67v.71l-5.65.69c-3.31.41-6.02,1.44-8.05,3.08-2.14,1.73-3.18,3.88-3.08,6.37.07,1.83.88,3.6,2.21,4.86,1.6,1.52,3.69,2.3,6.2,2.3,2.04,0,3.91-.56,5.56-1.68,1.45-.98,2.65-2.33,3.57-4.03ZM133.65,24.7v3.19c0,1.43-.29,2.77-.86,3.98-.57,1.21-1.34,2.2-2.28,2.92h0c-.93.72-1.95,1.09-3.04,1.09-1.22,0-2.24-.42-3.02-1.26-.78-.84-1.18-1.92-1.18-3.22,0-1.62.64-3.02,1.89-4.17,1.26-1.16,2.95-1.87,5.02-2.12l3.47-.41Z"/><path class="cls-1" d="M144.18,80.65v5.05h5.48v-17.3c0-2.21-.45-4.2-1.34-5.9-.89-1.71-2.16-3.05-3.77-4-1.61-.95-3.5-1.42-5.61-1.42-2.22,0-4.27.54-6.12,1.53s-3.23,2.49-4.04,3.48c-.43.52-.37,1.29.13,1.74l.03.03c.5.45,1.26.42,1.74-.06.69-.7,1.72-1.65,2.67-2.16,1.23-.66,2.52-.99,3.83-.99,1.94,0,3.48.69,4.57,2.04,1.1,1.37,1.66,3.28,1.66,5.67v.71l-5.65.69c-3.31.41-6.02,1.44-8.05,3.08-2.14,1.73-3.18,3.88-3.08,6.37.07,1.83.88,3.6,2.21,4.86,1.6,1.52,3.69,2.3,6.2,2.3,2.04,0,3.91-.56,5.56-1.68,1.45-.98,2.65-2.33,3.57-4.03ZM143.42,71.62v3.19c0,1.43-.29,2.77-.86,3.98-.57,1.21-1.34,2.2-2.28,2.92h0c-.93.72-1.95,1.09-3.04,1.09-1.22,0-2.24-.42-3.02-1.26-.78-.84-1.18-1.92-1.18-3.22,0-1.62.64-3.02,1.89-4.17,1.26-1.16,2.95-1.87,5.02-2.12l3.47-.41Z"/><path class="cls-1" d="M237.33,80.65v5.05h5.48v-17.3c0-2.21-.45-4.2-1.34-5.9-.89-1.71-2.16-3.05-3.77-4-1.61-.95-3.5-1.42-5.61-1.42-2.22,0-4.27.54-6.12,1.53s-3.23,2.49-4.04,3.48c-.43.52-.37,1.29.13,1.74l.03.03c.5.45,1.26.42,1.74-.06.69-.7,1.72-1.65,2.67-2.16,1.23-.66,2.52-.99,3.83-.99,1.94,0,3.48.69,4.57,2.04,1.1,1.37,1.66,3.28,1.66,5.67v.71l-5.65.69c-3.31.41-6.02,1.44-8.05,3.08-2.14,1.73-3.18,3.88-3.08,6.37.07,1.83.88,3.6,2.21,4.86,1.6,1.52,3.69,2.3,6.2,2.3,2.04,0,3.91-.56,5.56-1.68,1.45-.98,2.65-2.33,3.57-4.03ZM236.56,71.62v3.19c0,1.43-.29,2.77-.86,3.98-.57,1.21-1.34,2.2-2.28,2.92h0c-.93.72-1.95,1.09-3.04,1.09-1.22,0-2.24-.42-3.02-1.26-.78-.84-1.18-1.92-1.18-3.22,0-1.62.64-3.02,1.89-4.17,1.26-1.16,2.95-1.87,5.02-2.12l3.47-.41Z"/><path class="cls-1" d="M237.7,11.85c-1.8-1.13-3.91-1.7-6.27-1.7-2.51,0-4.83.65-6.9,1.92-2.07,1.27-3.71,3.04-4.89,5.25-1.18,2.21-1.78,4.68-1.78,7.33s.64,5.25,1.89,7.5c1.25,2.25,3,4.05,5.2,5.34,2.19,1.29,4.65,1.95,7.31,1.95,2.21,0,4.27-.5,6.12-1.48,1.49-.79,2.8-1.87,3.91-3.23.44-.54.4-1.34-.13-1.8h0c-.5-.43-1.25-.43-1.72.04-1.9,1.93-4.07,2.91-6.48,2.91-1.78,0-3.39-.5-4.77-1.5-1.39-1-2.5-2.41-3.28-4.2-.77-1.75-1.19-3.78-1.24-6.04h18.76v-.19c0-2.76-.5-5.2-1.5-7.27-1-2.07-2.41-3.69-4.21-4.82ZM231.2,13.1c1.71,0,3.05.7,4.1,2.14,1.02,1.41,1.64,3.34,1.84,5.76h-12.31c.3-2.42,1.02-4.35,2.13-5.76,1.13-1.43,2.55-2.15,4.24-2.15Z"/></g><path class="cls-1" d="M66.78,16.47c.9,0,1.63.66,1.74,1.53.01.08.02.16.02.24,0,.98-.81,1.77-1.8,1.77-.55,0-1.03-.25-1.35-.64-.26-.31-.42-.7-.41-1.13.01-.98.82-1.76,1.8-1.76ZM46.41,54.82c3.92,2.67,8.19,7.56,10.8,12.75-.81-4.9-2.12-9.23-2.01-14.98.12-6.2,1.4-12.15,4.16-17.68l.91-1.82s-13.29,7.15-13.86,21.73ZM75.11,19.52c-1.09-1.72-2.5-3.33-4.2-4.78,1.07,2.59,2.51,10.89-16.31,13.24,4.69-1.96,5.89-5.67,6.04-7.56.08-.97-.18-1.56-.66-1.83-.9-.51-1.77.57-2.16,1.07-1.9,2.46-4.9,4.05-8.89,3.29-7.32-1.39-7.44-9.61-7.46-9.88,1.75-.71,3.39-1.42,5.19-1.82-1.09,1.04-1.77,2.46-1.77,4.03,0,3.16,2.73,5.73,6.1,5.73s6.1-2.57,6.1-5.73c0-.7-.14-1.36-.38-1.98.08.05.16.1.24.16,1.33.9,2.35,1.58,2.99,1.96,1.97,1.16,4.5.79,6.01-.9.02-.02.03-.04.04-.05,2.02-2.41,1.95-5.12-.62-7.49,0,0-2.18-2.39-6.49-4.35C55.34,1.01,50.24-.02,44.16,0c-14.48.05-20.37,5.98-22.39,7.53C11.37,15.5,4.57,31.69.01,49.12c-.05.2.04.41.23.51,17.63,9.16,32.47,22.59,46.03,36.72.86-4.04.22-16.31-6.1-23.24-4.91-5.39-10.15-8.51-13.68-11.7-3.08-2.78-5.3-6.14-5.96-7.79-2.12-5.25-1.99-11.85,2.07-18.42,0,0,0,0,0,0l-.04.29-.02-.02c0,.06,0,.11,0,.17l.02-.15h.01c.01-.18.03-.28.03-.29,0,.11,0,.22,0,.33l-.02-.03c-.13,1.84-.25,11.77,11.56,20.22,2-2.36,13.96-15.72,28.47-15.72.08,0,.91,0,1.69.06.78.06,1.49.2,1.49.2,3.06.49,5.39,3.11,5.39,6.26,0,1.25-.37,2.41-1,3.4,3.67-2.56,6.71-6.4,7.29-10.67.46-3.39-.43-6.73-2.33-9.74Z"/></svg></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="closing">
+    <div class="closing-title">Interested in custom AI analysts to help manage your portfolio?</div>
+    <div class="cta">
+      <div class="label">Get in touch</div>
+      <a href="mailto:hello@revecio.com">hello@revecio.com</a>
+    </div>
+  </div>
+
+  <div class="footer">
+    <span>Reve &middot; revecio.com</span>
+    <span>Confidential — for discussion purposes only</span>
+  </div>
+
+</div>
+</body>
+</html>
